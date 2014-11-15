@@ -1,0 +1,7 @@
+# Cabal
+.cabal-sandbox/
+cabal.sandbox.config
+dist/
+
+# Testing
+test/

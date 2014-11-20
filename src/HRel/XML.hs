@@ -7,6 +7,9 @@ module HRel.XML (
 	NodeFilter,
 	runNodeFilter,
 	foreachNode,
+	foreachNode',
+	relative,
+	relatives,
 	node,
 	attribute,
 	text,
@@ -15,6 +18,8 @@ module HRel.XML (
 import Data.List
 import Data.Monoid
 
+import Control.Applicative
+import Control.Monad
 import Control.Monad.Trans.Maybe
 import Control.Monad.Reader
 
@@ -110,22 +115,38 @@ type NodeFilter t = MaybeT (Reader (Node t))
 runNodeFilter :: NodeFilter t a -> Node t -> Maybe a
 runNodeFilter a = runReader (runMaybeT a)
 
--- | Iterate through every "Node" matching the given tag name.
+-- | Iterate through every children "Node" matching the given tag name.
 foreachNode :: (Eq t) => t -> NodeFilter t a -> NodeFilter t [a]
 foreachNode t a =
-	asks (filter (isNodeTag t) . nodeChildren)
+	reader (filter (isNodeTag t) . nodeChildren)
 	>>= mapM (\child -> local (const child) a)
+	>>= \x -> case x of
+		[] -> mzero
+		xs -> pure xs
+
+-- | Foreach child node.
+foreachNode' :: NodeFilter t a -> NodeFilter t [a]
+foreachNode' a =
+	reader nodeChildren >>= mapM (\child -> local (const child) a)
 
 -- | Apply the filter to a sub-node with the given tag name.
 node :: (Eq t) => t -> NodeFilter t a -> NodeFilter t a
 node t a =
-	MaybeT (asks (find (isNodeTag t) . nodeChildren))
+	MaybeT (reader (find (isNodeTag t) . nodeChildren))
 	>>= \n -> local (const n) a
+
+-- | Perform search (breadth first) to find a node that matches the given "NodeFilter".
+relative :: NodeFilter t a -> NodeFilter t a
+relative a = foldl' (\x n -> x <|> local (const n) (relative a)) a =<< reader nodeChildren
+
+-- | Perform search to find nodes that match the given "NodeFilter".
+relatives :: NodeFilter t a -> NodeFilter t [a]
+relatives a = mplus (fmap (: []) a) (fmap concat (foreachNode' (relatives a)))
 
 -- | Fetch value of an attribute.
 attribute :: (Eq t) => t -> NodeFilter t t
-attribute k = MaybeT (fmap (lookup k) (asks nodeAttributes))
+attribute k = MaybeT (fmap (lookup k) (reader nodeAttributes))
 
 -- | Get the inner content.
 text :: (Monoid t) => NodeFilter t t
-text = asks nodeText
+text = reader nodeText

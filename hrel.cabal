@@ -16,5 +16,7 @@ executable hrel
                        tagsoup,
                        http-conduit,
                        text,
-                       bytestring
+                       bytestring,
+                       mtl,
+                       transformers
   default-language:    Haskell2010

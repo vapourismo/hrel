@@ -41,6 +41,8 @@ buildTree ns (_ : ts) =
 	buildTree ns ts
 buildTree ns [] = ns
 
--- | Reformat the given list of "Tag"s into a list of "Node"s.
-toNodeList :: (Monoid t, Eq t) => [Tag t] -> [Node t]
-toNodeList = buildTree []
+-- | Reformat the given list of "Tag"s into a "Node".
+toNodeList :: (Monoid t, Eq t) => [Tag t] -> Node t
+toNodeList = fix . buildTree [] where
+	fix [x] = x
+	fix xs = Node mempty [] mempty xs

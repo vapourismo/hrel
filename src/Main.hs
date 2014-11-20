@@ -2,7 +2,6 @@
 
 module Main (main) where
 
-import Data.Maybe
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
 
@@ -18,9 +17,9 @@ main :: IO ()
 main = do
 	txt <- fetchContents "http://www.ddlvalley.rocks/category/tv-shows/hd-720/feed/"
 	case toNodeList (parseTags txt) of
-		[x] -> print . fromJust $ runNodeFilter rssFilter x where
+		[x] -> print $ runNodeFilter rssFilter x where
 			rssFilter =
-				node "rss" $ node "channel" $ foreachNode "item" $ do
+				relative $ node "channel" $ foreachNode "item" $ do
 					title <- node "title" text
 					urls <- foreachNode "enclosure" (attribute "url")
 					return (title, urls)

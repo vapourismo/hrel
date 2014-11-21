@@ -3,6 +3,8 @@
 module HRel.XML (
 	Node (..),
 	toNodeList,
+	parseNodes,
+	parseNode,
 
 	NodeFilter,
 	runNodeFilter,
@@ -18,12 +20,13 @@ module HRel.XML (
 import Data.List
 import Data.Monoid
 
-import Control.Applicative
+import Control.Applicative hiding (empty)
 import Control.Monad
 import Control.Monad.Trans.Maybe
 import Control.Monad.Reader
 
 import Text.HTML.TagSoup
+import Text.StringLike
 
 -- | Node data type
 data Node t
@@ -107,6 +110,17 @@ toNodeList ts =
 	case build ts of
 		Just (n, ts') -> n : toNodeList ts'
 		Nothing -> []
+
+-- | Parse the input.
+parseNodes :: (StringLike t) => t -> [Node t]
+parseNodes = toNodeList . parseTags
+
+-- | Parse the input.
+parseNode :: (StringLike t) => t -> Node t
+parseNode ts =
+	case parseNodes ts of
+		[x] -> x
+		xs  -> Tag empty [] xs
 
 -- | Cursor used to navigate through an XML document
 type NodeFilter t = MaybeT (Reader (Node t))

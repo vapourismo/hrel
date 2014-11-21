@@ -137,7 +137,9 @@ node t a =
 
 -- | Perform search (breadth first) to find a node that matches the given "NodeFilter".
 relative :: NodeFilter t a -> NodeFilter t a
-relative a = foldl' (\x n -> x <|> local (const n) (relative a)) a =<< reader nodeChildren
+relative a =
+	reader nodeChildren
+	>>= foldl' (\x n -> x <|> local (const n) (relative a)) a
 
 -- | Perform search to find nodes that match the given "NodeFilter".
 relatives :: NodeFilter t a -> NodeFilter t [a]

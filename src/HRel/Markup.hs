@@ -53,7 +53,6 @@ nodeText :: (Monoid t) => Node t -> t
 nodeText (Text t) = t
 nodeText (Tag _ _ cs) = mconcat (map nodeText cs)
 
-
 -- | Show function for "Node"
 showNode :: (Show t) => Int -> Node t -> String
 showNode i n =
@@ -149,13 +148,13 @@ node t a =
 	MaybeT (reader (find (isNodeTag t) . nodeChildren))
 	>>= \n -> local (const n) a
 
--- | Perform search (breadth first) to find a node that matches the given "NodeFilter".
+-- | Perform a search (breadth first) to find a node that matches the given "NodeFilter".
 relative :: NodeFilter t a -> NodeFilter t a
 relative a =
 	reader nodeChildren
 	>>= foldl' (\x n -> x <|> local (const n) (relative a)) a
 
--- | Perform search to find nodes that match the given "NodeFilter".
+-- | Perform a search to find nodes that match the given "NodeFilter".
 relatives :: NodeFilter t a -> NodeFilter t [a]
 relatives a = mplus (fmap (: []) a) (fmap concat (foreachNode' (relatives a)))
 

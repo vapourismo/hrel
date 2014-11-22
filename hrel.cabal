@@ -15,6 +15,7 @@ executable hrel
   build-depends:       base >= 4.7 && < 4.8,
                        tagsoup,
                        http-conduit,
+                       network-uri,
                        text,
                        bytestring,
                        mtl,

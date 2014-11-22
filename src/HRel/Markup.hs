@@ -22,7 +22,6 @@ import Data.Monoid
 import Data.Maybe
 
 import Control.Applicative hiding (empty)
-import Control.Monad
 import Control.Monad.Trans.Maybe
 import Control.Monad.Reader
 
@@ -155,7 +154,9 @@ relative a =
 
 -- | Perform a search to find nodes that match the given "NodeFilter".
 relatives :: NodeFilter t a -> NodeFilter t [a]
-relatives a = mplus (fmap (: []) a) (fmap concat (foreachNode' (relatives a)))
+relatives a =
+	(++) <$> fmap maybeToList (optional a)
+	     <*> fmap concat (foreachNode' (relatives a))
 
 -- | Fetch value of an attribute.
 attribute :: (Eq t) => t -> NodeFilter t t

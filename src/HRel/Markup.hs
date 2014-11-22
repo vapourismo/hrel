@@ -8,12 +8,18 @@ module HRel.Markup (
 
 	NodeFilter,
 	runNodeFilter,
+
 	foreachNode,
-	foreachNode',
-	relative,
-	relatives,
-	node,
-	attribute,
+	forNode,
+	foreachTag,
+	forTag,
+	relativeNode,
+	relativeNodes,
+	relativeTag,
+	relativeTags,
+
+	tag,
+	attr,
 	text,
 ) where
 
@@ -128,39 +134,62 @@ type NodeFilter t = MaybeT (Reader (Node t))
 runNodeFilter :: NodeFilter t a -> Node t -> Maybe a
 runNodeFilter a = runReader (runMaybeT a)
 
--- | Iterate through every children "Node" matching the given tag name.
-foreachNode :: (Eq t) => t -> NodeFilter t a -> NodeFilter t [a]
-foreachNode t a =
-	reader (filter (isNodeTag t) . nodeChildren)
-	>>= fmap catMaybes . mapM (\child -> optional (local (const child) a))
-
--- | Foreach child node.
-foreachNode' :: NodeFilter t a -> NodeFilter t [a]
-foreachNode' a =
+-- | Match any child node.
+foreachNode :: NodeFilter t a -> NodeFilter t [a]
+foreachNode a =
 	reader nodeChildren
-	>>= fmap catMaybes . mapM (\child -> optional (local (const child) a))
+	>>= fmap catMaybes . mapM (\n -> local (const n) (optional a))
 
--- | Apply the filter to a sub-node with the given tag name.
-node :: (Eq t) => t -> NodeFilter t a -> NodeFilter t a
-node t a =
-	reader (filter (isNodeTag t) . nodeChildren)
-	>>= foldl' (\x n -> x <|> local (const n) a) a
+-- | Match one child node.
+forNode :: NodeFilter t a -> NodeFilter t a
+forNode a = do
+	cs <- reader nodeChildren
+	case cs of
+		[] -> mzero
+		(y : ys) -> foldl' (\x n -> x <|> sub n a) (sub y a) ys
+	where
+		sub = local . const
 
--- | Perform a search (breadth first) to find a node that matches the given "NodeFilter".
-relative :: NodeFilter t a -> NodeFilter t a
-relative a =
-	reader nodeChildren
-	>>= foldl' (\x n -> x <|> local (const n) (relative a)) a
+-- | Like "foreachNode" but for "Tag"s.
+foreachTag :: (Eq t) => t -> NodeFilter t a -> NodeFilter t [a]
+foreachTag t a =
+	foreachNode (tag >>= guard . (== t) >> a)
 
--- | Perform a search to find nodes that match the given "NodeFilter".
-relatives :: NodeFilter t a -> NodeFilter t [a]
-relatives a =
+-- | Like "forNode" but for "Tag"s.
+forTag :: (Eq t) => t -> NodeFilter t a -> NodeFilter t a
+forTag t a =
+	forNode (tag >>= guard . (== t) >> a)
+
+-- | Match the current node or a node at a lower level.
+relativeNode :: NodeFilter t a -> NodeFilter t a
+relativeNode a = a <|> forNode (relativeNode a)
+
+-- | Match the current and any node at a lower level.
+relativeNodes :: NodeFilter t a -> NodeFilter t [a]
+relativeNodes a =
 	(++) <$> fmap maybeToList (optional a)
-	     <*> fmap concat (foreachNode' (relatives a))
+	     <*> fmap concat (foreachNode (relativeNodes a))
+
+-- | Like "relativeNode" but for "Tag"s.
+relativeTag :: (Eq t) => t -> NodeFilter t a -> NodeFilter t a
+relativeTag t a =
+	relativeNode (tag >>= guard . (== t) >> a)
+
+-- | "Like relativeNodes" but for "Tag"s.
+relativeTags :: (Eq t) => t -> NodeFilter t a -> NodeFilter t [a]
+relativeTags t a =
+	relativeNodes (tag >>= guard . (== t) >> a)
+
+-- | Fetch the tag name.
+tag :: NodeFilter t t
+tag = MaybeT $ ask >>= \n ->
+	return $ case n of
+		Tag t _ _ -> return t
+		_ -> mzero
 
 -- | Fetch value of an attribute.
-attribute :: (Eq t) => t -> NodeFilter t t
-attribute k = MaybeT (fmap (lookup k) (reader nodeAttributes))
+attr :: (Eq t) => t -> NodeFilter t t
+attr k = MaybeT (fmap (lookup k) (reader nodeAttributes))
 
 -- | Get the inner content.
 text :: (Monoid t) => NodeFilter t t

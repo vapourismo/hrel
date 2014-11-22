@@ -19,6 +19,7 @@ module HRel.Markup (
 
 import Data.List
 import Data.Monoid
+import Data.Maybe
 
 import Control.Applicative hiding (empty)
 import Control.Monad
@@ -132,15 +133,13 @@ runNodeFilter a = runReader (runMaybeT a)
 foreachNode :: (Eq t) => t -> NodeFilter t a -> NodeFilter t [a]
 foreachNode t a =
 	reader (filter (isNodeTag t) . nodeChildren)
-	>>= mapM (\child -> local (const child) a)
-	>>= \x -> case x of
-		[] -> mzero
-		xs -> pure xs
+	>>= fmap catMaybes . mapM (\child -> optional (local (const child) a))
 
 -- | Foreach child node.
 foreachNode' :: NodeFilter t a -> NodeFilter t [a]
 foreachNode' a =
-	reader nodeChildren >>= mapM (\child -> local (const child) a)
+	reader nodeChildren
+	>>= fmap catMaybes . mapM (\child -> optional (local (const child) a))
 
 -- | Apply the filter to a sub-node with the given tag name.
 node :: (Eq t) => t -> NodeFilter t a -> NodeFilter t a

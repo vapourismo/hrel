@@ -144,8 +144,8 @@ foreachNode' a =
 -- | Apply the filter to a sub-node with the given tag name.
 node :: (Eq t) => t -> NodeFilter t a -> NodeFilter t a
 node t a =
-	MaybeT (reader (find (isNodeTag t) . nodeChildren))
-	>>= \n -> local (const n) a
+	reader (filter (isNodeTag t) . nodeChildren)
+	>>= foldl' (\x n -> x <|> local (const n) a) a
 
 -- | Perform a search (breadth first) to find a node that matches the given "NodeFilter".
 relative :: NodeFilter t a -> NodeFilter t a

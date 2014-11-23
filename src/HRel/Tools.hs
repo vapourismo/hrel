@@ -8,6 +8,8 @@ module HRel.Tools (
 ) where
 
 import Control.Monad.Trans.Maybe
+import Data.Char
+import qualified Data.Text.Lazy as T
 import Text.StringLike
 import Network.URI
 

@@ -24,7 +24,7 @@ module HRel.Markup (
 	relativeTags,
 
 	-- * Property extractors
-	tag,
+	tagName,
 	attr,
 	text,
 ) where
@@ -162,12 +162,12 @@ forNode a = do
 -- | Like "foreachNode" but for "Tag"s.
 foreachTag :: (Eq t, Monad m, Functor m) => t -> NodeFilterT t m a -> NodeFilterT t m [a]
 foreachTag t a =
-	foreachNode (tag >>= guard . (== t) >> a)
+	foreachNode (tagName >>= guard . (== t) >> a)
 
 -- | Like "forNode" but for "Tag"s.
 forTag :: (Eq t, Monad m, Functor m) => t -> NodeFilterT t m a -> NodeFilterT t m a
 forTag t a =
-	forNode (tag >>= guard . (== t) >> a)
+	forNode (tagName >>= guard . (== t) >> a)
 
 -- | Match the current node or a node at a lower level.
 relativeNode :: (Monad m, Functor m) => NodeFilterT t m a -> NodeFilterT t m a
@@ -182,16 +182,16 @@ relativeNodes a =
 -- | Like "relativeNode" but for "Tag"s.
 relativeTag :: (Eq t, Monad m, Functor m) => t -> NodeFilterT t m a -> NodeFilterT t m a
 relativeTag t a =
-	relativeNode (tag >>= guard . (== t) >> a)
+	relativeNode (tagName >>= guard . (== t) >> a)
 
 -- | "Like relativeNodes" but for "Tag"s.
 relativeTags :: (Eq t, Monad m, Functor m) => t -> NodeFilterT t m a -> NodeFilterT t m [a]
 relativeTags t a =
-	relativeNodes (tag >>= guard . (== t) >> a)
+	relativeNodes (tagName >>= guard . (== t) >> a)
 
 -- | Fetch the tag name.
-tag :: (Monad m) => NodeFilterT t m t
-tag = MaybeT $ ask >>= \n ->
+tagName :: (Monad m) => NodeFilterT t m t
+tagName = MaybeT $ ask >>= \n ->
 	return $ case n of
 		Tag t _ _ -> return t
 		_ -> mzero

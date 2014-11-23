@@ -1,14 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HRel.Markup (
+	-- * Parsing
 	Node (..),
 	toNodeList,
 	parseNodes,
 	parseNode,
 
+	-- * Filter types
+	NodeFilterT,
 	NodeFilter,
+	runNodeFilterT,
 	runNodeFilter,
 
+	-- * Combinators
 	foreachNode,
 	forNode,
 	foreachTag,
@@ -18,6 +23,7 @@ module HRel.Markup (
 	relativeTag,
 	relativeTags,
 
+	-- * Property extractors
 	tag,
 	attr,
 	text,
@@ -26,6 +32,7 @@ module HRel.Markup (
 import Data.List
 import Data.Monoid
 import Data.Maybe
+import Data.Functor.Identity
 
 import Control.Applicative hiding (empty)
 import Control.Monad.Trans.Maybe
@@ -38,11 +45,6 @@ import Text.StringLike
 data Node t
 	= Tag t [Attribute t] [Node t]
 	| Text t
-
--- | Is the given "Node" a tag with the given tag name?
-isNodeTag :: (Eq t) => t -> Node t -> Bool
-isNodeTag t (Tag t' _ _) = t == t'
-isNodeTag _ _ = False
 
 -- | Get all attributes.
 nodeAttributes :: Node t -> [Attribute t]
@@ -128,20 +130,27 @@ parseNode ts =
 		xs  -> Tag empty [] xs
 
 -- | Cursor used to navigate through an XML document
-type NodeFilter t = MaybeT (Reader (Node t))
+type NodeFilterT t m = MaybeT (ReaderT (Node t) m)
+
+-- | Apply the filter to a node.
+runNodeFilterT :: NodeFilterT t m a -> Node t -> m (Maybe a)
+runNodeFilterT a = runReaderT (runMaybeT a)
+
+-- | Shortcut for "NodeFilterT" in an "Identity" monad
+type NodeFilter t = NodeFilterT t Identity
 
 -- | Apply the filter to a node.
 runNodeFilter :: NodeFilter t a -> Node t -> Maybe a
 runNodeFilter a = runReader (runMaybeT a)
 
 -- | Match any child node.
-foreachNode :: NodeFilter t a -> NodeFilter t [a]
+foreachNode :: (Functor m, Monad m) => NodeFilterT t m a -> NodeFilterT t m [a]
 foreachNode a =
 	reader nodeChildren
 	>>= fmap catMaybes . mapM (\n -> local (const n) (optional a))
 
 -- | Match one child node.
-forNode :: NodeFilter t a -> NodeFilter t a
+forNode :: (Monad m, Functor m) => NodeFilterT t m a -> NodeFilterT t m a
 forNode a = do
 	cs <- reader nodeChildren
 	case cs of
@@ -151,46 +160,46 @@ forNode a = do
 		sub = local . const
 
 -- | Like "foreachNode" but for "Tag"s.
-foreachTag :: (Eq t) => t -> NodeFilter t a -> NodeFilter t [a]
+foreachTag :: (Eq t, Monad m, Functor m) => t -> NodeFilterT t m a -> NodeFilterT t m [a]
 foreachTag t a =
 	foreachNode (tag >>= guard . (== t) >> a)
 
 -- | Like "forNode" but for "Tag"s.
-forTag :: (Eq t) => t -> NodeFilter t a -> NodeFilter t a
+forTag :: (Eq t, Monad m, Functor m) => t -> NodeFilterT t m a -> NodeFilterT t m a
 forTag t a =
 	forNode (tag >>= guard . (== t) >> a)
 
 -- | Match the current node or a node at a lower level.
-relativeNode :: NodeFilter t a -> NodeFilter t a
+relativeNode :: (Monad m, Functor m) => NodeFilterT t m a -> NodeFilterT t m a
 relativeNode a = a <|> forNode (relativeNode a)
 
 -- | Match the current and any node at a lower level.
-relativeNodes :: NodeFilter t a -> NodeFilter t [a]
+relativeNodes :: (Monad m, Functor m) => NodeFilterT t m a -> NodeFilterT t m [a]
 relativeNodes a =
 	(++) <$> fmap maybeToList (optional a)
 	     <*> fmap concat (foreachNode (relativeNodes a))
 
 -- | Like "relativeNode" but for "Tag"s.
-relativeTag :: (Eq t) => t -> NodeFilter t a -> NodeFilter t a
+relativeTag :: (Eq t, Monad m, Functor m) => t -> NodeFilterT t m a -> NodeFilterT t m a
 relativeTag t a =
 	relativeNode (tag >>= guard . (== t) >> a)
 
 -- | "Like relativeNodes" but for "Tag"s.
-relativeTags :: (Eq t) => t -> NodeFilter t a -> NodeFilter t [a]
+relativeTags :: (Eq t, Monad m, Functor m) => t -> NodeFilterT t m a -> NodeFilterT t m [a]
 relativeTags t a =
 	relativeNodes (tag >>= guard . (== t) >> a)
 
 -- | Fetch the tag name.
-tag :: NodeFilter t t
+tag :: (Monad m) => NodeFilterT t m t
 tag = MaybeT $ ask >>= \n ->
 	return $ case n of
 		Tag t _ _ -> return t
 		_ -> mzero
 
 -- | Fetch value of an attribute.
-attr :: (Eq t) => t -> NodeFilter t t
+attr :: (Eq t, Monad m, Functor m) => t -> NodeFilterT t m t
 attr k = MaybeT (fmap (lookup k) (reader nodeAttributes))
 
 -- | Get the inner content.
-text :: (Monoid t) => NodeFilter t t
+text :: (Monoid t, Monad m) => NodeFilterT t m t
 text = reader nodeText

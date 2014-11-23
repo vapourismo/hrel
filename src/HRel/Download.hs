@@ -1,5 +1,5 @@
 module HRel.Download (
-	downloadHTTP,
+	downloadText,
 	downloadNode
 ) where
 
@@ -12,8 +12,8 @@ import Network.HTTP.Conduit
 import HRel.Markup
 
 -- | Download something via HTTP and decode using UTF-8.
-downloadHTTP :: String -> IO T.Text
-downloadHTTP = fmap T.decodeUtf8 . simpleHttp
+downloadText :: String -> IO T.Text
+downloadText = fmap T.decodeUtf8 . simpleHttp
 
 -- | Download something via HTTP and parse it.
 downloadNode :: String -> IO (Node T.Text)

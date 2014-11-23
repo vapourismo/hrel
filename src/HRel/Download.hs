@@ -3,7 +3,6 @@ module HRel.Download (
 	downloadNode
 ) where
 
-import qualified Data.ByteString.Lazy as B
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
 

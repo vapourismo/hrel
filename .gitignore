@@ -3,5 +3,5 @@
 cabal.sandbox.config
 dist/
 
-# Testing
-test/
+# Storage for acid-state
+data/

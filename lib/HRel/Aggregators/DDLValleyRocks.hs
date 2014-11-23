@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.Aggregator.DDLValleyRocks (
+module HRel.Aggregators.DDLValleyRocks (
 	aggregate
 ) where
 

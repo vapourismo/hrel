@@ -2,22 +2,13 @@ name:                hrel
 version:             0.0.0
 license:             GPL-3
 license-file:        LICENSE
-author:              Vapourismo
-maintainer:          itstheimp@gmail.com
--- copyright:
 build-type:          Simple
 cabal-version:       >= 1.10
 
-executable hrel
-  hs-source-dirs:      src
-  main-is:             Main.hs
+executable hrel-database
+  hs-source-dirs:      lib, src
+  main-is:             Database.hs
   ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind
-  build-depends:       base >= 4.7 && < 4.8,
-                       tagsoup,
-                       http-conduit,
-                       network-uri,
-                       text,
-                       bytestring,
-                       mtl,
-                       transformers
   default-language:    Haskell2010
+  extensions:          OverloadedStrings
+  build-depends:       base, acid-state, safecopy, containers, bytestring, network, network-uri, mtl, unbounded-delays

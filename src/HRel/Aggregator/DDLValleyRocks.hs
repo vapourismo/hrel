@@ -46,12 +46,13 @@ postFilter =
 rssFilter :: NodeFilterT T.Text IO [(,) [T.Text] [URI]]
 rssFilter =
 	relativeTag "rss" $ forTag "channel" $ foreachTag "item" $
-		(,) <$> fmap (map trimText . T.split (== '&')) (forTag "title" text)
-		    <*> (mergeLinks <$> (forTag "link" text
-		                         >>= liftIO . aggregatePost . T.unpack . trimText)
+		(,) <$> fmap fetchNames (forTag "title" text)
+		    <*> (mergeLinks <$> (forTag "link" text >>= aggregateLink)
 		                    <*> foreachTag "enclosure" (attr "url" >>= toURI))
 	where
+		fetchNames = map trimText . T.split (== '&')
 		mergeLinks a b = nub (a ++ b)
+		aggregateLink = liftIO . aggregatePost . T.unpack . trimText
 
 -- | Aggregate the links in a blog post.
 aggregatePost :: String -> IO [URI]

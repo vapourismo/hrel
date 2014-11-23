@@ -3,11 +3,14 @@
 module Main (main) where
 
 import Data.Char
+import Data.List
 import qualified Data.Text.Lazy as T
 
 import Text.StringLike
 
 import Control.Applicative
+import Control.Monad
+import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 
 import Network.URI
@@ -18,52 +21,57 @@ import HRel.Download
 toURI :: (Monad m, StringLike s) => s -> MaybeT m URI
 toURI = MaybeT . return . parseURI . toString
 
--- toHost :: (Monad m) => URI -> MaybeT m String
--- toHost = MaybeT . return . fmap uriRegName . uriAuthority
-
--- trimBS :: B8.ByteString -> B8.ByteString
--- trimBS = B8.filter (not . isSpace)
-
--- validHoster :: [String]
--- validHoster = ["ul.to", "uploaded.to", "uploaded.net"]
-
--- ddlvPost :: String -> IO [B8.ByteString]
--- ddlvPost =
--- 	fmap (maybe [] id . runNodeFilter htmlFilter . parseNode) . simpleHttp
--- 	where
--- 		hasAttr k v = attr k >>= guard . (v ==)
--- 		htmlFilter =
--- 			relativeTag "div" $ do
--- 				hasAttr "class" "cont cl"
--- 				relativeTags "a" $ do
--- 					hasAttr "class" "ext-link"
-
--- 					href <- fmap trimBS $ attr "href"
--- 					inner <- fmap trimBS $ text
--- 					guard (inner == href)
-
--- 					hoster <- toURI href >>= toHost
--- 					guard (elem hoster validHoster)
-
--- 					return href
-
 trimText :: T.Text -> T.Text
 trimText = T.dropAround isSpace
 
-ddlvFeed :: String -> IO [([T.Text], URI, [URI])]
-ddlvFeed =
-	fmap (maybe [] id . runNodeFilter fitler) . downloadNode
+toHost :: (Monad m) => URI -> MaybeT m String
+toHost = MaybeT . return . fmap uriRegName . uriAuthority
+
+validHoster :: [String]
+validHoster = ["ul.to", "uploaded.to", "uploaded.net",
+               "uptobox.com", "rapidgator.net", "go4up.com"]
+
+ddlValleyPostFilter :: NodeFilter T.Text [URI]
+ddlValleyPostFilter =
+	relativeTag "div" $ do
+		attrDiv <- attr "class"
+		guard (attrDiv == "cont cl")
+		relativeTags "a" $ do
+			attrA <- attr "class"
+			guard (attrA == "ext-link")
+
+			href <- fmap trimText $ attr "href"
+			inner <- fmap trimText $ text
+			guard (inner == href)
+
+			uri <- toURI href
+			hoster <- toHost uri
+			guard (elem hoster validHoster)
+
+			return uri
+
+ddlValleyRSSFilter :: NodeFilterT T.Text IO [(,) [T.Text] [URI]]
+ddlValleyRSSFilter =
+	relativeTag "rss" $ forTag "channel" $ foreachTag "item" $
+		(,) <$> fmap (map trimText . T.split (== '&')) (forTag "title" text)
+		    <*> (mergeLinks <$> (forTag "link" text
+		                         >>= liftIO . ddlValleyPost
+		                                    . T.unpack . trimText)
+		                    <*> foreachTag "enclosure" (attr "url" >>= toURI))
 	where
-		fitler =
-			relativeTag "rss" $ forTag "channel" $ foreachTag "item" $
-				(,,) <$> fmap mkNames (forTag "title" text)
-				     <*> (forTag "link" text >>= toURI . trimText)
-				     <*> foreachTag "enclosure" (attr "url" >>= toURI)
+		mergeLinks a b = nub (a ++ b)
 
+ddlValleyPost :: String -> IO [URI]
+ddlValleyPost =
+	fmap (maybe [] id . runNodeFilter ddlValleyPostFilter) . downloadNode
 
-		mkNames = map trimText . T.split (== '&')
+ddlValleyRSS :: String -> IO [(,) [T.Text] [URI]]
+ddlValleyRSS loc = do
+	cnts <- downloadNode loc
+	res <- runNodeFilterT ddlValleyRSSFilter cnts
+	return (maybe [] id res)
 
 main :: IO ()
 main =
-	ddlvFeed "http://www.ddlvalley.rocks/category/tv-shows/hd-720/feed/"
+	ddlValleyRSS "http://www.ddlvalley.rocks/category/tv-shows/hd-720/feed/"
 	>>= print

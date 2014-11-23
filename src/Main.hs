@@ -3,47 +3,67 @@
 module Main (main) where
 
 import Data.Char
-import qualified Data.ByteString.Lazy.Char8 as B8
+import qualified Data.Text.Lazy as T
 
 import Text.StringLike
 
 import Control.Applicative
-import Control.Monad
-import Control.Monad.Reader
 import Control.Monad.Trans.Maybe
 
 import Network.URI
-import Network.HTTP.Conduit
 
 import HRel.Markup
+import HRel.Download
 
--- type Source = IO [([B8.ByteString], [URI])]
+toURI :: (Monad m, StringLike s) => s -> MaybeT m URI
+toURI = MaybeT . return . parseURI . toString
 
--- toURI :: (Monad m, StringLike s) => s -> MaybeT m URI
--- toURI = MaybeT . return . parseURI . toString
+-- toHost :: (Monad m) => URI -> MaybeT m String
+-- toHost = MaybeT . return . fmap uriRegName . uriAuthority
 
--- ddlvalleySource :: Source
--- ddlvalleySource = do
--- 	maybe [] id . runNodeFilter rssFilter . parseNode
--- 	<$> simpleHttp "http://www.ddlvalley.rocks/category/tv-shows/hd-720/feed/"
+-- trimBS :: B8.ByteString -> B8.ByteString
+-- trimBS = B8.filter (not . isSpace)
+
+-- validHoster :: [String]
+-- validHoster = ["ul.to", "uploaded.to", "uploaded.net"]
+
+-- ddlvPost :: String -> IO [B8.ByteString]
+-- ddlvPost =
+-- 	fmap (maybe [] id . runNodeFilter htmlFilter . parseNode) . simpleHttp
 -- 	where
--- 		rssFilter =
--- 			relative . node "channel"
--- 			         $ foreachNode "item" targetNode
--- 		targetNode =
--- 			assocName <$> node "title" text
--- 			          <*> foreachNode "enclosure" (attribute "url" >>= toURI)
--- 		assocName title uris =
--- 			(map (B8.filter (not . isSpace)) (B8.split '&' title),
--- 			 uris)
+-- 		hasAttr k v = attr k >>= guard . (v ==)
+-- 		htmlFilter =
+-- 			relativeTag "div" $ do
+-- 				hasAttr "class" "cont cl"
+-- 				relativeTags "a" $ do
+-- 					hasAttr "class" "ext-link"
+
+-- 					href <- fmap trimBS $ attr "href"
+-- 					inner <- fmap trimBS $ text
+-- 					guard (inner == href)
+
+-- 					hoster <- toURI href >>= toHost
+-- 					guard (elem hoster validHoster)
+
+-- 					return href
+
+trimText :: T.Text -> T.Text
+trimText = T.dropAround isSpace
+
+ddlvFeed :: String -> IO [([T.Text], URI, [URI])]
+ddlvFeed =
+	fmap (maybe [] id . runNodeFilter fitler) . downloadNode
+	where
+		fitler =
+			relativeTag "rss" $ forTag "channel" $ foreachTag "item" $
+				(,,) <$> fmap mkNames (forTag "title" text)
+				     <*> (forTag "link" text >>= toURI . trimText)
+				     <*> foreachTag "enclosure" (attr "url" >>= toURI)
+
+
+		mkNames = map trimText . T.split (== '&')
 
 main :: IO ()
-main = do
-	txt <- simpleHttp "http://www.ddlvalley.rocks/z-nation-s01e11-720p-hdtv-x264-dimension/"
-	print (runNodeFilter htmlFilter (parseNode txt))
-	where
-		hasAttr k v = attr k >>= guard . (v ==)
-		htmlFilter =
-			relativeNode $ forTag "div" $ do
-				hasAttr "class" "cont cl"
-				relativeTags "a" $ attr "href"
+main =
+	ddlvFeed "http://www.ddlvalley.rocks/category/tv-shows/hd-720/feed/"
+	>>= print

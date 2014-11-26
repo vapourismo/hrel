@@ -57,8 +57,8 @@ aggregatePost =
 	fmap (maybe [] id . runNodeFilter postFilter) . downloadNode
 
 -- | Aggregate links (including blog post) from a RSS feed.
-aggregate :: String -> IO [(,) T.Text [URI]]
-aggregate loc = do
-	cnts <- downloadNode loc
+aggregate :: IO [(,) T.Text [URI]]
+aggregate = do
+	cnts <- downloadNode "http://oneclickwatch.ws/feed/"
 	res <- runNodeFilterT rssFilter cnts
 	return (maybe [] id res)

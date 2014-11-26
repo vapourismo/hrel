@@ -60,8 +60,17 @@ aggregatePost =
 	fmap (maybe [] id . runNodeFilter postFilter) . downloadNode
 
 -- | Aggregate links (including blog post) from a RSS feed.
-aggregate :: String -> IO [(,) [T.Text] [URI]]
-aggregate loc = do
+aggregateOne :: String -> IO [(,) [T.Text] [URI]]
+aggregateOne loc = do
 	cnts <- downloadNode loc
 	res <- runNodeFilterT rssFilter cnts
 	return (maybe [] id res)
+
+-- | Aggregate all feeds.
+aggregate :: IO [(,) [T.Text] [URI]]
+aggregate =
+	fmap concat $ mapM aggregateOne ["http://www.ddlvalley.rocks/category/tv-shows/hd-720/feed/",
+	                                 "http://www.ddlvalley.rocks/category/tv-shows/web-dl/feed/",
+	                                 "http://www.ddlvalley.rocks/category/movies/bdrip/feed/",
+	                                 "http://www.ddlvalley.rocks/category/movies/bluray-1080p/feed/",
+	                                 "http://www.ddlvalley.rocks/category/movies/bluray-720p/feed/"]

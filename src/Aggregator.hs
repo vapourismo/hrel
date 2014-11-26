@@ -1,2 +1,8 @@
+module Main (main) where
+
+import HRel.Aggregators
+
 main :: IO ()
-main = return ()
+main =
+	aggregate
+	>>= print . length

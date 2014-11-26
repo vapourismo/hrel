@@ -11,4 +11,6 @@ executable hrel-aggregator
   ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind
   default-language:    Haskell2010
   extensions:          OverloadedStrings
-  build-depends:       base
+  build-depends:       base, text, bytestring,
+                       tagsoup, network-uri, http-conduit,
+                       transformers, mtl

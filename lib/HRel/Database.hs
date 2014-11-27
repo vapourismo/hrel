@@ -44,11 +44,27 @@ insertGroup db names links = do
 		execute db "DELETE FROM groups WHERE id = ?"
 		        (Only oldGroupID)
 
-	executeMany db "INSERT IGNORE INTO names (searchName, fullName, groupID) VALUES (?, ?, ?)"
-	            (zipWith (\s f -> (s, f, groupID)) searchNames names)
+	forM_ (zip searchNames names) $ \(s, n) -> do
+		r <- execute db "INSERT IGNORE INTO names (searchName, fullName, groupID) VALUES (?, ?, ?)"
+		             (s, n, groupID)
+		when (r > 0) $ do
+			nameID <- insertID db
+			case T.split (== '-') s of
+				[] ->
+					return ()
+				xs -> do
+					executeMany db "INSERT INTO tags (value, nameID) VALUES (?, ?)"
+					            (map (flip (,) nameID . cleanText)
+					                  . filter (not . T.null)
+					                  . T.split (== '.')
+					                  $ T.concat (init xs))
+					return ()
+
+
 	executeMany db "INSERT IGNORE INTO links (uri, groupID) VALUES (?, ?)"
 	            (map (flip (,) groupID . show) links)
 
 	return groupID
 	where
 		searchNames = map (T.map toLower) names
+		cleanText = T.filter (not . isSpace)

@@ -41,8 +41,8 @@ insertGroup db names links = do
 		        (groupID, oldGroupID :: Word64)
 		execute db "UPDATE links SET groupID = ? WHERE groupID = ?"
 		        (groupID, oldGroupID :: Word64)
-		-- execute db "DELETE FROM groups WHERE id = ?"
-		--         (Only oldGroupID)
+		execute db "DELETE FROM groups WHERE id = ?"
+		        (Only oldGroupID)
 
 	executeMany db "INSERT IGNORE INTO names (searchName, fullName, groupID) VALUES (?, ?, ?)"
 	            (zipWith (\s f -> (s, f, groupID)) searchNames names)

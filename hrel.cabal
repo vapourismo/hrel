@@ -15,3 +15,11 @@ executable hrel-aggregator
                        tagsoup, network-uri, http-conduit,
                        transformers, mtl,
                        mysql-simple
+
+executable hrel-search
+  hs-source-dirs:      lib, src
+  main-is:             Search.hs
+  ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind
+  default-language:    Haskell2010
+  extensions:          OverloadedStrings
+  build-depends:       base, text, network-uri, mysql-simple

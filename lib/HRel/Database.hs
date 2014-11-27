@@ -32,10 +32,10 @@ createGroup db = do
 -- |
 insertGroup :: Connection -> [T.Text] -> [URI] -> IO Word64
 insertGroup db names links = do
-	rs <- query db "SELECT groupID FROM names WHERE searchName IN ?"
-	               (Only (In searchNames))
 	groupID <- createGroup db
 
+	rs <- query db "SELECT groupID FROM names WHERE searchName IN ?"
+	               (Only (In searchNames))
 	forM_ rs $ \(Only oldGroupID) -> do
 		execute db "UPDATE names SET groupID = ? WHERE groupID = ?"
 		        (groupID, oldGroupID :: Word64)

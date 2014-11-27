@@ -13,4 +13,5 @@ executable hrel-aggregator
   extensions:          OverloadedStrings
   build-depends:       base, text, bytestring,
                        tagsoup, network-uri, http-conduit,
-                       transformers, mtl
+                       transformers, mtl,
+                       mysql-simple

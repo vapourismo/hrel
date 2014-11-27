@@ -61,7 +61,6 @@ insertGroup db names links = do
 					                  $ T.concat (init xs))
 					return ()
 
-
 	executeMany db "INSERT IGNORE INTO links (uri, groupID) VALUES (?, ?)"
 	            (map (flip (,) groupID . show) links)
 
@@ -75,4 +74,4 @@ findNames :: Connection -> [T.Text] -> IO [(Word64, Word64, T.Text)]
 findNames db tags =
 	query db sql (Only (In (map T.toLower tags)))
 	where
-		sql = "select names.nameID, names.groupID, names.fullName from tags, names where tags.value in ? and tags.nameID = names.nameID group by tags.nameID order by count(tags.value) desc, names.nameID desc"
+		sql = "SELECT names.nameID, names.groupID, names.fullName FROM tags, names WHERE tags.value IN ? AND tags.nameID = names.nameID GROUP BY tags.nameID ORDER BY COUNT(tags.value) DESC, names.nameID DESC"

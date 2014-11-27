@@ -18,19 +18,19 @@ import Network.URI (URI)
 
 import Database.MySQL.Simple
 
--- |
+-- | Connect to the database.
 connectToDatabase :: IO Connection
 connectToDatabase =
 	connect (defaultConnectInfo {connectHost     = "localhost",
 	                             connectDatabase = "hrel"})
 
--- |
+-- | Create a new group and return it's ID.
 createGroup :: Connection -> IO Word64
 createGroup db = do
 	execute_ db "INSERT INTO groups () VALUES ()"
 	insertID db
 
--- |
+-- | Insert a group of release names associated with download links.
 insertGroup :: Connection -> [T.Text] -> [URI] -> IO Word64
 insertGroup db names links = do
 	groupID <- createGroup db
@@ -69,7 +69,7 @@ insertGroup db names links = do
 		searchNames = map (T.map toLower) names
 		cleanText = T.filter (not . isSpace)
 
--- |
+-- | Search for names that match the given tags.
 findNames :: Connection -> [T.Text] -> IO [(Word64, Word64, T.Text)]
 findNames db tags =
 	query db sql (Only (In (map T.toLower tags)))

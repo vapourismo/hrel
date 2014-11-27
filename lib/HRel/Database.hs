@@ -4,11 +4,13 @@ module HRel.Database (
 	connectToDatabase,
 	insertGroup,
 	findNames,
+	findGroup,
 
 	module Database.MySQL.Simple
 ) where
 
 import Data.Word
+import Data.List
 import Data.Char
 import qualified Data.Text.Lazy as T
 
@@ -75,3 +77,10 @@ findNames db tags =
 	query db sql (Only (In (map T.toLower tags)))
 	where
 		sql = "SELECT names.nameID, names.groupID, names.fullName FROM tags, names WHERE tags.value IN ? AND tags.nameID = names.nameID GROUP BY tags.nameID ORDER BY COUNT(tags.value) DESC, names.nameID DESC"
+
+-- |
+findGroup :: Connection -> Word64 -> IO ([T.Text], [String])
+findGroup db groupID = do
+	names <- query db "SELECT fullName FROM names WHERE groupID = ?" (Only groupID)
+	links <- query db "SELECT uri FROM links WHERE groupID = ?" (Only groupID)
+	return (map fromOnly names, sort (map fromOnly links))

@@ -3,6 +3,7 @@
 module HRel.Database (
 	connectToDatabase,
 	insertGroup,
+	findNames,
 
 	module Database.MySQL.Simple
 ) where
@@ -68,3 +69,10 @@ insertGroup db names links = do
 	where
 		searchNames = map (T.map toLower) names
 		cleanText = T.filter (not . isSpace)
+
+-- |
+findNames :: Connection -> [T.Text] -> IO [(Word64, Word64, T.Text)]
+findNames db tags =
+	query db sql (Only (In (map T.toLower tags)))
+	where
+		sql = "select names.nameID, names.groupID, names.fullName from tags, names where tags.value in ? and tags.nameID = names.nameID group by tags.nameID order by count(tags.value) desc, names.nameID desc"

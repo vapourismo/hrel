@@ -32,19 +32,22 @@ createGroup db = do
 -- |
 insertGroup :: Connection -> [T.Text] -> [URI] -> IO Word64
 insertGroup db names links = do
-	rs <- query db "SELECT nameID, groupID FROM names WHERE searchName IN ?"
+	rs <- query db "SELECT groupID FROM names WHERE searchName IN ?"
 	               (Only (In searchNames))
 	groupID <- createGroup db
 
-	forM_ rs $ \(nameID, oldGroupID) -> do
-		execute db "UPDATE names SET groupID = ? WHERE nameID = ?" (groupID, nameID :: Word64)
-		execute db "UPDATE links SET groupID = ? WHERE groupID = ?" (groupID, oldGroupID :: Word64)
-		execute db "DELETE FROM groups WHERE id = ?" (Only oldGroupID)
+	forM_ rs $ \(Only oldGroupID) -> do
+		execute db "UPDATE names SET groupID = ? WHERE groupID = ?"
+		        (groupID, oldGroupID :: Word64)
+		execute db "UPDATE links SET groupID = ? WHERE groupID = ?"
+		        (groupID, oldGroupID :: Word64)
+		-- execute db "DELETE FROM groups WHERE id = ?"
+		--         (Only oldGroupID)
 
-	executeMany db "INSERT INTO names (searchName, fullName, groupID) VALUES (?, ?, ?)"
-	               (zipWith (\s f -> (s, f, groupID)) searchNames names)
-	executeMany db "INSERT INTO links (uri, groupID) VALUES (?, ?)"
-	               (map (flip (,) groupID . show) links)
+	executeMany db "INSERT IGNORE INTO names (searchName, fullName, groupID) VALUES (?, ?, ?)"
+	            (zipWith (\s f -> (s, f, groupID)) searchNames names)
+	executeMany db "INSERT IGNORE INTO links (uri, groupID) VALUES (?, ?)"
+	            (map (flip (,) groupID . show) links)
 
 	return groupID
 	where

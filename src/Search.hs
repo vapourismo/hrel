@@ -10,6 +10,7 @@ import qualified Data.ByteString.Lazy as B
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
 
+import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Internal as H
 import qualified Text.Blaze.Html5.Attributes as A
@@ -35,47 +36,47 @@ searchHtml =
 	H.docTypeHtml $ do
 		H.head $ do
 			H.title "HRel"
-			H.link H.! A.rel "stylesheet"
-			       H.! A.type_ "text/css"
-			       H.! A.href "/style.css"
+			H.link ! A.rel "stylesheet"
+			       ! A.type_ "text/css"
+			       ! A.href "/style.css"
 		H.body $
-			H.form H.! A.id "container"
-			       H.! A.method "post"
-			       H.! A.action "/" $ do
-				H.input H.! A.type_ "input"
-				        H.! A.name "q"
-				        H.! A.id "query"
+			H.form ! A.id "container"
+			       ! A.method "post"
+			       ! A.action "/" $ do
+				H.input ! A.type_ "input"
+				        ! A.name "q"
+				        ! A.id "query"
 
 resultHtml :: [(Word64, Word64, T.Text)] -> H.Html
 resultHtml results =
 	H.docTypeHtml $ do
 		H.head $ do
 			H.title "HRel"
-			H.link H.! A.rel "stylesheet"
-			       H.! A.type_ "text/css"
-			       H.! A.href "/style.css"
+			H.link ! A.rel "stylesheet"
+			       ! A.type_ "text/css"
+			       ! A.href "/style.css"
 		H.body $
-			H.div H.! A.id "container" $
+			H.div ! A.id "container" $
 				forM_ results $ \(_, groupID, name) ->
-					H.a H.! A.href (fromString ("/" ++ show groupID))
-					    H.! A.class_ "group-link" $ H.lazyText name
+					H.a ! A.href (fromString ("/" ++ show groupID))
+					    ! A.class_ "group-link" $ H.lazyText name
 
 groupResult :: ([T.Text], [String]) -> H.Html
 groupResult (names, links) =
 	H.docTypeHtml $ do
 		H.head $ do
 			H.title "HRel"
-			H.link H.! A.rel "stylesheet"
-			       H.! A.type_ "text/css"
-			       H.! A.href "/style.css"
+			H.link ! A.rel "stylesheet"
+			       ! A.type_ "text/css"
+			       ! A.href "/style.css"
 		H.body $
-			H.div H.! A.id "container" $ do
+			H.div ! A.id "container" $ do
 				forM_ names $ \name ->
-					H.span H.! A.class_ "release-name" $
+					H.span ! A.class_ "release-name" $
 						H.lazyText name
 				forM_ links $ \link ->
-					H.a H.! A.class_ "release-link"
-					    H.! A.href (fromString link) $ fromString link
+					H.a ! A.class_ "release-link"
+					    ! A.href (fromString link) $ fromString link
 
 main :: IO ()
 main = do

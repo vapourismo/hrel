@@ -95,8 +95,7 @@ findNames :: Connection -> [T.Text] -> IO [(Word64, Word64, T.Text)]
 findNames db tags =
 	query db sql (Only (In (map T.toLower tags)))
 	where
-		-- TODO: Sort by groupID instead of nameID
-		sql = "SELECT names.nameID, names.groupID, names.fullName FROM tags, names WHERE tags.value IN ? AND tags.nameID = names.nameID GROUP BY tags.nameID ORDER BY COUNT(tags.value) DESC, names.nameID DESC"
+		sql = "SELECT names.nameID, names.groupID, names.fullName FROM tags, names WHERE tags.value IN ? AND tags.nameID = names.nameID GROUP BY tags.nameID ORDER BY COUNT(tags.value) DESC, names.groupID DESC"
 
 -- | Find a group by ID
 findGroup :: Connection -> Word64 -> IO ([T.Text], [String])

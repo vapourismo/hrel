@@ -19,12 +19,14 @@ import Control.Monad
 import Network.URI (URI)
 
 import Database.MySQL.Simple
+import Database.MySQL.Base.Types
 
 -- | Connect to the database.
 connectToDatabase :: IO Connection
 connectToDatabase =
 	connect (defaultConnectInfo {connectHost     = "localhost",
-	                             connectDatabase = "hrel"})
+	                             connectDatabase = "hrel",
+	                             connectOptions  = [Reconnect True]})
 
 -- | Create a new group and return it's ID.
 createGroup :: Connection -> IO Word64

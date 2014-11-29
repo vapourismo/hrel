@@ -3,9 +3,7 @@
 module Main (main) where
 
 import Data.Word
-import Data.Char
 import qualified Data.ByteString.Lazy as B
-import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
 
 import Text.Blaze.Html.Renderer.Text
@@ -19,11 +17,7 @@ import HRel.Database
 import HRel.Web.Templates
 
 instance Parsable Word64 where
-	parseParam xs =
-		if T.all isDigit xs then
-			Right (read (T.unpack xs))
-		else
-			Left "Not a Word64"
+	parseParam = readEither
 
 main :: IO ()
 main = do

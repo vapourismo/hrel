@@ -74,7 +74,7 @@ insertGroup db names links = do
 					            (tagify nameID xs)
 					return ()
 
-				-- Anything else is a ill-formated release name
+				-- Anything else is an ill-formated release name
 				_ -> return ()
 
 	-- Insert links

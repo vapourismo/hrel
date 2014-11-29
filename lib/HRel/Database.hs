@@ -66,10 +66,10 @@ insertGroup db names links = do
 
 		-- Generate search tags, when the insertion was successful (no duplicate entry)
 		when (r > 0) $ do
-			nameID <- insertID db
 			case T.split (== '-') s of
 				-- Something resembling the format "name.and.info-group"
 				xs | length xs > 1 -> do
+					nameID <- insertID db
 					executeMany db "INSERT INTO tags (value, nameID) VALUES (?, ?)"
 					            (tagify nameID xs)
 					return ()
@@ -82,6 +82,7 @@ insertGroup db names links = do
 	            (map (flip (,) groupID . show) links)
 
 	return groupID
+
 	where
 		searchNames = map (T.map toLower) names
 		cleanText = T.filter (not . isSpace)

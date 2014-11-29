@@ -109,6 +109,6 @@ findGroup db groupID = do
 
 -- | Get the group ID by searching for a member of the group.
 findGroupByMember :: Connection -> T.Text -> IO (Maybe Word64)
-findGroupByMember db name = do
-	gid <- query db "SELECT groupID FROM names WHERE searchName = ? LIMIT 1" (Only name)
-	return (fmap fromOnly (listToMaybe gid))
+findGroupByMember db name =
+	fmap (fmap fromOnly . listToMaybe)
+	     (query db "SELECT groupID FROM names WHERE searchName = ? LIMIT 1" (Only name))

@@ -41,10 +41,10 @@ main = do
 		get "/g/:gid" $
 			param "gid" >>= showGroup db
 
-		get "/n/:name" $ do
-			name <- param "name"
-			gid <- liftIO (findGroupByMember db name)
-			maybe (redirect "/") (showGroup db) gid
+		get "/n/:name" $
+			param "name"
+			>>= liftIO . findGroupByMember db
+			>>= maybe (redirect "/") (showGroup db)
 
  		get "/style.css" $ do
 			setHeader "Content-Type" "text/css"

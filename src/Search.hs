@@ -38,7 +38,7 @@ main = do
 				Nothing ->
 					redirect "/"
 
-		get "/:gid" $ do
+		get "/g/:gid" $ do
 			gid <- param "gid"
 			entries <- liftIO (findGroup db gid)
 			html (renderHtml (groupTpl entries))

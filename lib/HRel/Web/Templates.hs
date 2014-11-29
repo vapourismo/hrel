@@ -47,7 +47,7 @@ resultTpl results =
 		body $
 			div ! A.id "container" $
 				forM_ results $ \(_, groupID, name) ->
-					a ! A.href (fromString ("/" ++ show groupID))
+					a ! A.href (fromString ("/g/" ++ show groupID))
 					  ! A.class_ "group-link" $ lazyText name
 
 -- | Group Inspection Page

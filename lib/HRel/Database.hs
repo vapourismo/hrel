@@ -14,7 +14,6 @@ import Data.List
 import Data.Char
 import qualified Data.Text.Lazy as T
 
-import Control.Applicative
 import Control.Monad
 
 import Network.URI (URI)
@@ -99,6 +98,7 @@ findNames db tags =
 
 -- | Find a group by ID
 findGroup :: Connection -> Word64 -> IO ([T.Text], [String])
-findGroup db groupID =
-	(,) <$> (map fromOnly <$> query db "SELECT fullName FROM names WHERE groupID = ?" (Only groupID))
-	    <*> (sort . map fromOnly <$> query db "SELECT uri FROM links WHERE groupID = ?" (Only groupID))
+findGroup db groupID = do
+	names <- query db "SELECT fullName FROM names WHERE groupID = ?" (Only groupID)
+	links <- query db "SELECT uri FROM links WHERE groupID = ?" (Only groupID)
+	return (map fromOnly names, sort (map fromOnly links))

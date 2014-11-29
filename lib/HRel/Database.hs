@@ -102,4 +102,4 @@ findGroup :: Connection -> Word64 -> IO ([T.Text], [String])
 findGroup db groupID = do
 	names <- query db "SELECT fullName FROM names WHERE groupID = ?" (Only groupID)
 	links <- query db "SELECT uri FROM links WHERE groupID = ?" (Only groupID)
-	return (map fromOnly names, sort (map fromOnly links))
+	return (sort (map fromOnly names), sort (map fromOnly links))

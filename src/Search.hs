@@ -38,12 +38,15 @@ main = do
 				Nothing ->
 					redirect "/"
 
-		get "/g/:gid" $ do
-			gid <- param "gid"
-			entries <- liftIO (findGroup db gid)
-			html (renderHtml (groupTpl entries))
+		get "/g/:gid" $
+			param "gid" >>= showGroup db
 
-		get "/style.css" $ do
+		get "/n/:name" $ do
+			name <- param "name"
+			gid <- liftIO (findGroupByMember db name)
+			maybe (redirect "/") (showGroup db) gid
+
+ 		get "/style.css" $ do
 			setHeader "Content-Type" "text/css"
 			raw style
 
@@ -57,3 +60,8 @@ main = do
 			. T.toLower
 			. T.decodeUtf8
 			. B.fromStrict
+
+		showGroup db gid = do
+			entries <- liftIO (findGroup db gid)
+			html (renderHtml (groupTpl entries))
+

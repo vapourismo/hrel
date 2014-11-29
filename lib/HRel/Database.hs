@@ -66,13 +66,14 @@ insertGroup db names links = do
 		when (r > 0) $ do
 			nameID <- insertID db
 			case T.split (== '-') s of
-				[] ->
-					-- No use of '-' means it's a ill-formated release name
-					return ()
-				xs -> do
+				-- Something resembling the format "name.and.info-group"
+				xs | length xs > 1 -> do
 					executeMany db "INSERT INTO tags (value, nameID) VALUES (?, ?)"
 					            (tagify nameID xs)
 					return ()
+
+				-- Anything else is a ill-formated release name
+				_ -> return ()
 
 	-- Insert links
 	executeMany db "INSERT IGNORE INTO links (uri, groupID) VALUES (?, ?)"

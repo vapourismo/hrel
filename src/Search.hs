@@ -4,6 +4,7 @@ module Main (main) where
 
 import Data.Word
 import qualified Data.ByteString.Lazy as B
+import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
 
 import Text.Blaze.Html.Renderer.Text
@@ -50,4 +51,9 @@ main = do
 			text "There used to be a dog here"
 
 	where
-		splitIntoTags = map T.decodeUtf8 . filter (not . B.null) . B.split 32 . B.fromStrict
+		splitIntoTags =
+			filter (not . T.null)
+			. T.split (== ' ')
+			. T.toLower
+			. T.decodeUtf8
+			. B.fromStrict

@@ -51,7 +51,7 @@ main = do
 			raw style
 
 		notFound $
-			text "There used to be a dog here"
+			redirect "/"
 
 	where
 		splitIntoTags =

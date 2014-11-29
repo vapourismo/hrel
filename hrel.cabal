@@ -19,7 +19,7 @@ executable hrel-aggregator
 executable hrel-search
   hs-source-dirs:      lib, src
   main-is:             Search.hs
-  ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind
+  ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind -fno-warn-orphans
   default-language:    Haskell2010
   extensions:          OverloadedStrings
   build-depends:       base, text, bytestring,

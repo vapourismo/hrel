@@ -5,6 +5,7 @@ module HRel.Database (
 	insertGroup,
 	findNames,
 	findGroup,
+	findGroupByMember,
 
 	module Database.MySQL.Simple
 ) where
@@ -12,6 +13,7 @@ module HRel.Database (
 import Data.Word
 import Data.List
 import Data.Char
+import Data.Maybe
 import qualified Data.Text.Lazy as T
 
 import Control.Monad
@@ -103,3 +105,9 @@ findGroup db groupID = do
 	names <- query db "SELECT fullName FROM names WHERE groupID = ?" (Only groupID)
 	links <- query db "SELECT uri FROM links WHERE groupID = ?" (Only groupID)
 	return (sort (map fromOnly names), sort (map fromOnly links))
+
+-- | Get the group ID by searching for a member of the group.
+findGroupByMember :: Connection -> T.Text -> IO (Maybe Word64)
+findGroupByMember db name = do
+	gid <- query db "SELECT groupID FROM names WHERE searchName = ? LIMIT 1" (Only name)
+	return (fmap fromOnly (listToMaybe gid))

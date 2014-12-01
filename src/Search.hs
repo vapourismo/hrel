@@ -34,7 +34,9 @@ main = do
 			case lookup "q" (parseSimpleQuery (B.toStrict q)) of
 				Just searchTerm -> do
 					names <- liftIO (findNames db (splitIntoTags searchTerm))
-					html (renderHtml (resultTpl names))
+					maybe (html (renderHtml (resultTpl names)))
+					      (showGroup db)
+					      (isSingleGroup names)
 				Nothing ->
 					redirect "/"
 
@@ -64,3 +66,10 @@ main = do
 			entries <- liftIO (findGroup db gid)
 			html (renderHtml (groupTpl entries))
 
+		isSingleGroup [] = Nothing
+		isSingleGroup ((_, gid, _) : xs) = isSingleGroup' gid xs
+
+		isSingleGroup' gid [] = Just gid
+		isSingleGroup' gid ((_, gid', _) : xs)
+			| gid == gid' = isSingleGroup' gid xs
+			| otherwise = Nothing

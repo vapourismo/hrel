@@ -3,7 +3,7 @@ module HRel.Tools (
 	toURI,
 	toHost,
 	validHosters,
-	isValidHost,
+	isValidURI,
 
 	-- * Text Tools
 	trimText
@@ -28,8 +28,10 @@ validHosters :: [String]
 validHosters = ["ul.to", "uploaded.to", "uploaded.net"]
 
 -- | Check if the given host name maybe be used.
-isValidHost :: String -> Bool
-isValidHost = flip elem validHosters
+isValidURI :: URI -> Bool
+isValidURI uri =
+	maybe False (flip elem validHosters . uriRegName)
+	      (uriAuthority uri)
 
 -- | Trim space around a text.
 trimText :: T.Text -> T.Text

@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HRel.Aggregators.DDLValleyRocks (
-	aggregate
+	aggregate,
+	aggregateOne,
+	aggregatePost,
 ) where
 
 import Data.List

@@ -11,4 +11,6 @@ main = do
 	db <- connectToDatabase
 	rels <- aggregate
 	forM_ rels $ \(names, links) ->
-		insertGroup db names (filter isValidURI links)
+		let links' = filter isValidURI links
+		in when (length links' > 0 && length names > 0) . void $
+			insertGroup db names (filter isValidURI links)

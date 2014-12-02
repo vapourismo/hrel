@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HRel.Aggregators.DDLValleyRocks (
-	aggregate,
-	aggregateOne
+	aggregate
 ) where
 
 import Data.List
@@ -39,7 +38,7 @@ postFilter =
 
 			uri <- toURI href
 			hoster <- toHost uri
-			-- guard (elem hoster validHostNames)
+			guard (elem hoster validHostNames)
 
 			return uri
 

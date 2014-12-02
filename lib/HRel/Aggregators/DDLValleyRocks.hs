@@ -19,11 +19,6 @@ import HRel.Markup
 import HRel.Download
 import HRel.Tools
 
--- | Use only links to these hosters.
-validHostNames :: [String]
-validHostNames = ["ul.to", "uploaded.to", "uploaded.net",
-                  "uptobox.com", "rapidgator.net", "go4up.com"]
-
 -- | Filter a blog post.
 postFilter :: NodeFilter T.Text [URI]
 postFilter =
@@ -34,15 +29,11 @@ postFilter =
 			attrA <- attr "class"
 			guard (attrA == "ext-link")
 
-			href <- fmap trimText $ attr "href"
-			inner <- fmap trimText $ text
+			href <- fmap trimText (attr "href")
+			inner <- fmap trimText text
 			guard (inner == href)
 
-			uri <- toURI href
-			hoster <- toHost uri
-			guard (elem hoster validHostNames)
-
-			return uri
+			toURI href
 
 -- | Filter a RSS feed.
 rssFilter :: NodeFilterT T.Text IO [(,) [T.Text] [URI]]

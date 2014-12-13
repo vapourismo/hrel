@@ -25,3 +25,14 @@ executable hrel-search
   build-depends:       base, text, bytestring,
                        network-uri, mysql-simple, mysql, scotty,
                        blaze-html, blaze-markup, http-types, transformers
+
+executable hrel-fetchfavs
+  hs-source-dirs:      lib, src
+  main-is:             FetchFavs.hs
+  ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind
+  default-language:    Haskell2010
+  extensions:          OverloadedStrings
+  build-depends:       base, text, bytestring,
+                       network-uri, mysql-simple, mysql,
+                       http-types, transformers, http-conduit,
+                       mtl, tagsoup

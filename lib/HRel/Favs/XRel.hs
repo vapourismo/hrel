@@ -16,6 +16,5 @@ xrelFeedFilter =
 			forTag "title" text
 
 fetch :: String -> IO [T.Text]
-fetch url = do
-	cnts <- downloadNode url
-	return (maybe [] id (runNodeFilter xrelFeedFilter cnts))
+fetch url =
+	fmap (maybe [] id . runNodeFilter xrelFeedFilter) (downloadNode url)

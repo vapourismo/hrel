@@ -15,6 +15,7 @@ xrelFeedFilter =
 		foreachTag "entry" $
 			forTag "title" text
 
+-- | Fetch the release names for a favlist. URL must point to an Atom feed.
 fetch :: String -> IO [T.Text]
 fetch url =
 	fmap (maybe [] id . runNodeFilter xrelFeedFilter) (downloadNode url)

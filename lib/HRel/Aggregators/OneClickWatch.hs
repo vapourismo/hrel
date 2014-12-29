@@ -25,6 +25,7 @@ postFilter =
 	relativeTag "div" $ do
 		attrDiv <- attr "id"
 		guard (attrDiv == "content")
+
 		forTag "div" . forTag "div" $ do
 			attrDiv' <- attr "class"
 			guard (attrDiv' == "entry")

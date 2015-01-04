@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.Markup (
+module Data.Markup.Node (
 	-- * Parsing
 	Node (..),
 	toNodeList,
@@ -144,7 +144,7 @@ runNodeFilter :: NodeFilter t a -> Node t -> Maybe a
 runNodeFilter a = runReader (runMaybeT a)
 
 -- | Match any child node.
-foreachNode :: (Functor m, Monad m) => NodeFilterT t m a -> NodeFilterT t m [a]
+foreachNode :: (Monad m, Functor m) => NodeFilterT t m a -> NodeFilterT t m [a]
 foreachNode a =
 	reader nodeChildren
 	>>= fmap catMaybes . mapM (\n -> local (const n) (optional a))

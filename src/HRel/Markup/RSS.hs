@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Markup.RSS (
+module HRel.Markup.RSS (
 	forRSSChannel,
 	foreachRSSChannel
 ) where
 
 import Data.String
-import Data.Markup.Node
+import HRel.Markup.Node
 
 -- | Navigate into one RSS channel.
 forRSSChannel :: (Functor m, Monad m, IsString t, Eq t)

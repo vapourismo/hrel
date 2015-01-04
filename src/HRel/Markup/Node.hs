@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Markup.Node (
+module HRel.Markup.Node (
 	-- * Parsing
 	Node (..),
 	toNodeList,

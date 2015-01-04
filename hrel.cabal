@@ -5,34 +5,45 @@ license-file:        LICENSE
 build-type:          Simple
 cabal-version:       >= 1.10
 
-executable hrel-aggregator
-  hs-source-dirs:      lib, src
-  main-is:             Aggregator.hs
+library
+  hs-source-dirs:      lib
   ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind
   default-language:    Haskell2010
   extensions:          OverloadedStrings
-  build-depends:       base, text, bytestring,
-                       tagsoup, network-uri, http-conduit,
+  build-depends:       base,
                        transformers, mtl,
-                       mysql-simple, mysql
+                       tagsoup
+  exposed-modules:     Data.Markup.Node,
+                       Data.Markup.RSS
 
-executable hrel-search
-  hs-source-dirs:      lib, src
-  main-is:             Search.hs
-  ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind -fno-warn-orphans
-  default-language:    Haskell2010
-  extensions:          OverloadedStrings
-  build-depends:       base, text, bytestring,
-                       network-uri, mysql-simple, mysql, scotty,
-                       blaze-html, blaze-markup, http-types, transformers
-
-executable hrel-fetchfavs
-  hs-source-dirs:      lib, src
-  main-is:             FetchFavs.hs
-  ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind
-  default-language:    Haskell2010
-  extensions:          OverloadedStrings
-  build-depends:       base, text, bytestring,
-                       network-uri, mysql-simple, mysql,
-                       http-types, transformers, http-conduit,
-                       mtl, tagsoup
+-- executable hrel-aggregator
+--   hs-source-dirs:      lib, src
+--   main-is:             Aggregator.hs
+--   ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind
+--   default-language:    Haskell2010
+--   extensions:          OverloadedStrings
+--   build-depends:       base, text, bytestring,
+--                        tagsoup, network-uri, http-conduit,
+--                        transformers, mtl,
+--                        mysql-simple, mysql
+--
+-- executable hrel-search
+--   hs-source-dirs:      lib, src
+--   main-is:             Search.hs
+--   ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind -fno-warn-orphans
+--   default-language:    Haskell2010
+--   extensions:          OverloadedStrings
+--   build-depends:       base, text, bytestring,
+--                        network-uri, mysql-simple, mysql, scotty,
+--                        blaze-html, blaze-markup, http-types, transformers
+--
+-- executable hrel-fetchfavs
+--   hs-source-dirs:      lib, src
+--   main-is:             FetchFavs.hs
+--   ghc-options:         -O2 -j -Wall -fno-warn-unused-do-bind
+--   default-language:    Haskell2010
+--   extensions:          OverloadedStrings
+--   build-depends:       base, text, bytestring,
+--                        network-uri, mysql-simple, mysql,
+--                        http-types, transformers, http-conduit,
+--                        mtl, tagsoup

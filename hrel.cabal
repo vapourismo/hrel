@@ -11,7 +11,12 @@ library
   default-language:    Haskell2010
   extensions:          OverloadedStrings
   build-depends:       base,
-                       transformers, mtl,
-                       tagsoup
+                       transformers,
+                       mtl,
+                       tagsoup,
+                       text,
+                       http-conduit,
+                       network-uri
   exposed-modules:     HRel.Markup.Node,
-                       HRel.Markup.RSS
+                       HRel.Markup.RSS,
+                       HRel.Markup.Download

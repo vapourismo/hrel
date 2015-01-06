@@ -27,6 +27,9 @@ module HRel.Markup.Node (
 	tagName,
 	attr,
 	text,
+
+	-- * Property guards
+	attrGuard
 ) where
 
 import Data.List
@@ -206,4 +209,6 @@ attr k = MaybeT (fmap (lookup k) (reader nodeAttributes))
 text :: (Monoid t, Monad m) => NodeFilterT t m t
 text = reader nodeText
 
--- |
+-- | Check if an attribute is present and has a certain value.
+attrGuard :: (Eq t, Monad m, Functor m) => t -> t -> NodeFilterT t m ()
+attrGuard k v = attr k >>= guard . (== v)

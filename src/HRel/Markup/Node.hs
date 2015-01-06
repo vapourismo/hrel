@@ -176,8 +176,10 @@ relativeNode a = a <|> forNode (relativeNode a)
 -- | Match the current and any node at a lower level.
 relativeNodes :: (Monad m, Functor m) => NodeFilterT t m a -> NodeFilterT t m [a]
 relativeNodes a =
-	(++) <$> fmap maybeToList (optional a)
-	     <*> fmap concat (foreachNode (relativeNodes a))
+	merge <$> optional a
+	      <*> foreachNode (relativeNodes a)
+	where
+		merge h t = maybeToList h ++ concat t
 
 -- | Like "relativeNode" but for "Tag"s.
 relativeTag :: (Eq t, Monad m, Functor m) => t -> NodeFilterT t m a -> NodeFilterT t m a
@@ -203,3 +205,5 @@ attr k = MaybeT (fmap (lookup k) (reader nodeAttributes))
 -- | Get the inner content.
 text :: (Monoid t, Monad m) => NodeFilterT t m t
 text = reader nodeText
+
+-- |

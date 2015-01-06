@@ -7,13 +7,13 @@ module HRel.Markup.Node (
 	parseNodes,
 	parseNode,
 
-	-- * Filter types
+	-- * Filtering
 	NodeFilterT,
 	NodeFilter,
 	runNodeFilterT,
 	runNodeFilter,
 
-	-- * Combinators
+	-- * Navigation combinators
 	foreachNode,
 	forNode,
 	foreachTag,
@@ -23,7 +23,7 @@ module HRel.Markup.Node (
 	relativeTag,
 	relativeTags,
 
-	-- * Property extractors
+	-- * Property getters
 	tagName,
 	attr,
 	text,

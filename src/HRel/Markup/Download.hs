@@ -11,7 +11,7 @@ import Network.HTTP.Conduit
 
 import HRel.Markup.Node
 
--- |
+-- | Download something via HTTP and run the node filter (assumes UTF-8).
 withNodeFilter :: (MonadIO m)
                => NodeFilterT T.Text m a -> String -> m (Maybe a)
 withNodeFilter f url =

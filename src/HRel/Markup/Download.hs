@@ -1,5 +1,6 @@
 module HRel.Markup.Download (
-	withNodeFilter
+	withNodeFilter,
+	withNodeFilter'
 ) where
 
 import Control.Monad.IO.Class
@@ -17,3 +18,9 @@ withNodeFilter :: (MonadIO m)
 withNodeFilter f url =
 	liftIO (simpleHttp url)
 	>>= runNodeFilterT f . parseNode . T.decodeUtf8
+
+-- | Same as "withNodeFilter" but for the "NodeFilter"s.
+withNodeFilter' :: NodeFilter T.Text a -> String -> IO (Maybe a)
+withNodeFilter' f url =
+	fmap (runNodeFilter f . parseNode . T.decodeUtf8) (simpleHttp url)
+

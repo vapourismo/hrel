@@ -10,35 +10,34 @@ import Control.Monad
 import Control.Monad.Trans
 
 import HRel.Markup.Node
+import HRel.Markup.Download
 import HRel.URI
 
 -- | Filter a blog post.
 postFilter :: NodeFilter T.Text [URI]
 postFilter =
 	relativeTag "div" $ do
-		attrDiv <- attr "class"
-		guard (attrDiv == "cont cl")
+		attrGuard "class" "cont cl"
 		relativeTags "a" $ do
-			attrA <- attr "class"
-			guard (attrA == "ext-link")
+			attrGuard "class" "ext-link"
 
-			href <- fmap T.strip (attr "href")
-			inner <- fmap T.strip text
-			guard (inner == href)
+			href <- attr "href"
+			inner <- text
+			guard (T.strip inner == T.strip href)
 
-			toURI href
+			toURI (T.strip href)
 
----- | Filter a RSS feed.
---rssFilter :: NodeFilterT T.Text IO [(,) [T.Text] [URI]]
---rssFilter =
---	relativeTag "rss" $ forTag "channel" $ foreachTag "item" $
---		(,) <$> fmap fetchNames (forTag "title" text)
---		    <*> (mergeLinks <$> (forTag "link" text >>= aggregateLink)
---		                    <*> foreachTag "enclosure" (attr "url" >>= toURI))
---	where
---		fetchNames = map T.strip . T.split (== '&')
---		mergeLinks a b = nub (a ++ b)
---		aggregateLink = liftIO . aggregatePost . T.unpack . T.strip
+-- | Filter a RSS feed.
+rssFilter :: NodeFilterT T.Text IO [(,) [T.Text] [URI]]
+rssFilter =
+	relativeTag "rss" $ forTag "channel" $ foreachTag "item" $
+		appl <$> forTag "title" text
+		     <*> (forTag "link" text >>= aggregateLink)
+		     <*> foreachTag "enclosure" (attr "url" >>= toURI)
+	where
+		appl t l e = (map T.strip (T.split (== '&') t),
+		              nub (maybe [] id l ++ e))
+		aggregateLink = liftIO . withNodeFilter' postFilter . T.unpack . T.strip
 
 ---- | Aggregate the links in a blog post.
 --aggregatePost :: String -> IO [URI]

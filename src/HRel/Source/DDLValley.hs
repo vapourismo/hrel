@@ -32,13 +32,13 @@ rssFilter :: NodeFilterT T.Text IO [(,) [T.Text] [URI]]
 rssFilter =
 	relativeTag "rss" $ forTag "channel" $ foreachTag "item" $
 		appl <$> forTag "title" text
-		     <*> (forTag "link" text >>= aggregatePost)
+		     <*> (forTag "link" text >>= aggregateLinks)
 		     <*> foreachTag "enclosure" (attr "url" >>= toURI)
 	where
 		appl t l e =
 			(map T.strip (T.split (== '&') t),
 			 nub (maybe [] id l ++ e))
-		aggregatePost =
+		aggregateLinks =
 			liftIO . withNodeFilter' postFilter . T.unpack . T.strip
 
 -- Example Feeds

@@ -20,4 +20,5 @@ library
   exposed-modules:     HRel.Markup.Node,
                        HRel.Markup.RSS,
                        HRel.Markup.Download,
-                       HRel.Source.DDLValley
+                       HRel.Source.DDLValley,
+                       HRel.Source.OneClickWatch

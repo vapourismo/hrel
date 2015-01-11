@@ -32,30 +32,18 @@ rssFilter :: NodeFilterT T.Text IO [(,) [T.Text] [URI]]
 rssFilter =
 	relativeTag "rss" $ forTag "channel" $ foreachTag "item" $
 		appl <$> forTag "title" text
-		     <*> (forTag "link" text >>= aggregateLink)
+		     <*> (forTag "link" text >>= aggregatePost)
 		     <*> foreachTag "enclosure" (attr "url" >>= toURI)
 	where
-		appl t l e = (map T.strip (T.split (== '&') t),
-		              nub (maybe [] id l ++ e))
-		aggregateLink = liftIO . withNodeFilter' postFilter . T.unpack . T.strip
+		appl t l e =
+			(map T.strip (T.split (== '&') t),
+			 nub (maybe [] id l ++ e))
+		aggregatePost =
+			liftIO . withNodeFilter' postFilter . T.unpack . T.strip
 
----- | Aggregate the links in a blog post.
---aggregatePost :: String -> IO [URI]
---aggregatePost =
---	fmap (maybe [] id . runNodeFilter postFilter) . downloadNode
-
----- | Aggregate links (including blog post) from a RSS feed.
---aggregateOne :: String -> IO [(,) [T.Text] [URI]]
---aggregateOne loc = do
---	cnts <- downloadNode loc
---	res <- runNodeFilterT rssFilter cnts
---	return (maybe [] id res)
-
----- | Aggregate all feeds.
---aggregate :: IO [(,) [T.Text] [URI]]
---aggregate =
---	fmap concat $ mapM aggregateOne ["http://www.ddlvalley.rocks/category/tv-shows/hd-720/feed/",
---	                                 "http://www.ddlvalley.rocks/category/tv-shows/web-dl/feed/",
---	                                 "http://www.ddlvalley.rocks/category/movies/bdrip/feed/",
---	                                 "http://www.ddlvalley.rocks/category/movies/bluray-1080p/feed/",
---	                                 "http://www.ddlvalley.rocks/category/movies/bluray-720p/feed/"]
+-- Example Feeds
+--     "http://www.ddlvalley.rocks/category/tv-shows/hd-720/feed/"
+--     "http://www.ddlvalley.rocks/category/tv-shows/web-dl/feed/"
+--     "http://www.ddlvalley.rocks/category/movies/bdrip/feed/"
+--     "http://www.ddlvalley.rocks/category/movies/bluray-1080p/feed/"
+--     "http://www.ddlvalley.rocks/category/movies/bluray-720p/feed/"

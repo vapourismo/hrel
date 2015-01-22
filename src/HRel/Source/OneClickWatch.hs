@@ -43,18 +43,5 @@ rssFilter =
 		aggregateLinks =
 			liftIO . withNodeFilter' postFilter . T.unpack . T.strip
 
----- | Trim space around a text.
---T.strip :: T.Text -> T.Text
---T.strip = T.dropAround isSpace
-
----- | Aggregate the links in a blog post.
---aggregatePost :: String -> IO [URI]
---aggregatePost =
---	fmap (maybe [] id . runNodeFilter postFilter) . downloadNode
-
----- | Aggregate links (including blog post) from a RSS feed.
---aggregate :: IO [(,) T.Text [URI]]
---aggregate = do
---	cnts <- downloadNode "http://oneclickwatch.ws/feed/"
---	res <- runNodeFilterT rssFilter cnts
---	return (maybe [] id res)
+-- Example Feeds:
+--   "http://oneclickwatch.ws/feed/"

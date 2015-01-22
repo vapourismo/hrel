@@ -42,8 +42,8 @@ rssFilter =
 			liftIO . withNodeFilter' postFilter . T.unpack . T.strip
 
 -- Example Feeds
---     "http://www.ddlvalley.rocks/category/tv-shows/hd-720/feed/"
---     "http://www.ddlvalley.rocks/category/tv-shows/web-dl/feed/"
---     "http://www.ddlvalley.rocks/category/movies/bdrip/feed/"
---     "http://www.ddlvalley.rocks/category/movies/bluray-1080p/feed/"
---     "http://www.ddlvalley.rocks/category/movies/bluray-720p/feed/"
+--   "http://www.ddlvalley.rocks/category/tv-shows/hd-720/feed/"
+--   "http://www.ddlvalley.rocks/category/tv-shows/web-dl/feed/"
+--   "http://www.ddlvalley.rocks/category/movies/bdrip/feed/"
+--   "http://www.ddlvalley.rocks/category/movies/bluray-1080p/feed/"
+--   "http://www.ddlvalley.rocks/category/movies/bluray-720p/feed/"

@@ -21,4 +21,5 @@ library
                        HRel.Markup.RSS,
                        HRel.Markup.Download,
                        HRel.Source.DDLValley,
-                       HRel.Source.OneClickWatch
+                       HRel.Source.OneClickWatch,
+                       HRel.Source.XRel

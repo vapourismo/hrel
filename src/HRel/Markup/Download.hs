@@ -2,8 +2,8 @@ module HRel.Markup.Download (
 	module HRel.Markup.Node,
 
 	-- * Download shortcuts
+	withNodeFilterT,
 	withNodeFilter,
-	withNodeFilter',
 
 	-- * Hungry "NodeFilter"s
 	NodeFilterH,
@@ -26,17 +26,17 @@ import Network.HTTP.Types.Status
 import HRel.Markup.Node
 
 -- | Download something and run the node filter (assumes UTF-8).
-withNodeFilter :: (MonadIO m)
-               => NodeFilterT T.Text m a -> Request -> Manager -> m (Maybe a)
-withNodeFilter nfil req mgr = do
+withNodeFilterT :: (MonadIO m)
+                => NodeFilterT T.Text m a -> Request -> Manager -> m (Maybe a)
+withNodeFilterT nfil req mgr = do
 	res <- liftIO (httpLbs req mgr)
 	case responseStatus res of
 		Status 200 _ -> runNodeFilterT nfil (parseNode (T.decodeUtf8 (responseBody res)))
 		_ -> return Nothing
 
--- | Same as "withNodeFilter" but for the "NodeFilter"s.
-withNodeFilter' :: NodeFilter T.Text a -> Request -> Manager -> IO (Maybe a)
-withNodeFilter' nfil req mgr = do
+-- | Same as "withNodeFilterT" but for the "NodeFilter"s.
+withNodeFilter :: NodeFilter T.Text a -> Request -> Manager -> IO (Maybe a)
+withNodeFilter nfil req mgr = do
 	res <- httpLbs req mgr
 	return $ case responseStatus res of
 		Status 200 _ -> runNodeFilter nfil (parseNode (T.decodeUtf8 (responseBody res)))

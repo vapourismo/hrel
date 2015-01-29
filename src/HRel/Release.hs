@@ -4,7 +4,7 @@ module HRel.Release (
 ) where
 
 import Data.Word
-import Data.Text.Lazy
+import Data.Text
 
 -- | Release information
 data Release = Release Text (Maybe Product)

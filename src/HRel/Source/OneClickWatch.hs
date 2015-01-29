@@ -5,7 +5,7 @@ module HRel.Source.OneClickWatch (
 ) where
 
 import Data.Char
-import qualified Data.Text.Lazy as T
+import qualified Data.Text as T
 
 import Control.Monad
 import Control.Applicative

@@ -7,7 +7,7 @@ module HRel.Source.XRel (
 
 import Control.Applicative
 
-import qualified Data.Text.Lazy as T
+import qualified Data.Text as T
 import qualified Data.ByteString as B
 
 import Network.HTTP.Client
@@ -35,7 +35,7 @@ releaseInfoFilter =
 
 		return (Release relName prod)
 
--- | Generate the URL
+-- | Generate the request instance
 releaseInfoRequest :: B.ByteString -> IO Request
 releaseInfoRequest rel =
 	setQueryString [("dirname", Just rel)] <$> parseUrl "http://api.xrel.to/api/release/info.xml"

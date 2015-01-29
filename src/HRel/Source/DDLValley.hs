@@ -5,7 +5,7 @@ module HRel.Source.DDLValley (
 ) where
 
 import Data.List
-import qualified Data.Text.Lazy as T
+import qualified Data.Text as T
 
 import Control.Applicative
 import Control.Monad

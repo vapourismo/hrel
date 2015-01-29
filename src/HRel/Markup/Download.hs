@@ -16,14 +16,19 @@ import Control.Monad.Trans
 import Control.Monad.Reader
 import Control.Monad.Trans.Maybe
 
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.Encoding as T
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as L
 
 import Network.HTTP.Client
 import Network.HTTP.Types.Status
 
 import HRel.Markup.Node
+
+-- | The the strict
+toNode :: Response L.ByteString -> Node T.Text
+toNode = (seq >>= id) . parseNode . T.decodeUtf8 . L.toStrict . responseBody
 
 -- | Download something and run the node filter (assumes UTF-8).
 withNodeFilterT :: (MonadIO m)
@@ -31,7 +36,7 @@ withNodeFilterT :: (MonadIO m)
 withNodeFilterT nfil req mgr = do
 	res <- liftIO (httpLbs req mgr)
 	case responseStatus res of
-		Status 200 _ -> runNodeFilterT nfil (parseNode (T.decodeUtf8 (responseBody res)))
+		Status 200 _ -> runNodeFilterT nfil (toNode res)
 		_ -> return Nothing
 
 -- | Same as "withNodeFilterT" but for the "NodeFilter"s.
@@ -39,7 +44,7 @@ withNodeFilter :: NodeFilter T.Text a -> Request -> Manager -> IO (Maybe a)
 withNodeFilter nfil req mgr = do
 	res <- httpLbs req mgr
 	return $ case responseStatus res of
-		Status 200 _ -> runNodeFilter nfil (parseNode (T.decodeUtf8 (responseBody res)))
+		Status 200 _ -> runNodeFilter nfil (toNode res)
 		_ -> Nothing
 
 -- | A special "NodeFilterT" variant which is optimized for node filters that
@@ -55,7 +60,7 @@ withNodeFilterH :: NodeFilterH a -> Request -> Manager -> IO (Maybe a)
 withNodeFilterH nfil req mgr = do
 	res <- httpLbs req mgr
 	case responseStatus res of
-		Status 200 _ -> runNodeFilterH nfil (parseNode (T.decodeUtf8 (responseBody res))) mgr
+		Status 200 _ -> runNodeFilterH nfil (toNode res) mgr
 		_ -> return Nothing
 
 -- | "withNodeFilterH" within a "NodeFilterH"

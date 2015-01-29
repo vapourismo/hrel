@@ -7,14 +7,12 @@ import qualified Data.Text.Lazy as T
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Trans
 
-import HRel.Markup.Node
 import HRel.Markup.Download
 import HRel.URI
 
 -- | Filter a blog post.
-postFilter :: NodeFilter T.Text [URI]
+postFilter :: NodeFilterH [URI]
 postFilter =
 	relativeTag "div" $ do
 		attrGuard "class" "cont cl"
@@ -28,7 +26,7 @@ postFilter =
 			toURI (T.strip href)
 
 -- | Filter a RSS feed.
-rssFilter :: NodeFilterT T.Text IO [(,) [T.Text] [URI]]
+rssFilter :: NodeFilterH [(,) [T.Text] [URI]]
 rssFilter =
 	relativeTag "rss" $ forTag "channel" $ foreachTag "item" $
 		appl <$> forTag "title" text
@@ -36,10 +34,9 @@ rssFilter =
 		     <*> foreachTag "enclosure" (attr "url" >>= toURI)
 	where
 		appl t l e =
-			(map T.strip (T.split (== '&') t),
-			 nub (maybe [] id l ++ e))
-		aggregateLinks =
-			liftIO . withNodeFilter' postFilter . T.unpack . T.strip
+			(map T.strip (T.split (== '&') t), nub (l ++ e))
+		aggregateLinks url =
+			continueWith' (T.unpack url) [] postFilter
 
 -- Example Feeds
 --   "http://www.ddlvalley.rocks/category/tv-shows/hd-720/feed/"

@@ -2,12 +2,14 @@
 
 module HRel.Source.XRel (
 	releaseInfoFilter,
-	releaseInfoRequest
+	releaseInfoRequest,
+	releaseInfoRequest'
 ) where
 
 import Control.Applicative
 
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.ByteString as B
 
 import Network.HTTP.Client
@@ -39,3 +41,7 @@ releaseInfoFilter =
 releaseInfoRequest :: B.ByteString -> IO Request
 releaseInfoRequest rel =
 	setQueryString [("dirname", Just rel)] <$> parseUrl "http://api.xrel.to/api/release/info.xml"
+
+-- | Same as "releaseInfoRequest" but for "Text"
+releaseInfoRequest' :: T.Text -> IO Request
+releaseInfoRequest' = releaseInfoRequest . T.encodeUtf8

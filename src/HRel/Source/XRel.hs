@@ -26,12 +26,12 @@ releaseInfoFilter =
 			    <*> forTag "title" text
 
 		prod <- case T.strip (T.toLower t) of
-			"tv"    -> fmap Just $
-				Episode prodTitle <$> forTag "tv_season" (fmap (read . T.unpack) text)
-				                  <*> forTag "tv_episode" (fmap (read . T.unpack) text)
-			"movie" -> return (Just (Movie prodTitle))
-			"game"  -> return (Just (Game prodTitle))
-			_       -> return (Nothing)
+			"tv"    -> (Episode prodTitle <$> forTag "tv_season" (fmap (read . T.unpack) text)
+			                              <*> forTag "tv_episode" (fmap (read . T.unpack) text))
+			           <|> return (Episode prodTitle 0 0)
+			"movie" -> return (Movie prodTitle)
+			"game"  -> return (Game prodTitle)
+			_       -> return Unknown
 
 		return (Release relName prod)
 

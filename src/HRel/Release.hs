@@ -10,7 +10,7 @@ import Data.Text
 data Release = Release Text Product
 	deriving (Show, Eq, Ord)
 
--- |
+-- | Release product
 data Product
 	= Movie Text
 	| Episode Text Word Word

@@ -20,7 +20,7 @@ import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
 import qualified Data.ByteString as B
 
-import Network.HTTP.Conduit
+import Network.HTTP.Client
 import Network.HTTP.Types.Status
 
 import HRel.Markup.Node

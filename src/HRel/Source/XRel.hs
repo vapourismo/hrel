@@ -8,7 +8,7 @@ import Data.Word
 import qualified Data.Text.Lazy as T
 import qualified Data.ByteString as B
 
-import Network.HTTP.Conduit
+import Network.HTTP.Client
 
 import HRel.Markup.Node
 
@@ -31,9 +31,9 @@ releaseInfoFilter =
 			    <*> forTag "title" text
 
 		case T.strip (T.toLower t) of
-			"movie" -> return (Movie relName prodTitle)
 			"tv"    -> Television relName prodTitle <$> forTag "tv_season" (fmap (read . T.unpack) text)
 			                                        <*> forTag "tv_episode" (fmap (read . T.unpack) text)
+			"movie" -> return (Movie relName prodTitle)
 			"game"  -> return (Game relName prodTitle)
 			_       -> return (Unknown relName prodTitle)
 

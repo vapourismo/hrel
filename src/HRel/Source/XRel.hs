@@ -25,12 +25,15 @@ releaseInfoFilter =
 			(,) <$> forTag "type" text
 			    <*> forTag "title" text
 
-		case T.strip (T.toLower t) of
-			"tv"    -> Television relName prodTitle <$> forTag "tv_season" (fmap (read . T.unpack) text)
-			                                        <*> forTag "tv_episode" (fmap (read . T.unpack) text)
-			"movie" -> return (Movie relName prodTitle)
-			"game"  -> return (Game relName prodTitle)
-			_       -> return (Unknown relName prodTitle)
+		prod <- case T.strip (T.toLower t) of
+			"tv"    -> fmap Just $
+				Episode prodTitle <$> forTag "tv_season" (fmap (read . T.unpack) text)
+				                  <*> forTag "tv_episode" (fmap (read . T.unpack) text)
+			"movie" -> return (Just (Movie prodTitle))
+			"game"  -> return (Just (Game prodTitle))
+			_       -> return (Nothing)
+
+		return (Release relName prod)
 
 -- | Generate the URL
 releaseInfoRequest :: B.ByteString -> IO Request

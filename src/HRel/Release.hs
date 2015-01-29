@@ -1,14 +1,18 @@
 module HRel.Release (
-	Release (..)
+	Release (..),
+	Product (..)
 ) where
 
 import Data.Word
-import qualified Data.Text.Lazy as T
+import Data.Text.Lazy
 
 -- | Release information
-data Release
-	= Movie T.Text T.Text
-	| Television T.Text T.Text Word Word
-	| Game T.Text T.Text
-	| Unknown T.Text T.Text
-	deriving (Show, Eq)
+data Release = Release Text (Maybe Product)
+	deriving (Show, Eq, Ord)
+
+-- |
+data Product
+	= Movie Text
+	| Episode Text Word Word
+	| Game Text
+	deriving (Show, Eq, Ord)

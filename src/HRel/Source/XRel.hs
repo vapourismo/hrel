@@ -6,6 +6,9 @@ import Control.Applicative
 
 import Data.Word
 import qualified Data.Text.Lazy as T
+import qualified Data.ByteString as B
+
+import Network.HTTP.Conduit
 
 import HRel.Markup.Node
 
@@ -33,3 +36,8 @@ releaseInfoFilter =
 			                                        <*> forTag "tv_episode" (fmap (read . T.unpack) text)
 			"game"  -> return (Game relName prodTitle)
 			_       -> return (Unknown relName prodTitle)
+
+-- | Generate the URL
+releaseInfoRequest :: B.ByteString -> IO Request
+releaseInfoRequest rel =
+	setQueryString [("dirname", Just rel)] <$> parseUrl "http://api.xrel.to/api/release/info.xml"

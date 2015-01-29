@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.Source.OneClickWatch where
+module HRel.Source.OneClickWatch (
+	rssFilter
+) where
 
 import Data.Char
 import qualified Data.Text.Lazy as T

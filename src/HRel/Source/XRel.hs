@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.Source.XRel where
+module HRel.Source.XRel (
+	releaseInfoFilter,
+	releaseInfoRequest
+) where
 
 import Control.Applicative
 

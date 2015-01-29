@@ -14,8 +14,8 @@ library
                        transformers,
                        mtl,
                        tagsoup,
-                       text,
-                       http-conduit,
+                       text, bytestring,
+                       http-conduit, http-types,
                        network-uri
   exposed-modules:     HRel.Markup.Node,
                        HRel.Markup.RSS,

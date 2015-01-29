@@ -22,4 +22,5 @@ library
                        HRel.Markup.Download,
                        HRel.Source.DDLValley,
                        HRel.Source.OneClickWatch,
-                       HRel.Source.XRel
+                       HRel.Source.XRel,
+                       HRel.Release

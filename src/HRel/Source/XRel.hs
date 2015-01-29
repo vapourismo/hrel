@@ -7,21 +7,13 @@ module HRel.Source.XRel (
 
 import Control.Applicative
 
-import Data.Word
 import qualified Data.Text.Lazy as T
 import qualified Data.ByteString as B
 
 import Network.HTTP.Client
 
 import HRel.Markup.Node
-
--- | Release information
-data Release
-	= Movie T.Text T.Text
-	| Television T.Text T.Text Word Word
-	| Game T.Text T.Text
-	| Unknown T.Text T.Text
-	deriving (Show, Eq)
+import HRel.Release
 
 -- | Filter a response to "release/info".
 releaseInfoFilter :: NodeFilter T.Text Release

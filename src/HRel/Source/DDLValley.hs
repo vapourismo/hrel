@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.Source.DDLValley where
+module HRel.Source.DDLValley (
+	rssFilter
+) where
 
 import Data.List
 import qualified Data.Text.Lazy as T

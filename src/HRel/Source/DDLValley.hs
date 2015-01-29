@@ -28,8 +28,9 @@ postFilter =
 			toURI (T.strip href)
 
 -- | Filter a RSS feed.
-rssFilter :: NodeFilterH [(,) [T.Text] [URI]]
+rssFilter :: NodeFilterH [(,) T.Text [URI]]
 rssFilter =
+	fmap (>>= \(ns, us) -> map (flip (,) us) ns) $
 	relativeTag "rss" $ forTag "channel" $ foreachTag "item" $
 		appl <$> forTag "title" text
 		     <*> (forTag "link" text >>= aggregateLinks)

@@ -1,5 +1,4 @@
 language: haskell
 ghc: 7.8
-before_install: cabal update
 install: cabal install -j --only-dependencies
 script: cabal configure && cabal build -j

@@ -23,6 +23,8 @@ postFilter =
 		forTag "div" . forTag "div" $ do
 			attrGuard "class" "entry"
 			forTag "p" . relativeTags "a" $ do
+				attrGuard "rel" "nofollow"
+
 				href <- attr "href"
 				inner <- text
 				guard (T.strip inner == T.strip href)

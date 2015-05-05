@@ -2,6 +2,3 @@
 .cabal-sandbox/
 cabal.sandbox.config
 dist/
-
-# Storage for acid-state
-data/

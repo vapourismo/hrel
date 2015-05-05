@@ -45,7 +45,7 @@ fetchFromDump url mgr = do
 			case T.split (== '|') line of
 				[_, name, _, _, downloadURI, size,_, _, _, _, _] -> do
 				 	uri <- parseURI (T.unpack downloadURI)
-					pure (Torrent name [uri] (Just (read (T.unpack size))))
+					pure (Torrent (T.copy name) [uri] (Just (read (T.unpack size))))
 
 				_ -> Nothing
 

@@ -1,21 +1,45 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module HRel.Source (
-	-- * Types
+	-- * Release
+	Release,
+	makeRelease,
+
+	-- * Torrent
 	Torrent (..),
 	Aggregator (..),
-
-	-- * Aggregation
-	fetch,
+	fetch
 ) where
 
+import Data.Char
 import qualified Data.Text as T
 
 import Network.URI
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 
+-- | Release Identifier
+newtype Release = Release T.Text
+	deriving (Show, Eq, Ord)
+
+-- | Make a release from the given raw text.
+makeRelease :: T.Text -> Release
+makeRelease =
+	Release . normalizeName . fst . retrieveAuthor
+	where
+		splitProperly f = map T.strip . filter (not . T.null) . T.split f
+
+		retrieveAuthor txt =
+			case splitProperly (== '-') txt of
+				[rn] -> (rn, Nothing)
+				xs   -> (T.intercalate "-" (init xs), Just (fst (T.span (not . isSpace) (last xs))))
+
+		normalizeName =
+			T.toLower . T.intercalate " " . splitProperly (not . isAlphaNum)
+
 -- | Torrent
 data Torrent = Torrent {
-	torrentRelease     :: T.Text,
+	torrentRelease     :: Release,
 	torrentSource      :: [URI],
 	torrentContentSize :: Maybe Word
 } deriving (Show, Eq, Ord)

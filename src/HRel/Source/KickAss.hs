@@ -45,7 +45,7 @@ fetchFromDump url mgr = do
 			case T.split (== '|') line of
 				[_, name, _, _, downloadURI, size,_, _, _, _, _] -> do
 				 	uri <- parseURI (T.unpack downloadURI)
-					pure (Torrent (T.copy name) [uri] (Just (read (T.unpack size))))
+					pure (Torrent (makeRelease (T.copy name)) [uri] (Just (read (T.unpack size))))
 
 				_ -> Nothing
 
@@ -78,7 +78,7 @@ fetchFromRSS url mgr = do
 						             >>= toURI . T.strip
 						torrentURI <- forTag "enclosure" (attr "url")
 						              >>= toURI . fst . T.break (== '?') . T.strip
-						return (Torrent (T.strip title)
+						return (Torrent (makeRelease (T.copy title))
 						                [magnetURI, torrentURI]
 						                (Just (read (T.unpack (T.strip size)))))
 

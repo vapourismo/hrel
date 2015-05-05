@@ -51,7 +51,7 @@ fetchFromDump url mgr = do
 
 		pickTorrents = catMaybes . map toTorrent . T.lines
 
--- |
+-- | Fetch results from RSS feed.
 fetchFromRSS :: String -> Manager -> IO [Torrent]
 fetchFromRSS url mgr = do
 	req <- parseUrl url

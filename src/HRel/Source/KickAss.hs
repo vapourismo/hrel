@@ -57,10 +57,8 @@ fetchFromRSS url mgr = do
 	req <- parseUrl url
 	withResponse req mgr $ \ res ->
 		case responseStatus res of
-			Status 200 _ -> do
-				fmap (runFilter . fromMarkup' . decode) (brConsume (responseBody res))
-					>>= print
-				return []
+			Status 200 _ ->
+				fmap (maybe [] id . runFilter . fromMarkup' . decode) (brConsume (responseBody res))
 
 			Status _   _ ->
 				return []

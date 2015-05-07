@@ -3,6 +3,7 @@
 module HRel.Source (
 	-- * Release
 	Release,
+	toText,
 	makeRelease,
 	normalizeRelease,
 
@@ -33,7 +34,7 @@ import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 
 -- | Release Identifier
-newtype Release = Release T.Text
+newtype Release = Release { toText :: T.Text }
 	deriving (Show, Eq, Ord)
 
 -- | Make a release from the given raw text.
@@ -58,15 +59,15 @@ normalizeRelease =
 
 -- |
 withTextResponse :: Request -> Manager -> (T.Text -> IO [a]) -> IO [a]
-withTextResponse req mgr f = do
-	withResponse req mgr $ \ res ->
-		case responseStatus res of
-			Status 200 _ ->
-				(brConsume (responseBody res) >>= f . T.decodeUtf8 . B.concat)
-					`catch` \ (SomeException _) -> return []
+withTextResponse req mgr f =
+	handle (\ (SomeException _) -> return []) $
+		withResponse req mgr $ \ res ->
+			case responseStatus res of
+				Status 200 _ ->
+					brConsume (responseBody res) >>= f . T.decodeUtf8 . B.concat
 
-			Status _   _ ->
-				return []
+				Status _   _ ->
+					return []
 
 -- | Torrent
 data Torrent = Torrent {

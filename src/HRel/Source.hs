@@ -4,6 +4,7 @@ module HRel.Source (
 	-- * Release
 	Release,
 	makeRelease,
+	normalizeRelease,
 
 	-- * Torrent
 	Torrent (..),
@@ -24,15 +25,20 @@ newtype Release = Release T.Text
 
 -- | Make a release from the given raw text.
 makeRelease :: T.Text -> Release
-makeRelease =
-	Release . normalizeName . fst . retrieveAuthor
+makeRelease = Release . normalizeRelease
+
+-- | Normalize the release name.
+normalizeRelease :: T.Text -> T.Text
+normalizeRelease =
+	normalizeName . fst . retrieveAuthor
 	where
 		splitProperly f = map T.strip . filter (not . T.null) . T.split f
 
 		retrieveAuthor txt =
 			case splitProperly (== '-') txt of
 				[rn] -> (rn, Nothing)
-				xs   -> (T.intercalate "-" (init xs), Just (fst (T.span (not . isSpace) (last xs))))
+				xs   -> (T.intercalate "-" (init xs),
+				         Just (fst (T.span (not . isSpace) (last xs))))
 
 		normalizeName =
 			T.toLower . T.intercalate " " . splitProperly (not . isAlphaNum)

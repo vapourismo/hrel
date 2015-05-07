@@ -51,15 +51,15 @@ data Torrent = Torrent {
 } deriving (Show, Eq, Ord)
 
 -- | Used to aggregate "Torrent"s.
-newtype Aggregator = Aggregator { runAggregator :: Manager -> IO [Torrent] }
+newtype Aggregator a = Aggregator { runAggregator :: Manager -> IO [a] }
 
 -- | "Monoid" instance which can be used to merge several "Aggregator"s.
-instance Monoid Aggregator where
+instance Monoid (Aggregator a) where
 	mempty = Aggregator (const (pure []))
 	mappend (Aggregator a) (Aggregator b) =
 		Aggregator (\ mgr -> (++) <$> a mgr <*> b mgr)
 	mconcat as = Aggregator (\ mgr -> fmap concat (mapM (\ (Aggregator f) -> f mgr) as))
 
 -- | Fetch "Torrent"s.
-fetch :: Aggregator -> IO [Torrent]
+fetch :: Aggregator a -> IO [a]
 fetch = withManager tlsManagerSettings . runAggregator

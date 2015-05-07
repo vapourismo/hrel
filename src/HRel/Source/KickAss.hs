@@ -83,15 +83,15 @@ fetchFromRSS url mgr = do
 			runFilter = runNodeFilter rssFilter
 
 -- | Hourly dump from 'kickass.to'
-kickAssHourly :: Aggregator
+kickAssHourly :: Aggregator Torrent
 kickAssHourly =	Aggregator (fetchFromDump "https://kickass.to/hourlydump.txt.gz")
 
 -- | Daily dump from 'kickass.to'
-kickAssDaily :: Aggregator
+kickAssDaily :: Aggregator Torrent
 kickAssDaily = Aggregator (fetchFromDump "https://kickass.to/dailydump.txt.gz")
 
 -- | Search on 'kickass.to'
-kickAssSearch :: String -> Aggregator
+kickAssSearch :: String -> Aggregator Torrent
 kickAssSearch term =
 	Aggregator (fetchFromRSS ("https://kickass.to/usearch/"
 	                          ++ escapeURIString isUnescapedInURI term

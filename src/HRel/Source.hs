@@ -6,16 +6,30 @@ module HRel.Source (
 	makeRelease,
 	normalizeRelease,
 
+	-- * Utilities
+	withTextResponse,
+	module Network.HTTP.Client,
+	module Network.HTTP.Types,
+
+
 	-- * Torrent
 	Torrent (..),
 	Aggregator (..),
 	fetch
 ) where
 
+import Control.Exception
+
 import Data.Char
+
+import qualified Data.ByteString as B
+
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 
 import Network.URI
+
+import Network.HTTP.Types
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 
@@ -42,6 +56,18 @@ normalizeRelease =
 
 		normalizeName =
 			T.toLower . T.intercalate " " . splitProperly (not . isAlphaNum)
+
+-- |
+withTextResponse :: Request -> Manager -> (T.Text -> IO [a]) -> IO [a]
+withTextResponse req mgr f = do
+	withResponse req mgr $ \ res ->
+		case responseStatus res of
+			Status 200 _ ->
+				(brConsume (responseBody res) >>= f . T.decodeUtf8 . B.concat)
+					`catch` \ (SomeException _) -> return []
+
+			Status _   _ ->
+				return []
 
 -- | Torrent
 data Torrent = Torrent {

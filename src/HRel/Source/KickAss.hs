@@ -18,10 +18,8 @@ import qualified Data.Text.Encoding as T
 
 import qualified Codec.Compression.GZip as Z
 
-import Network.HTTP.Client
-import Network.HTTP.Types
-
 import Network.URI
+import Network.HTTP.Types
 
 import HRel.Source
 import HRel.Markup

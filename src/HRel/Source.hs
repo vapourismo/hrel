@@ -11,7 +11,6 @@ module HRel.Source (
 	module Network.HTTP.Client,
 	module Network.HTTP.Types,
 
-
 	-- * Torrent
 	Torrent (..),
 	Aggregator (..),

@@ -76,7 +76,7 @@ data Torrent = Torrent {
 	torrentContentSize :: Maybe Word
 } deriving (Show, Eq, Ord)
 
--- | Used to aggregate "Torrent"s.
+-- | Used to aggregate "a".
 newtype Aggregator a = Aggregator { runAggregator :: Manager -> IO [a] }
 
 -- | "Monoid" instance which can be used to merge several "Aggregator"s.

@@ -32,7 +32,7 @@ normalizeRelease :: T.Text -> T.Text
 normalizeRelease =
 	normalizeName . fst . retrieveAuthor
 	where
-		splitProperly f = map T.strip . filter (not . T.null) . T.split f
+		splitProperly f = filter (not . T.null) . map T.strip . T.split f
 
 		retrieveAuthor txt =
 			case splitProperly (== '-') txt of

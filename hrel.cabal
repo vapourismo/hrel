@@ -12,4 +12,5 @@ library
                        network-uri, http-client, http-client-tls, http-types
   exposed-modules:     HRel.Source,
                        HRel.Source.KickAss,
+                       HRel.Source.XRel,
                        HRel.Markup

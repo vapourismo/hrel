@@ -6,12 +6,17 @@ module HRel.Database (
 	InsertID,
 	insertRelease,
 	insertTorrent,
+
+	findTorrents,
 ) where
 
 import Control.Exception
 
 import Data.Word
+import Data.Maybe
 import qualified Database.MySQL.Simple as M
+
+import Network.URI
 
 import HRel.Source
 
@@ -38,3 +43,13 @@ insertTorrent db (Torrent release uris size) = do
 	M.executeMany db "INSERT INTO torrents (torrentRelease, torrentURI, torrentSize) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE torrentID = LAST_INSERT_ID(torrentID)"
 	                 (map (\ uri -> (releaseID, show uri, size)) uris)
 	M.insertID db
+
+-- |
+findTorrents :: M.Connection -> Release -> IO [Torrent]
+findTorrents db release =
+	map make <$> M.query db "SELECT releaseName, torrentURI, torrentSize FROM torrents, releases WHERE torrentRelease = releaseID AND releaseName = ? GROUP BY torrentURI"
+	                        (M.Only (toText release))
+	where
+		make (releaseName, torrentURI, torrentSize) =
+			Torrent (makeRelease releaseName) [fromJust (parseURI torrentURI)] torrentSize
+

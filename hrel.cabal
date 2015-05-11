@@ -3,12 +3,34 @@ version:             0.0.0
 build-type:          Simple
 cabal-version:       >= 1.10
 
-executable hrel-fetch-dumps
+library
   hs-source-dirs:      src
-  main-is:             Main/FetchDumps.hs
   ghc-options:         -O2 -j -Wall -fprof-auto -threaded
                        -fno-warn-unused-do-bind -fno-warn-tabs
   default-language:    Haskell2010
   build-depends:       base, text, bytestring, zlib, parsec, mtl, transformers, tagsoup,
                        network-uri, http-client, http-client-tls, http-types,
                        mysql-simple
+  exposed-modules:     HRel.Source,
+                       HRel.Source.KickAss,
+                       HRel.Source.XRel,
+                       HRel.Database,
+                       HRel.Markup
+
+-- executable hrel-fetch-dumps
+--   hs-source-dirs:      src
+--   main-is:             Main/FetchDumps.hs
+--   ghc-options:         -O2 -j -Wall -fprof-auto -threaded
+--                        -fno-warn-unused-do-bind -fno-warn-tabs
+--   default-language:    Haskell2010
+--   build-depends:       base, text, bytestring, zlib, parsec, mtl, transformers, tagsoup,
+--                        network-uri, http-client, http-client-tls, http-types,
+--                        mysql-simple
+
+executable hrel-get
+  hs-source-dirs:      src/Main
+  main-is:             Get.hs
+  ghc-options:         -O2 -j -Wall -fprof-auto -threaded
+                       -fno-warn-unused-do-bind -fno-warn-tabs
+  default-language:    Haskell2010
+  build-depends:       base, text, hrel

@@ -13,7 +13,6 @@ dumps = kickAssHourly
 
 -- | Entry point
 main :: IO ()
-main = do
-	rs <- fetch dumps
+main =
 	withDatabase $ \ db ->
-		mapM_ (insertTorrent db) rs
+		fetch dumps >>= mapM_ (insertTorrent db)

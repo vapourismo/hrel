@@ -57,7 +57,7 @@ normalizeRelease =
 		normalizeName =
 			T.toLower . T.intercalate " " . splitProperly (not . isAlphaNum)
 
--- |
+-- | Do something with a "Text" response.
 withTextResponse :: Request -> Manager -> (T.Text -> IO [a]) -> IO [a]
 withTextResponse req mgr f =
 	handle (\ (SomeException _) -> return []) $

@@ -21,6 +21,7 @@ module HRel.Source (
 import Control.Exception
 
 import Data.Char
+import Data.List
 
 import qualified Data.ByteString as B
 
@@ -32,6 +33,8 @@ import Network.URI
 import Network.HTTP.Types
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
+
+import HRel.Units
 
 -- | Release Identifier
 newtype Release = Release { toText :: T.Text }
@@ -74,7 +77,13 @@ data Torrent = Torrent {
 	torrentRelease     :: Release,
 	torrentSource      :: [URI],
 	torrentContentSize :: Maybe Word
-} deriving (Show, Eq, Ord)
+} deriving (Eq, Ord)
+
+instance Show Torrent where
+	show (Torrent rel uris size) =
+		"Release '" ++ T.unpack (toText rel) ++ "'" ++
+		maybe [] (\ s -> " (" ++ showAsBytes s ++ ")") size ++ "\n" ++
+		intercalate "\n" (map (\ u -> " + " ++ show u) uris)
 
 -- | Used to aggregate "a".
 newtype Aggregator a = Aggregator { runAggregator :: Manager -> IO [a] }

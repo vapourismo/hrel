@@ -15,7 +15,8 @@ library
                        HRel.Source.KickAss,
                        HRel.Source.XRel,
                        HRel.Database,
-                       HRel.Markup
+                       HRel.Markup,
+                       HRel.Units
 
 executable hrel-fetch
   hs-source-dirs:      src/Main

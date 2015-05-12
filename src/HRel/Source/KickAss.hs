@@ -3,7 +3,8 @@
 module HRel.Source.KickAss (
 	kickAssHourly,
 	kickAssDaily,
-	kickAssSearch
+	kickAssSearch,
+	kickAssReleaseSearch
 ) where
 
 import Control.Monad.Trans.Maybe
@@ -84,3 +85,7 @@ kickAssSearch term =
 	Aggregator (fetchFromRSS ("https://kickass.to/usearch/"
 	                          ++ escapeURIString isUnescapedInURI term
 	                          ++ "/?rss=1"))
+
+-- | Search for a release on 'kickass.to'
+kickAssReleaseSearch :: Release -> Aggregator Torrent
+kickAssReleaseSearch = kickAssSearch . T.unpack . toText

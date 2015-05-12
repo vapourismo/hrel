@@ -20,6 +20,8 @@ module HRel.Source (
 
 import Control.Exception
 
+import Control.Applicative
+
 import Data.Char
 import Data.List
 
@@ -100,11 +102,15 @@ instance Monad Aggregator where
 	Aggregator f >>= g =
 		Aggregator (\ mgr -> f mgr >>= fmap concat . mapM (\ x -> runAggregator (g x) mgr))
 
+instance Alternative Aggregator where
+	empty = Aggregator (const (pure []))
+	Aggregator a <|> Aggregator b =
+		Aggregator (\ mgr -> (++) <$> a mgr <*> b mgr)
+
 -- | "Monoid" instance which can be used to merge several "Aggregator"s.
 instance Monoid (Aggregator a) where
-	mempty = Aggregator (const (pure []))
-	mappend (Aggregator a) (Aggregator b) =
-		Aggregator (\ mgr -> (++) <$> a mgr <*> b mgr)
+	mempty = empty
+	mappend = (<|>)
 	mconcat as = Aggregator (\ mgr -> fmap concat (mapM (\ (Aggregator f) -> f mgr) as))
 
 -- | Fetch "Torrent"s.

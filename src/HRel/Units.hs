@@ -18,13 +18,14 @@ data ByteUnitPrefix
 -- | Show a number as bytes including unit.
 showAsBytes :: Word -> String
 showAsBytes n =
-	makle n NoBase2Suffix
+	makle (fromIntegral n :: Float) NoBase2Suffix
 	where
 		makle x p
 			| x >= 1000 && p < Yobi =
-				makle (div x 1000) (succ p)
+				makle (x / 1000) (succ p)
 			| otherwise =
-				show x ++ case p of
+				show (fromInteger (round (x * 100)) / 100 :: Float) ++
+				case p of
 					NoBase2Suffix -> " B"
 					Kibi          -> " KiB"
 					Mebi          -> " MiB"

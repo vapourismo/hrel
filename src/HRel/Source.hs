@@ -88,6 +88,18 @@ instance Show Torrent where
 -- | Used to aggregate "a".
 newtype Aggregator a = Aggregator { runAggregator :: Manager -> IO [a] }
 
+instance Functor Aggregator where
+	fmap g (Aggregator f) = Aggregator (fmap (fmap g) . f)
+
+instance Applicative Aggregator where
+	pure x = Aggregator (const (pure [x]))
+	Aggregator f <*> Aggregator g =
+		Aggregator (\ mgr -> (<*>) <$> f mgr <*> g mgr)
+
+instance Monad Aggregator where
+	Aggregator f >>= g =
+		Aggregator (\ mgr -> f mgr >>= fmap concat . mapM (\ x -> runAggregator (g x) mgr))
+
 -- | "Monoid" instance which can be used to merge several "Aggregator"s.
 instance Monoid (Aggregator a) where
 	mempty = Aggregator (const (pure []))

@@ -44,7 +44,7 @@ insertTorrent db (Torrent release uris size) = do
 	                 (map (\ uri -> (releaseID, show uri, size)) uris)
 	M.insertID db
 
--- |
+-- | Find torrents for a specific release.
 findTorrents :: M.Connection -> Release -> IO [Torrent]
 findTorrents db release =
 	map make <$> M.query db "SELECT releaseName, torrentURI, torrentSize FROM torrents, releases WHERE torrentRelease = releaseID AND releaseName = ? GROUP BY torrentURI"
@@ -52,4 +52,3 @@ findTorrents db release =
 	where
 		make (releaseName, torrentURI, torrentSize) =
 			Torrent (makeRelease releaseName) [fromJust (parseURI torrentURI)] torrentSize
-

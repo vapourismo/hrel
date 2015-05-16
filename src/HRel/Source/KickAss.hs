@@ -88,4 +88,9 @@ kickAssSearch term =
 
 -- | Search for a release on 'kickass.to'
 kickAssReleaseSearch :: Release -> Aggregator Torrent
-kickAssReleaseSearch = kickAssSearch . T.unpack . toText
+kickAssReleaseSearch release = do
+	torrent <- kickAssSearch (T.unpack (toText release))
+	if torrentRelease torrent == release then
+		pure torrent
+	else
+		mempty

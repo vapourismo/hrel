@@ -8,9 +8,19 @@ library
   ghc-options:         -O2 -j -Wall -fprof-auto
                        -fno-warn-unused-do-bind -fno-warn-tabs
   default-language:    Haskell2010
-  build-depends:       base, text, bytestring, zlib, parsec, mtl, transformers, tagsoup,
-                       network-uri, http-client, http-client-tls, http-types,
-                       mysql-simple, conduit, exceptions
+  build-depends:       base,
+                       text,
+                       bytestring,
+                       zlib,
+                       tagsoup,
+                       mtl,
+                       transformers,
+                       exceptions,
+                       http-client,
+                       http-client-tls,
+                       http-types,
+                       network-uri,
+                       conduit
   exposed-modules:     HRel.Torrent,
                        HRel.Release,
                        HRel.Source.KickAss,

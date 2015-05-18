@@ -15,6 +15,7 @@ import qualified Data.Conduit.List as C
 import qualified Data.Text.Encoding as T
 import qualified Data.ByteString.Lazy as BL
 
+import HRel.Fetch
 import HRel.Markup
 import HRel.Release
 import HRel.Conduit

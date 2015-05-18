@@ -27,6 +27,7 @@ library
                        HRel.Source.XRel,
                        HRel.Conduit,
                        HRel.Markup,
+                       HRel.Fetch,
                        HRel.Units
 
 executable hrel-xrel

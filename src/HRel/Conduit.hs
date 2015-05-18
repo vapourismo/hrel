@@ -1,12 +1,9 @@
 module HRel.Conduit (
-	-- * HTTP related
-	FetchT,
+	-- * Conduits
 	request,
 	fetch,
 	fetchGZipped,
-
-	-- * Markup
-	markup,
+	markup
 ) where
 
 import Control.Monad.Catch
@@ -24,10 +21,8 @@ import qualified Codec.Compression.GZip as Z
 import Network.HTTP.Types
 import Network.HTTP.Client
 
+import HRel.Fetch
 import HRel.Markup
-
--- | Transformer used to perform HTTP "Request"s.
-type FetchT = ReaderT Manager
 
 -- | Generate a request.
 request :: (MonadThrow m) => String -> Conduit i m Request

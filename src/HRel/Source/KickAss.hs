@@ -43,6 +43,7 @@ import qualified Data.Conduit.List as C
 
 import Network.URI
 
+import HRel.Fetch
 import HRel.Markup
 import HRel.Conduit
 import HRel.Release

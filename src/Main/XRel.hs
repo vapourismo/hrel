@@ -9,10 +9,7 @@ import qualified Data.Conduit.List as C
 
 import Network.HTTP.Client.TLS
 
-import HRel.Fetch
-
-import HRel.Source.XRel
-import HRel.Source.KickAss
+import HRel
 
 -- |
 main :: IO ()

@@ -21,14 +21,15 @@ library
                        http-types,
                        network-uri,
                        conduit
-  exposed-modules:     HRel.Torrent,
-                       HRel.Release,
+  exposed-modules:     HRel
                        HRel.Source.KickAss,
                        HRel.Source.XRel,
-                       HRel.Conduit,
-                       HRel.Markup,
+                       HRel.Torrent,
+                       HRel.Release,
                        HRel.Fetch
-  other-modules:       HRel.Units
+  other-modules:       HRel.Units,
+                       HRel.Conduit,
+                       HRel.Markup
 
 executable hrel-xrel
   hs-source-dirs:      src/Main

@@ -30,7 +30,7 @@ import HRel.Markup
 type FetchT = ReaderT Manager
 
 -- | Generate a request.
-request :: (MonadThrow m) => String -> Source m Request
+request :: (MonadThrow m) => String -> Conduit i m Request
 request = parseUrl >=> yield
 
 -- | Perform a request and retrieve the result body.

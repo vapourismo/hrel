@@ -20,8 +20,11 @@ import HRel.Conduit
 -- | Retrieve the xRel favourite list at the given URL.
 xrelFavourites :: (MonadIO m, MonadThrow m) => String -> Source (FetchT m) Release
 xrelFavourites url =
-	request url =$= fetch =$= C.map (T.decodeUtf8 . BL.toStrict)
-	            =$= markup rssFilter =$= C.concat
+	request url
+		=$= fetch
+		=$= C.map (T.decodeUtf8 . BL.toStrict)
+		=$= markup rssFilter
+		=$= C.concat
 	where
  		rssFilter =
  			relativeTag "feed" (foreachTag "entry" (forTag "title" (makeRelease <$> text)))

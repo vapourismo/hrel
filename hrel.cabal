@@ -27,8 +27,8 @@ library
                        HRel.Source.XRel,
                        HRel.Conduit,
                        HRel.Markup,
-                       HRel.Fetch,
-                       HRel.Units
+                       HRel.Fetch
+  other-modules:       HRel.Units
 
 executable hrel-xrel
   hs-source-dirs:      src/Main

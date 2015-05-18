@@ -7,6 +7,8 @@ module HRel.Source.XRel (
 import Control.Monad.Trans
 import Control.Monad.Catch
 
+import Data.List
+
 import Data.Conduit
 import qualified Data.Conduit.List as C
 
@@ -24,6 +26,7 @@ xrelFavourites url =
 		=$= fetch
 		=$= C.map (T.decodeUtf8 . BL.toStrict)
 		=$= markup rssFilter
+		=$= C.map nub
 		=$= C.concat
 	where
  		rssFilter =

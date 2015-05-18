@@ -20,7 +20,7 @@ import HRel.Markup
 import HRel.Release
 import HRel.Conduit
 
--- | Retrieve the xRel favourite list at the given URL.
+-- | Retrieve the xRel favourite list using the given URL.
 xrelFavourites :: (MonadIO m, MonadThrow m) => String -> Source (FetchT m) Release
 xrelFavourites url =
 	request url

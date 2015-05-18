@@ -49,7 +49,7 @@ import HRel.Conduit
 import HRel.Release
 import HRel.Torrent
 
--- | Search for "Torrent"s that match the given "Release".
+-- | Search for "Torrent"s which match the given "Release".
 kickAssReleaseSearch :: (MonadThrow m, MonadIO m) => Conduit Release (FetchT m) Torrent
 kickAssReleaseSearch = do
 	r <- await

@@ -11,7 +11,7 @@ import Network.HTTP.Client.TLS
 
 import HRel
 
--- |
+-- | Entry Point
 main :: IO ()
 main = do
 	args <- getArgs

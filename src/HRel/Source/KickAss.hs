@@ -1,34 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HRel.Source.KickAss (
-	--kickAssHourly,
-	--kickAssDaily,
-	--kickAssSearch,
-	--kickAssReleaseSearch,
+	kickAssReleaseSearch
 ) where
-
-----import Control.Monad.Trans
-----import Control.Monad.Reader
---import Control.Monad.Trans.Maybe
-
---import Data.Maybe
-
-----import Data.Conduit
-
---import qualified Data.ByteString as B
---import qualified Data.ByteString.Lazy as L
-
---import qualified Data.Text as T
---import qualified Data.Text.Encoding as T
-
---import qualified Codec.Compression.GZip as Z
-
---import Network.URI
---import Network.HTTP.Types
-
---import HRel.Source
---import HRel.Release
---import HRel.Markup
 
 ---- | Download data dump and parse its contents.
 --fetchFromDump :: String -> Manager -> IO [Torrent]
@@ -41,7 +15,7 @@ module HRel.Source.KickAss (
 --				     (brConsume (responseBody res))
 
 --			Status _   _ ->
---				return []
+--				pure []
 --	where
 --		decode = T.decodeUtf8 . L.toStrict . Z.decompress . L.fromStrict
 
@@ -55,73 +29,62 @@ module HRel.Source.KickAss (
 
 --		pickTorrents = catMaybes . map toTorrent . T.lines
 
----- | Fetch results from RSS feed.
---fetchFromRSS :: String -> Manager -> IO [Torrent]
---fetchFromRSS url mgr = do
---	req <- parseUrl url
---	withTextResponse req mgr (pure . maybe [] id . runNodeFilter rssFilter . fromMarkup')
---	where
---		rssFilter =
---			relativeTag "rss" $ forTag "channel" $
---				foreachTag "item" $ do
---					title <- forTag "title" text
---					size <- forTag "torrent:contentLength" text
---					magnetURI <- forTag "torrent:magnetURI" text
---					             >>= toURI . T.strip
---					torrentURI <- forTag "enclosure" (attr "url")
---					              >>= toURI . fst . T.break (== '?') . T.strip
---					return (Torrent (makeRelease (T.copy title))
---					                [magnetURI, torrentURI]
---					                (Just (read (T.unpack (T.strip size)))))
+import Control.Monad.Catch
+import Control.Monad.Trans
+import Control.Monad.Trans.Maybe
 
---		toURI = MaybeT . return . parseURI . T.unpack
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 
------- | Hourly dump from 'kickass.to'
-----kickAssHourly_ :: Producer (ReaderT Manager IO) Torrent
-----kickAssHourly_ = do
-----	lift ask
-----		>>= liftIO . fetchFromDump "https://kickass.to/hourlydump.txt.gz"
-----		>>= mapM_ yield
+import qualified Data.ByteString.Lazy as BL
 
----- | Hourly dump from 'kickass.to'
---kickAssHourly :: Aggregator Torrent
---kickAssHourly =	Aggregator (fetchFromDump "https://kickass.to/hourlydump.txt.gz")
+import Data.Conduit
+import qualified Data.Conduit.List as C
 
------- | Daily dump from 'kickass.to'
-----kickAssDaily_ :: Producer (ReaderT Manager IO) Torrent
-----kickAssDaily_ =
-----	lift ask
-----		>>= liftIO . fetchFromDump "https://kickass.to/dailydump.txt.gz"
-----		>>= mapM_ yield
+import Network.URI
 
----- | Daily dump from 'kickass.to'
---kickAssDaily :: Aggregator Torrent
---kickAssDaily = Aggregator (fetchFromDump "https://kickass.to/dailydump.txt.gz")
+import HRel.Markup
+import HRel.Conduit
+import HRel.Release
+import HRel.Torrent
 
----- | Search on 'kickass.to'
---kickAssSearch :: String -> Aggregator Torrent
---kickAssSearch term =
---	Aggregator (fetchFromRSS ("https://kickass.to/usearch/"
---	                          ++ escapeURIString isUnescapedInURI term
---	                          ++ "/?rss=1"))
+-- | Search for "Torrent"s that match the given "Release".
+kickAssReleaseSearch :: (MonadThrow m, MonadIO m) => Conduit Release (FetchT m) Torrent
+kickAssReleaseSearch = do
+	r <- await
+	case r of
+		Nothing  ->
+			pure ()
 
------- | Search for a release on 'kickass.to'
-----kickAssReleaseSearch_ :: Conduit Release (ReaderT Manager IO) Torrent
-----kickAssReleaseSearch_ =
-----	await >>= maybe (pure ()) continue
-----	where
-----		continue :: Release -> Conduit Release (ReaderT Manager IO) Torrent
-----		continue rel =
-----			lift ask >>= liftIO . fetchFromRSS ("https://kickass.to/usearch/"
-----			                                    ++ escapeURIString isUnescapedInURI (T.unpack (toText rel))
-----			                                    ++ "/?rss=1")
-----			         >>= mapM_ (\ tor -> when (torrentRelease tor == rel) (yield tor))
+		Just rel ->
+			request (makeURL rel)
+				=$= fetch
+				=$= C.map (T.decodeUtf8 . BL.toStrict)
+				=$= markup rssFilter
+				=$= C.concat
+				=$= C.filter (\ tor -> torrentRelease tor == rel)
 
----- | Search for a release on 'kickass.to'
---kickAssReleaseSearch :: Release -> Aggregator Torrent
---kickAssReleaseSearch release = do
---	torrent <- kickAssSearch (T.unpack (toText release))
---	if torrentRelease torrent == release then
---		pure torrent
---	else
---		mempty
+	where
+		makeURL rel =
+			"https://kickass.to/usearch/"
+			++ escapeURIString isUnescapedInURI (T.unpack (toText rel))
+			++ "/?rss=1"
+
+		rssFilter =
+			relativeTag "rss" $ forTag "channel" $
+				foreachTag "item" $ do
+					title <- forTag "title" text
+					size <- forTag "torrent:contentLength" text
+					magnetURIString <- forTag "torrent:magnetURI" text
+					torrentURIString <- forTag "enclosure" (attr "url")
+
+					magnetURI <- toURI (T.strip magnetURIString)
+					torrentURI <- toURI (removeQuery torrentURIString)
+
+					pure (Torrent (makeRelease (T.copy title))
+					              [magnetURI, torrentURI]
+					              (Just (read (T.unpack (T.strip size)))))
+
+		removeQuery = fst . T.break (== '?') . T.strip
+
+		toURI = MaybeT . pure . parseURI . T.unpack

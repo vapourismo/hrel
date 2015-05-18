@@ -16,6 +16,5 @@ library
                        HRel.Source.KickAss,
                        HRel.Source.XRel,
                        HRel.Conduit,
-                       HRel.Database,
                        HRel.Markup,
                        HRel.Units

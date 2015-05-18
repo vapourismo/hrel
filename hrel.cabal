@@ -10,26 +10,12 @@ library
   default-language:    Haskell2010
   build-depends:       base, text, bytestring, zlib, parsec, mtl, transformers, tagsoup,
                        network-uri, http-client, http-client-tls, http-types,
-                       mysql-simple
-  exposed-modules:     HRel.Source,
+                       mysql-simple, conduit, exceptions
+  exposed-modules:     HRel.Torrent,
+                       HRel.Release,
                        HRel.Source.KickAss,
                        HRel.Source.XRel,
+                       HRel.Conduit,
                        HRel.Database,
                        HRel.Markup,
                        HRel.Units
-
-executable hrel-find
-  hs-source-dirs:      src/Main
-  main-is:             Find.hs
-  ghc-options:         -O2 -j -Wall -fprof-auto
-                       -fno-warn-unused-do-bind -fno-warn-tabs
-  default-language:    Haskell2010
-  build-depends:       base, text, hrel
-
-executable hrel-xrel
-  hs-source-dirs:      src/Main
-  main-is:             XRel.hs
-  ghc-options:         -O2 -j -Wall -fprof-auto
-                       -fno-warn-unused-do-bind -fno-warn-tabs
-  default-language:    Haskell2010
-  build-depends:       base, hrel

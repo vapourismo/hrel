@@ -56,13 +56,14 @@ kickAssReleaseSearch = do
 		Nothing  ->
 			pure ()
 
-		Just rel ->
+		Just rel -> do
 			request (makeURL rel)
 				=$= fetch
 				=$= C.map (T.decodeUtf8 . BL.toStrict)
 				=$= markup rssFilter
 				=$= C.concat
 				=$= C.filter (\ tor -> torrentRelease tor == rel)
+			kickAssReleaseSearch
 
 	where
 		makeURL rel =

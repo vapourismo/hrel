@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module HRel.Source.KickAss (
 	kickAssReleaseSearch
@@ -32,6 +33,7 @@ module HRel.Source.KickAss (
 import Control.Monad.Catch
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
+import Control.Monad.Reader
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -41,16 +43,16 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Conduit
 import qualified Data.Conduit.List as C
 
+import Network.HTTP.Client
 import Network.URI
 
-import HRel.Fetch
 import HRel.Markup
 import HRel.Conduit
 import HRel.Release
 import HRel.Torrent
 
 -- | Search for "Torrent"s which match the given "Release".
-kickAssReleaseSearch :: (MonadThrow m, MonadIO m) => Conduit Release (FetchT m) Torrent
+kickAssReleaseSearch :: (MonadThrow m, MonadIO m, MonadReader Manager m) => Conduit Release m Torrent
 kickAssReleaseSearch = do
 	r <- await
 	case r of

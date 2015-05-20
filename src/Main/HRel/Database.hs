@@ -14,7 +14,10 @@ module HRel.Database (
 	insertTorrent,
 
 	-- * Updates
-	updateNewTorrents
+	updateNewTorrents,
+
+	-- * Re-exports
+	M.Connection,
 ) where
 
 import Control.Monad
@@ -33,7 +36,7 @@ import HRel.Torrent
 withDatabase :: (M.Connection -> IO a) -> IO a
 withDatabase =
 	bracket (M.connect M.defaultConnectInfo { M.connectDatabase = "hrel" })
-	        (M.close)
+	        M.close
 
 -- | Find a "Release" from the watchlist
 findWatchedRelease :: M.Connection -> Release -> IO (Maybe InsertID)

@@ -9,6 +9,7 @@ module HRel.Database (
 	-- * Conduits
 	watchRelease,
 	pairTorrents,
+	activeReleases,
 
 	-- * Cleanup
 	updateNewTorrents
@@ -79,6 +80,12 @@ watchRelease db =
 			insert db
 				"INSERT INTO watchlist (watchRelease) VALUES (?) ON DUPLICATE KEY UPDATE watchID = LAST_INSERT_ID(watchID)"
 				(M.Only (toText rel))
+
+-- | Fetch active "Release"s.
+activeReleases :: (MonadIO m) => M.Connection -> Source m Release
+activeReleases db =
+	liftIO (map (makeRelease . M.fromOnly) <$> M.query_ db "SELECT watchRelease FROM watchlist WHERE watchActive = 1")
+		>>= mapM_ yield
 
 -- | Update the newly added "Torrent"s.
 updateNewTorrents :: M.Connection -> IO ()

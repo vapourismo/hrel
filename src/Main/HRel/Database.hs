@@ -67,7 +67,7 @@ pairTorrents db =
 				Just watchID ->
 					pure . catMaybes <=< forM uris $ \ uri ->
 						insert db
-							"INSERT INTO torrents (torrentWatch, torrentURI, torrentContentSize) VALUES ()"
+							"INSERT INTO torrents (torrentWatch, torrentURI, torrentContentSize) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE torrentID = LAST_INSERT_ID(torrentID)"
 							(watchID, show uri, mbSize)
 
 

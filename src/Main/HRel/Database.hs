@@ -1,30 +1,28 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module HRel.Database (
+	-- * Database
+	M.Connection,
 	withDatabase,
 
-	-- * Retrieval
-	findWatchedRelease,
-
-	-- * Insertion
-	InsertID,
-	insert,
-
+	-- * Conduits
 	watchRelease,
-	insertTorrent,
+	pairTorrents,
 
-	-- * Updates
-	updateNewTorrents,
-
-	-- * Re-exports
-	M.Connection,
+	-- * Cleanup
+	updateNewTorrents
 ) where
 
 import Control.Monad
+import Control.Monad.Reader
 import Control.Exception
 
 import Data.Word
 import Data.Maybe
+
+import Data.Conduit
+import qualified Data.Conduit.List as C
 
 import qualified Database.MySQL.Simple as M
 import qualified Database.MySQL.Simple.QueryParams as M
@@ -56,25 +54,31 @@ insert db qry param = do
 	else
 		pure Nothing
 
--- | Insert a "Release" to the watchlist.
-watchRelease :: M.Connection -> Release -> IO (Maybe InsertID)
-watchRelease db release =
-	insert db
-		"INSERT INTO watchlist (watchRelease) VALUES (?) ON DUPLICATE KEY UPDATE watchID = LAST_INSERT_ID(watchID)"
-		(M.Only (toText release))
+-- | Pair "Torrent" with its "Release".
+pairTorrents :: (MonadIO m) => M.Connection -> Sink Torrent m ()
+pairTorrents db =
+	C.mapM_ (void . liftIO . insertTorrent) =$= C.sinkNull
+	where
+		insertTorrent (Torrent _ [] _) = pure []
+		insertTorrent (Torrent release uris mbSize) = do
+			mWatchID <- findWatchedRelease db release
+			case mWatchID of
+				Nothing -> pure []
+				Just watchID ->
+					pure . catMaybes <=< forM uris $ \ uri ->
+						insert db
+							"INSERT INTO torrents (torrentWatch, torrentURI, torrentContentSize) VALUES ()"
+							(watchID, show uri, mbSize)
 
--- | Insert a "Torrent".
-insertTorrent :: M.Connection -> Torrent -> IO [InsertID]
-insertTorrent _ (Torrent _ [] _) = pure []
-insertTorrent db (Torrent release uris mbSize) = do
-	mWatchID <- findWatchedRelease db release
-	case mWatchID of
-		Nothing -> pure []
-		Just watchID ->
-			pure . catMaybes <=< forM uris $ \ uri ->
-				insert db
-					"INSERT INTO torrents (torrentWatch, torrentURI, torrentContentSize) VALUES ()"
-					(watchID, show uri, mbSize)
+
+-- | Insert a "Release" to the watchlist.
+watchRelease :: (MonadIO m) => M.Connection -> Conduit Release m Release
+watchRelease db =
+	C.mapMaybeM $ \ rel -> (rel <$) <$> do
+		liftIO $
+			insert db
+				"INSERT INTO watchlist (watchRelease) VALUES (?) ON DUPLICATE KEY UPDATE watchID = LAST_INSERT_ID(watchID)"
+				(M.Only (toText rel))
 
 -- | Update the newly added "Torrent"s.
 updateNewTorrents :: M.Connection -> IO ()

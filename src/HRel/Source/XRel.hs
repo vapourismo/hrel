@@ -7,7 +7,6 @@ module HRel.Source.XRel (
 
 import Control.Monad.Trans
 import Control.Monad.Catch
-import Control.Monad.Reader
 
 import Data.List
 
@@ -24,10 +23,10 @@ import HRel.Release
 import HRel.Conduit
 
 -- | Retrieve the xRel favourite list using the given URL.
-xrelFavourites :: (MonadIO m, MonadThrow m, MonadReader Manager m) => String -> Source m Release
-xrelFavourites url =
+xrelFavourites :: (MonadIO m, MonadThrow m) => String -> Manager -> Source m Release
+xrelFavourites url mgr =
 	request url
-		=$= fetch
+		=$= fetch mgr
 		=$= C.map (T.decodeUtf8 . BL.toStrict)
 		=$= markup rssFilter
 		=$= C.map nub

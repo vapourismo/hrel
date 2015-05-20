@@ -33,7 +33,6 @@ module HRel.Source.KickAss (
 import Control.Monad.Catch
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
-import Control.Monad.Reader
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -52,8 +51,8 @@ import HRel.Release
 import HRel.Torrent
 
 -- | Search for "Torrent"s which match the given "Release".
-kickAssReleaseSearch :: (MonadThrow m, MonadIO m, MonadReader Manager m) => Conduit Release m Torrent
-kickAssReleaseSearch = do
+kickAssReleaseSearch :: (MonadThrow m, MonadIO m) => Manager -> Conduit Release m Torrent
+kickAssReleaseSearch mgr = do
 	r <- await
 	case r of
 		Nothing  ->
@@ -61,12 +60,12 @@ kickAssReleaseSearch = do
 
 		Just rel -> do
 			request (makeURL rel)
-				=$= fetch
+				=$= fetch mgr
 				=$= C.map (T.decodeUtf8 . BL.toStrict)
 				=$= markup rssFilter
 				=$= C.concat
 				=$= C.filter (\ tor -> torrentRelease tor == rel)
-			kickAssReleaseSearch
+			kickAssReleaseSearch mgr
 
 	where
 		makeURL rel =

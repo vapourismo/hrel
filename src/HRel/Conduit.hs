@@ -30,10 +30,9 @@ request :: (MonadThrow m) => String -> Conduit i m Request
 request = parseUrl >=> yield
 
 -- | Perform a request and retrieve the result body.
-fetch :: (MonadIO m, MonadReader Manager m) => Conduit Request m BL.ByteString
-fetch =
-	C.mapM $ \ req -> do
-		mgr <- ask
+fetch :: (MonadIO m) => Manager -> Conduit Request m BL.ByteString
+fetch mgr =
+	C.mapM $ \ req ->
 		liftIO $ handle (const (pure BL.empty) :: HttpException -> IO BL.ByteString) $
 			flip fmap (httpLbs req mgr) $ \ res ->
 				case responseStatus res of
@@ -41,9 +40,9 @@ fetch =
 					Status _   _ -> BL.empty
 
 -- | Similiar to "fetch" but decompresses the result (independent from body compression).
-fetchGZipped :: (MonadIO m, MonadReader Manager m) => Conduit Request m BL.ByteString
-fetchGZipped =
-	fetch =$= C.map Z.decompress
+fetchGZipped :: (MonadIO m) => Manager -> Conduit Request m BL.ByteString
+fetchGZipped mgr =
+	fetch mgr =$= C.map Z.decompress
 
 -- | Process incoming "StringLike" values and parse them using a "NodeFilterT".
 markup :: (StringLike t, Monad m) => NodeFilterT t m a -> Conduit t m a

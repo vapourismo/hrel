@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module HRel.Source.XRel (
 	xrelFavourites
@@ -6,6 +7,7 @@ module HRel.Source.XRel (
 
 import Control.Monad.Trans
 import Control.Monad.Catch
+import Control.Monad.Reader
 
 import Data.List
 
@@ -15,13 +17,14 @@ import qualified Data.Conduit.List as C
 import qualified Data.Text.Encoding as T
 import qualified Data.ByteString.Lazy as BL
 
-import HRel.Fetch
+import Network.HTTP.Client
+
 import HRel.Markup
 import HRel.Release
 import HRel.Conduit
 
 -- | Retrieve the xRel favourite list using the given URL.
-xrelFavourites :: (MonadIO m, MonadThrow m) => String -> Source (FetchT m) Release
+xrelFavourites :: (MonadIO m, MonadThrow m, MonadReader Manager m) => String -> Source m Release
 xrelFavourites url =
 	request url
 		=$= fetch

@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module HRel.Conduit (
 	-- * Conduits
 	request,
@@ -21,7 +23,6 @@ import qualified Codec.Compression.GZip as Z
 import Network.HTTP.Types
 import Network.HTTP.Client
 
-import HRel.Fetch
 import HRel.Markup
 
 -- | Generate a request.
@@ -29,7 +30,7 @@ request :: (MonadThrow m) => String -> Conduit i m Request
 request = parseUrl >=> yield
 
 -- | Perform a request and retrieve the result body.
-fetch :: (MonadIO m) => Conduit Request (FetchT m) BL.ByteString
+fetch :: (MonadIO m, MonadReader Manager m) => Conduit Request m BL.ByteString
 fetch =
 	C.mapM $ \ req -> do
 		mgr <- ask
@@ -40,7 +41,7 @@ fetch =
 					Status _   _ -> BL.empty
 
 -- | Similiar to "fetch" but decompresses the result (independent from body compression).
-fetchGZipped :: (MonadIO m) => Conduit Request (FetchT m) BL.ByteString
+fetchGZipped :: (MonadIO m, MonadReader Manager m) => Conduit Request m BL.ByteString
 fetchGZipped =
 	fetch =$= C.map Z.decompress
 

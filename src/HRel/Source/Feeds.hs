@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module HRel.Source.XRel (
-	xrelFavourites
+module HRel.Source.Feeds (
+	fromRSSTitles
 ) where
 
 import Data.List
@@ -15,9 +15,9 @@ import HRel.Conduit
 import HRel.Markup
 import HRel.Release
 
--- |
-xrelFavourites :: String -> HRelSource Release
-xrelFavourites url =
+-- | Extract releases from RSS entry titles.
+fromRSSTitles :: String -> HRelSource Release
+fromRSSTitles url =
 	request url =$= fetch =$= C.map T.decodeUtf8
 	            =$= markup xmlFilter =$= C.map nub =$= C.concat
 	where

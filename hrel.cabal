@@ -21,7 +21,7 @@ library
                        http-types,
                        network-uri,
                        conduit
-  exposed-modules:     HRel.Source.XRel,
+  exposed-modules:     HRel.Source.Feeds,
                        HRel.Torrent,
                        HRel.Release,
                        HRel.Units,

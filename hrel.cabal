@@ -34,4 +34,4 @@ executable hrel
   ghc-options:         -O2 -j -Wall -fprof-auto -threaded -rtsopts -with-rtsopts=-N
                        -fno-warn-unused-do-bind -fno-warn-tabs
   default-language:    Haskell2010
-  build-depends:       base, hrel, conduit, http-client, http-client-tls, mtl, mysql-simple
+  build-depends:       base, hrel, conduit, http-client, http-client-tls

@@ -9,6 +9,7 @@ module HRel.Conduit (
 	-- * Utilities
 	request,
 	fetch,
+	fetchGZipped,
 	markup,
 
 	-- * Re-exports
@@ -19,6 +20,8 @@ import Control.Monad.Reader
 
 import Data.Void
 import Text.StringLike
+
+import qualified Codec.Compression.GZip as Z
 
 import Data.Conduit
 import qualified Data.Conduit.List as C
@@ -52,25 +55,31 @@ runHRelConduit mgr sink =
 
 -- | Generate a request.
 request :: String -> HRelSource Request
-request = parseUrl >=> yield
+request =
+	parseUrl >=> yield
 
--- | Perform a request and retrieve the result body.
-fetch :: HRelConduit Request B.ByteString
-fetch =
+-- | Execute request and the response body.
+fetchLazy :: HRelConduit Request BL.ByteString
+fetchLazy =
 	C.mapMaybeM $ \ req -> do
 		HRel mgr <- ask
 		res <- liftIO (httpLbs req mgr)
 
 		pure $
 			if responseStatus res == status200 then
-				Just (BL.toStrict (responseBody res))
+				Just (responseBody res)
 			else
 				Nothing
 
----- | Similiar to "fetch" but decompresses the result (independent from body compression).
---fetchGZipped :: (MonadIO m) => Manager -> Conduit Request m BL.ByteString
---fetchGZipped mgr =
---	fetch mgr =$= C.map Z.decompress
+-- | Perform a request and retrieve the result body.
+fetch :: HRelConduit Request B.ByteString
+fetch =
+	fetchLazy =$= C.map BL.toStrict
+
+-- | Similiar to "fetch" but decompresses the result (independent from body compression).
+fetchGZipped :: HRelConduit Request B.ByteString
+fetchGZipped =
+	fetchLazy =$= C.map (BL.toStrict . Z.decompress)
 
 -- | Process incoming "StringLike" values and parse them using a "NodeFilterT".
 markup :: (StringLike t) => NodeFilterT t IO a -> HRelConduit t a

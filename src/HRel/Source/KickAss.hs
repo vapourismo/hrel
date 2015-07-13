@@ -1,5 +1,5 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 module HRel.Source.KickAss (
 	kickAssReleaseSearch
@@ -30,25 +30,23 @@ module HRel.Source.KickAss (
 
 --		pickTorrents = catMaybes . map toTorrent . T.lines
 
-import Control.Monad.Catch
-import Control.Monad.Trans
-import Control.Monad.Trans.Maybe
+import           Control.Monad.Catch
+import           Control.Monad.Trans
+import           Control.Monad.Trans.Maybe
 
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+import qualified Data.Text                 as T
+import qualified Data.Text.Encoding        as T
+import qualified Data.ByteString.Lazy      as BL
+import           Data.Conduit
+import qualified Data.Conduit.List         as C
 
-import qualified Data.ByteString.Lazy as BL
+import           Network.HTTP.Client
+import           Network.URI
 
-import Data.Conduit
-import qualified Data.Conduit.List as C
-
-import Network.HTTP.Client
-import Network.URI
-
-import HRel.Markup
-import HRel.Conduit
-import HRel.Release
-import HRel.Torrent
+import           HRel.Conduit
+import           HRel.Markup
+import           HRel.Release
+import           HRel.Torrent
 
 -- | Search for "Torrent"s which match the given "Release".
 kickAssReleaseSearch :: (MonadThrow m, MonadIO m) => Manager -> Conduit Release m Torrent

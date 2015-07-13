@@ -4,13 +4,13 @@ module HRel.Source.Feeds (
 	fromRSSTitles
 ) where
 
-import Data.List
-import qualified Data.Conduit.List as C
+import           Data.List
+import qualified Data.Conduit.List  as C
 import qualified Data.Text.Encoding as T
 
-import HRel.Conduit
-import HRel.Markup
-import HRel.Release
+import           HRel.Conduit
+import           HRel.Markup
+import           HRel.Release
 
 -- | Extract releases from RSS entry titles.
 fromRSSTitles :: String -> HRelSource Release

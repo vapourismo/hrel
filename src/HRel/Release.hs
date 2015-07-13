@@ -7,7 +7,7 @@ module HRel.Release (
 	normalizeRelease
 ) where
 
-import Data.Char
+import           Data.Char
 import qualified Data.Text as T
 
 -- | Release Identifier

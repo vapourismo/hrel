@@ -16,23 +16,22 @@ module HRel.Conduit (
 	module Data.Conduit
 ) where
 
-import Control.Monad.Reader
-
-import Data.Void
-import Text.StringLike
+import           Control.Monad.Reader
 
 import qualified Codec.Compression.GZip as Z
 
-import Data.Conduit
-import qualified Data.Conduit.List as C
+import qualified Data.ByteString        as B
+import qualified Data.ByteString.Lazy   as BL
+import           Data.Conduit
+import qualified Data.Conduit.List      as C
+import           Data.Void
 
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
+import           Text.StringLike
 
-import Network.HTTP.Client
-import Network.HTTP.Types
+import           Network.HTTP.Client
+import           Network.HTTP.Types
 
-import HRel.Markup
+import           HRel.Markup
 
 data HRel = HRel Manager
 

@@ -32,18 +32,16 @@ module HRel.Markup (
 	attrGuard
 ) where
 
-import Data.List
-import Data.Maybe
+import           Control.Applicative       hiding (empty)
+import           Control.Monad.Reader
+import           Control.Monad.Trans.Maybe
 
-import Data.Functor.Identity
+import           Data.List
+import           Data.Maybe
+import           Data.Functor.Identity
 
-import Control.Applicative hiding (empty)
-
-import Control.Monad.Trans.Maybe
-import Control.Monad.Reader
-
-import Text.HTML.TagSoup
-import Text.StringLike
+import           Text.HTML.TagSoup
+import           Text.StringLike
 
 -- | Node data type
 data Node t

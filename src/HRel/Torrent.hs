@@ -5,18 +5,18 @@ module HRel.Torrent (
 	Torrent (..),
 ) where
 
-import Data.List
-import qualified Data.Text as T
+import           Data.List
+import qualified Data.Text    as T
 
-import Network.URI
+import           Network.URI
 
-import HRel.Units
-import HRel.Release
+import           HRel.Release
+import           HRel.Units
 
 -- | Torrent
 data Torrent = Torrent {
-	torrentRelease     :: Release,
-	torrentSource      :: [URI],
+	torrentRelease     ::     Release,
+	torrentSource      ::     [URI],
 	torrentContentSize :: Maybe Word
 } deriving (Eq, Ord)
 

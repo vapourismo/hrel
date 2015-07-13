@@ -1,14 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 module HRel.Source.Feeds (
 	fromRSSTitles
 ) where
 
 import Data.List
-
 import qualified Data.Conduit.List as C
-
 import qualified Data.Text.Encoding as T
 
 import HRel.Conduit

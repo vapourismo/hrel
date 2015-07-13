@@ -69,7 +69,7 @@ kickAssReleaseSearch mgr = do
 
 	where
 		makeURL rel =
-			"https://kickass.to/usearch/"
+			"https://kat.cr/usearch/"
 			++ escapeURIString isUnescapedInURI (T.unpack (toText rel))
 			++ "/?rss=1"
 

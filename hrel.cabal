@@ -21,20 +21,17 @@ library
                        http-types,
                        network-uri,
                        conduit
-  exposed-modules:     HRel,
-                       HRel.Source.KickAss,
-                       HRel.Source.XRel,
+  exposed-modules:     HRel.Source.XRel,
                        HRel.Torrent,
                        HRel.Release,
-                       HRel.Fetch
-  other-modules:       HRel.Units,
+                       HRel.Units,
                        HRel.Conduit,
                        HRel.Markup
 
 executable hrel-xrel
   hs-source-dirs:      src/Main
   main-is:             XRel.hs
-  ghc-options:         -O2 -j -Wall -fprof-auto
+  ghc-options:         -O2 -j -Wall -fprof-auto -threaded -rtsopts -with-rtsopts=-N
                        -fno-warn-unused-do-bind -fno-warn-tabs
   default-language:    Haskell2010
   build-depends:       base, hrel, conduit, http-client, http-client-tls, mtl, mysql-simple

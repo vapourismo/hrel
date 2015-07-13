@@ -1,50 +1,78 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 module HRel.Conduit (
-	-- * Conduits
+	-- * Conduit
+	HRelConduitM,
+	HRelSource,
+	HRelConduit,
+	HRelSink,
+	runHRelConduit,
+
+	-- * Utilities
 	request,
 	fetch,
-	fetchGZipped,
-	markup
+	markup,
+
+	-- * Re-exports
+	module Data.Conduit
 ) where
 
-import Control.Monad.Catch
-import Control.Monad.Trans
 import Control.Monad.Reader
+
+import Data.Void
+import Text.StringLike
 
 import Data.Conduit
 import qualified Data.Conduit.List as C
 
-import Text.StringLike
-
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
-import qualified Codec.Compression.GZip as Z
 
-import Network.HTTP.Types
 import Network.HTTP.Client
+import Network.HTTP.Types
 
 import HRel.Markup
 
+data HRel = HRel Manager
+
+-- | Conduit base monad
+type HRelConduitM i o r = ConduitM i o (ReaderT HRel IO) r
+
+-- | Source
+type HRelSource o = HRelConduitM () o ()
+
+-- | Conduit
+type HRelConduit i o = HRelConduitM i o ()
+
+-- | Sink
+type HRelSink i r = HRelConduitM i Void r
+
+-- | Execute a conduit sequence.
+runHRelConduit :: Manager -> HRelSink () r -> IO r
+runHRelConduit mgr sink =
+	runReaderT (runConduit sink) (HRel mgr)
+
 -- | Generate a request.
-request :: (MonadThrow m) => String -> Conduit i m Request
+request :: String -> HRelSource Request
 request = parseUrl >=> yield
 
 -- | Perform a request and retrieve the result body.
-fetch :: (MonadIO m) => Manager -> Conduit Request m BL.ByteString
-fetch mgr =
-	C.mapM $ \ req ->
-		liftIO $ handle (const (pure BL.empty) :: HttpException -> IO BL.ByteString) $
-			flip fmap (httpLbs req mgr) $ \ res ->
-				case responseStatus res of
-					Status 200 _ -> responseBody res
-					Status _   _ -> BL.empty
+fetch :: HRelConduit Request B.ByteString
+fetch =
+	C.mapMaybeM $ \ req -> do
+		HRel mgr <- ask
+		res <- liftIO (httpLbs req mgr)
 
--- | Similiar to "fetch" but decompresses the result (independent from body compression).
-fetchGZipped :: (MonadIO m) => Manager -> Conduit Request m BL.ByteString
-fetchGZipped mgr =
-	fetch mgr =$= C.map Z.decompress
+		pure $
+			if responseStatus res == status200 then
+				Just (BL.toStrict (responseBody res))
+			else
+				Nothing
+
+---- | Similiar to "fetch" but decompresses the result (independent from body compression).
+--fetchGZipped :: (MonadIO m) => Manager -> Conduit Request m BL.ByteString
+--fetchGZipped mgr =
+--	fetch mgr =$= C.map Z.decompress
 
 -- | Process incoming "StringLike" values and parse them using a "NodeFilterT".
-markup :: (StringLike t, Monad m) => NodeFilterT t m a -> Conduit t m a
+markup :: (StringLike t) => NodeFilterT t IO a -> HRelConduit t a
 markup nf =
-	C.mapMaybeM (runNodeFilterT nf . fromMarkup')
+	C.mapMaybeM (liftIO . runNodeFilterT nf . fromMarkup')

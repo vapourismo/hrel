@@ -13,7 +13,10 @@ import qualified Data.Text as T
 
 -- | Release Identifier
 newtype Release = Release { fromRelease :: T.Text }
-	deriving (Show, Eq, Ord)
+	deriving (Eq, Ord)
+
+instance Show Release where
+	show = T.unpack . fromRelease
 
 -- | Make a release from the given raw text.
 makeRelease :: T.Text -> Release

@@ -1,4 +1,8 @@
 module HRel.Conduit (
+	-- * Types
+	HRel (..),
+	HRelT,
+
 	-- * Conduit
 	HRelConduitM,
 	HRelSource,
@@ -35,8 +39,9 @@ import           HRel.Markup
 
 data HRel = HRel Manager
 
--- | Conduit base monad
-type HRelConduitM i o r = ConduitM i o (ReaderT HRel IO) r
+type HRelT = ReaderT HRel IO
+
+type HRelConduitM i o r = ConduitM i o HRelT r
 
 -- | Source
 type HRelSource o = HRelConduitM () o ()
@@ -53,7 +58,7 @@ runHRelConduit mgr sink =
 	runReaderT (runConduit sink) (HRel mgr)
 
 -- | Generate a request.
-request :: String -> HRelSource Request
+request :: String -> HRelConduit i Request
 request =
 	parseUrl >=> yield
 
@@ -81,6 +86,6 @@ fetchGZipped =
 	fetchLazy =$= C.map (BL.toStrict . Z.decompress)
 
 -- | Process incoming "StringLike" values and parse them using a "NodeFilterT".
-markup :: (StringLike t) => NodeFilterT t IO a -> HRelConduit t a
+markup :: (StringLike t) => NodeFilterT t HRelT a -> HRelConduit t a
 markup nf =
-	C.mapMaybeM (liftIO . runNodeFilterT nf . fromMarkup')
+	C.mapMaybeM (runNodeFilterT nf . fromMarkup')

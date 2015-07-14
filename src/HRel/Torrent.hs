@@ -22,6 +22,6 @@ data Torrent = Torrent {
 
 instance Show Torrent where
 	show (Torrent rel uris size) =
-		"Torrent '" ++ T.unpack (toText rel) ++ "'" ++
+		"Torrent '" ++ T.unpack (fromRelease rel) ++ "'" ++
 		maybe [] (\ s -> " (" ++ showAsBytes s ++ ")") size ++ "\n" ++
 		intercalate "\n" (map (\ u -> " + " ++ show u) uris)

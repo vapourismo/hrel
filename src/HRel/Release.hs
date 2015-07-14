@@ -2,7 +2,8 @@
 
 module HRel.Release (
 	-- * Release
-	Release (toText),
+	Release,
+	fromRelease,
 	makeRelease,
 	normalizeRelease
 ) where
@@ -11,7 +12,7 @@ import           Data.Char
 import qualified Data.Text as T
 
 -- | Release Identifier
-newtype Release = Release { toText :: T.Text }
+newtype Release = Release { fromRelease :: T.Text }
 	deriving (Show, Eq, Ord)
 
 -- | Make a release from the given raw text.

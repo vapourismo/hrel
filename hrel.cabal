@@ -22,6 +22,7 @@ library
                        network-uri,
                        conduit
   exposed-modules:     HRel.Source.Feeds,
+                       HRel.Source.KickAssTorrents,
                        HRel.Torrent,
                        HRel.Release,
                        HRel.Units,

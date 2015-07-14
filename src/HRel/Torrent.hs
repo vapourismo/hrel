@@ -15,8 +15,8 @@ import           HRel.Units
 
 -- | Torrent
 data Torrent = Torrent {
-	torrentRelease     ::     Release,
-	torrentSource      ::     [URI],
+	torrentRelease     :: Release,
+	torrentSource      :: [URI],
 	torrentContentSize :: Maybe Word
 } deriving (Eq, Ord)
 

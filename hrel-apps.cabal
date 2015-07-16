@@ -12,7 +12,7 @@ library
 
 executable hrel-jobs
   hs-source-dirs:      src
-  main-is:             Main.hs
+  main-is:             Jobs.hs
   ghc-options:         -O2 -j -Wall -fprof-auto -threaded -rtsopts -with-rtsopts=-N
                        -fno-warn-unused-do-bind -fno-warn-tabs
   default-language:    Haskell2010
@@ -24,3 +24,14 @@ executable hrel-jobs
                        http-client-tls,
                        conduit,
                        exceptions
+
+executable hrel-web
+  hs-source-dirs:      src
+  main-is:             Web.hs
+  ghc-options:         -O2 -j -Wall -fprof-auto -threaded -rtsopts -with-rtsopts=-N
+                       -fno-warn-unused-do-bind -fno-warn-tabs
+  default-language:    Haskell2010
+  build-depends:       base,
+                       hrel,
+                       hrel-apps,
+                       scotty

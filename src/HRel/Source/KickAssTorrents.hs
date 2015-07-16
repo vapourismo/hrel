@@ -5,15 +5,18 @@ module HRel.Source.KickAssTorrents (
 ) where
 
 import           Control.Monad
+import           Control.Monad.Trans
+import           Control.Monad.Catch
 
 import           Data.Char
 import           Data.Maybe
 import           Data.Conduit
-import qualified Data.Conduit.List         as C
-import qualified Data.Text                 as T
-import qualified Data.Text.Encoding        as T
+import qualified Data.Conduit.List  as C
+import qualified Data.Text          as T
+import qualified Data.Text.Encoding as T
 
 import           Network.URI
+import           Network.HTTP.Client
 
 import           HRel.Conduit
 import           HRel.Markup
@@ -21,8 +24,8 @@ import           HRel.Release
 import           HRel.Torrent
 
 -- | Search for "Torrent"s which match the given "Release".
-kickAssSearch :: HRelConduit Release Torrent
-kickAssSearch =
+kickAssSearch :: (MonadIO m, MonadThrow m) => Manager -> Conduit Release m Torrent
+kickAssSearch mgr =
 	conduit
 	where
 		conduit =
@@ -32,7 +35,7 @@ kickAssSearch =
 			request ("https://kat.cr/usearch/"
 			         ++ escapeURIString isUnescapedInURI (T.unpack (fromRelease rel))
 			         ++ "/?rss=1")
-				=$= fetch
+				=$= fetch mgr
 				=$= C.map T.decodeUtf8
 				=$= markup (xmlFilter rel)
 				=$= C.concat

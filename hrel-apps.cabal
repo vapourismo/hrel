@@ -35,6 +35,6 @@ executable hrel-web
                        hrel,
                        hrel-apps,
                        scotty,
-                       blaze-html,
                        text,
-                       mtl
+                       mtl,
+                       lucid

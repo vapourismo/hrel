@@ -2,9 +2,7 @@
 
 import           Control.Monad
 
-import qualified Text.Blaze.Html5              as H
-import qualified Text.Blaze.Html5.Attributes   as H
-import qualified Text.Blaze.Html.Renderer.Text as H
+import qualified Lucid                         as L
 
 import           Data.Char
 import           Data.Word
@@ -18,47 +16,39 @@ import           System.Environment
 import           HRel.Units
 import           HRel.Database
 
-sharedBodyTemplate :: H.Html -> H.Html
+sharedBodyTemplate :: L.Html () -> L.Html ()
 sharedBodyTemplate contents =
-	H.docTypeHtml $ do
-		H.head $
-			H.link H.! H.href  "/style.css"
-			       H.! H.rel   "stylesheet"
-			       H.! H.type_ "text/css"
+	L.doctypehtml_ $ do
+		L.head_ $
+			L.link_ [L.href_ "/style.css", L.rel_  "stylesheet", L.type_ "text/css"]
+		L.body_ contents
 
-		H.body contents
-
-indexTemplate :: [(Word64, T.Text)] -> H.Html
+indexTemplate :: [(Word64, T.Text)] -> L.Html ()
 indexTemplate feeds =
 	sharedBodyTemplate $ do
-		H.div H.! H.class_ "content" $
-			H.div H.! H.class_ "entry" $
+		L.div_ [L.class_ "content"] $
+			L.div_ [L.class_ "entry"] $
 				forM_ feeds $ \ (fid, url) ->
-					H.a H.! H.class_ "box feed" H.! H.href ("/feed/" <> H.toValue fid) $
-						H.text url
+					L.a_ [L.class_ "box feed", L.href_ (T.pack ("/feed/" <> show fid))] $
+						L.toHtml url
 
 handleIndex :: Database -> ActionM ()
 handleIndex db = do
 	feeds <- runAction db (query_ "SELECT id, url FROM feeds")
-	html (H.renderHtml (indexTemplate feeds))
+	html (L.renderText (indexTemplate feeds))
 
-listTemplate :: [(T.Text, T.Text, Maybe Word)] -> H.Html
+listTemplate :: [(T.Text, T.Text, Maybe Word)] -> L.Html ()
 listTemplate links =
 	sharedBodyTemplate $ do
-		H.div H.! H.class_ "content" $
+		L.div_ [L.class_ "content"] $
 			forM_ links $ \ (name, link, mbSize) -> do
 				let premLink = "https://www.premiumize.me/downloader?magnet=" <> link
 
-				H.div H.! H.class_ "entry" $ do
-					H.div H.! H.class_ "box name" $ H.text name
-					H.div H.! H.class_ "box size" $ H.string (maybe "unknown" showAsBytes mbSize)
-					H.a H.! H.class_ "box link"
-					    H.! H.href (H.toValue link) $
-						H.text "link"
-					H.a H.! H.class_ "box link"
-					    H.! H.href (H.toValue premLink)
-					    H.! H.target "blank" $
-						H.text "add"
+				L.div_ [L.class_ "entry"] $ do
+					L.div_ [L.class_ "box name"] (L.toHtml name)
+					L.div_ [L.class_ "box size"] (L.toHtml (maybe "unknown" showAsBytes mbSize))
+					L.a_ [L.class_ "box link", L.href_ link] "link"
+					L.a_ [L.class_ "box link", L.href_ premLink, L.target_ "blank"] "add"
 
 listQuery :: Query
 listQuery =
@@ -72,7 +62,15 @@ handleList :: Database -> ActionM ()
 handleList db = do
 	fid <- param "fid"
 	items <- runAction db (query listQuery (Only (fid :: Word64)))
-	html (H.renderHtml (listTemplate items))
+	html (L.renderText (listTemplate items))
+
+formTemplate :: L.Html ()
+formTemplate =
+	L.body_ [L.href_ "Herro"] ""
+
+handleForm :: Database -> ActionM ()
+handleForm _ =
+	html (L.renderText formTemplate)
 
 main :: IO ()
 main = do
@@ -94,6 +92,10 @@ main = do
 
 			-- Index
 			get "/" (handleIndex db)
+
+			-- Form
+			get "/submit" (handleForm db)
+			--post "/submit" (handleForm db)
 
 			-- Specify list
 			get "/feed/:fid" (handleList db)

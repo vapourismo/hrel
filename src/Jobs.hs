@@ -45,7 +45,7 @@ trackTorrents db =
 	C.mapM_ $ \ (rid, torrent) ->
 		runAction db $
 			forM_ (torrentSource torrent) $ \ src ->
-				execute "INSERT INTO torrents (rel, url, size) VALUES (?, ?, ?)" (rid, show src, torrentContentSize torrent)
+				execute "INSERT INTO torrents (rel, url, size) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)" (rid, show src, torrentContentSize torrent)
 
 main :: IO ()
 main = withDatabase $ \ db -> withManager tlsManagerSettings $ \ mgr -> do

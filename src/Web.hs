@@ -76,7 +76,7 @@ handleList db = do
 	html (H.renderHtml (listTemplate items))
 
 unixSocket :: String
-unixSocket = "/tmp/hrel-web.sock"
+unixSocket = "/run/hrel/web.sock"
 
 main :: IO ()
 main =

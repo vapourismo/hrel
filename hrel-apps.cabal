@@ -11,13 +11,16 @@ library
                        hrel,
                        mysql,
                        mysql-simple,
+                       hedis,
                        mtl,
                        http-client,
                        http-client-tls,
                        conduit,
-                       exceptions
+                       exceptions,
+                       bytestring
   exposed-modules:     HRel.Database,
-                       HRel.Processing
+                       HRel.Processing,
+                       HRel.JobControl
 
 executable hrel-jobs
   hs-source-dirs:      src

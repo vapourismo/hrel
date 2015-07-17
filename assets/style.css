@@ -1,0 +1,36 @@
+body {
+	background-color: rgb(20, 20, 20);
+	padding: 0;
+	margin: 0;
+	font-family: monospace;
+}
+
+.content {
+	display: table;
+	border-spacing: 5px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.entry {
+	display: table-row;
+	padding: 20px;
+}
+
+.entry .box {
+	display: table-cell;
+	padding: 10px;
+	margin: 5px;
+	background-color: rgb(26, 26, 26);
+	color: rgb(175, 175, 175);
+	text-decoration: none;
+}
+
+.entry:hover .box {
+	color: rgb(200, 200, 200);
+	background: rgb(150, 55, 60);
+}
+
+.size, .link {
+	text-align: center;
+}

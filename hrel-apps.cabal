@@ -34,4 +34,7 @@ executable hrel-web
   build-depends:       base,
                        hrel,
                        hrel-apps,
-                       scotty
+                       scotty,
+                       blaze-html,
+                       text,
+                       mtl

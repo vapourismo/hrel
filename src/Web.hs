@@ -114,12 +114,14 @@ tryFeed db url =
 		releases <- fromRSSTitles mgr url $$ C.consume
 
 		if length releases > 0 then do
+			-- Add to existing feeds
 			mbID <- runAction db (insert "INSERT INTO feeds (url) VALUES (?) \
 			                              \ ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"
 			                             (Only url))
 
 			case mbID of
 				Just fid -> do
+					-- Fetch torrents
 					runConduit $
 						C.sourceList (map ((,) fid) releases)
 							=$= trackReleases db

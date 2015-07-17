@@ -17,6 +17,7 @@ module HRel.Database (
 	-- * Re-export stuff
 	M.In (..),
 	M.Only (..),
+	M.Query,
 	Database
 ) where
 

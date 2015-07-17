@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import           Control.Monad
-import           Control.Monad.Trans
 
 import qualified Text.Blaze.Html5              as H
 import qualified Text.Blaze.Html5.Attributes   as H
@@ -37,7 +36,7 @@ indexTemplate feeds =
 
 handleIndex :: Database -> ActionM ()
 handleIndex db = do
-	feeds <- liftIO (runAction db (query_ "SELECT id, url FROM feeds"))
+	feeds <- runAction db (query_ "SELECT id, url FROM feeds")
 	html (H.renderHtml (indexTemplate feeds))
 
 listTemplate :: [(T.Text, T.Text, Maybe Word)] -> H.Html
@@ -51,10 +50,18 @@ listTemplate links =
 					H.a H.! H.class_ "box link" H.! H.href (H.toValue link) $
 						H.text "link"
 
+listQuery :: Query
+listQuery =
+	"SELECT name, url, size \
+	 \ FROM torrents t, releases r \
+	 \ WHERE r.feed = ? AND t.rel = r.id \
+	 \ ORDER BY t.id DESC \
+	 \ LIMIT 100"
+
 handleList :: Database -> ActionM ()
 handleList db = do
 	fid <- param "fid"
-	items <- liftIO (runAction db (query "SELECT name, url, size FROM torrents t, releases r WHERE r.feed = ? AND t.rel = r.id ORDER BY t.id DESC LIMIT 100" (Only (fid :: Word64))))
+	items <- runAction db (query listQuery (Only (fid :: Word64)))
 	html (H.renderHtml (listTemplate items))
 
 main :: IO ()

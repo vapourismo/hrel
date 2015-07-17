@@ -43,12 +43,19 @@ listTemplate :: [(T.Text, T.Text, Maybe Word)] -> H.Html
 listTemplate links =
 	sharedBodyTemplate $ do
 		H.div H.! H.class_ "content" $
-			forM_ links $ \ (name, link, mbSize) ->
+			forM_ links $ \ (name, link, mbSize) -> do
+				let premLink = "https://www.premiumize.me/downloader?magnet=" <> link
+
 				H.div H.! H.class_ "entry" $ do
 					H.div H.! H.class_ "box name" $ H.text name
 					H.div H.! H.class_ "box size" $ H.string (maybe "unknown" showAsBytes mbSize)
-					H.a H.! H.class_ "box link" H.! H.href (H.toValue link) $
+					H.a H.! H.class_ "box link"
+					    H.! H.href (H.toValue link) $
 						H.text "link"
+					H.a H.! H.class_ "box link"
+					    H.! H.href (H.toValue premLink)
+					    H.! H.target "blank" $
+						H.text "add"
 
 listQuery :: Query
 listQuery =

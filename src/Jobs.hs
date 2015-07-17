@@ -30,8 +30,7 @@ trackReleases db =
 						[Only True] -> Just (releaseID, rel)
 						_           -> Nothing
 
-				Nothing -> do
-					liftIO (print rel)
+				Nothing ->
 					pure Nothing
 
 findTorrents :: (MonadIO m, MonadThrow m) => Manager -> Conduit (Word64, Release) m (Word64, Torrent)

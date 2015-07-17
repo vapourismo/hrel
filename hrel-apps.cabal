@@ -37,6 +37,15 @@ executable hrel-jobs
                        conduit,
                        exceptions
 
+executable hrel-queue-all
+  hs-source-dirs:      src
+  main-is:             QueueAll.hs
+  ghc-options:         -O2 -j -Wall -fprof-auto -threaded -rtsopts -with-rtsopts=-N
+                       -fno-warn-unused-do-bind -fno-warn-tabs
+  default-language:    Haskell2010
+  build-depends:       base,
+                       hrel-apps
+
 executable hrel-web
   hs-source-dirs:      src
   main-is:             Web.hs

@@ -82,7 +82,7 @@ execute_ q = do
 insert :: (M.QueryParams p) => M.Query -> p -> Action (Maybe Word64)
 insert q p = do
 	num <- execute q p
-	if num > 0 then
+	if num >= 0 then
 		Just <$> (ask >>= liftIO . M.insertID)
 	else
 		pure Nothing

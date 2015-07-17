@@ -37,7 +37,4 @@ executable hrel-web
                        scotty,
                        blaze-html,
                        text,
-                       mtl,
-                       network,
-                       data-default-class,
-                       unix
+                       mtl

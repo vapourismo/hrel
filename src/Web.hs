@@ -6,16 +6,14 @@ import qualified Text.Blaze.Html5              as H
 import qualified Text.Blaze.Html5.Attributes   as H
 import qualified Text.Blaze.Html.Renderer.Text as H
 
+import           Data.Char
 import           Data.Word
-import           Data.Bits
 import           Data.Monoid
-import           Data.Default.Class
 import qualified Data.Text                     as T
 
 import           Web.Scotty
-import           Network.Socket
 
-import           System.Posix.Files
+import           System.Environment
 
 import           HRel.Units
 import           HRel.Database
@@ -76,28 +74,19 @@ handleList db = do
 	items <- runAction db (query listQuery (Only (fid :: Word64)))
 	html (H.renderHtml (listTemplate items))
 
-unixSocket :: FilePath
-unixSocket = "web.sock"
-
 main :: IO ()
-main =
+main = do
+	args <- getArgs
+
+	-- Figure out which port to use
+	let scottyPort =
+		case args of
+			[portStr] | all isDigit portStr -> read portStr
+			_ -> 3000
+
 	withDatabase $ \ db -> do
-		-- Remove unix socket if it exists
-		socketExists <- fileExist unixSocket
-		when socketExists (removeLink unixSocket)
-
-		-- Setup socket
-		sock <- socket AF_UNIX Stream 0
-		bind sock (SockAddrUnix unixSocket)
-		listen sock sOMAXCONN
-
-		-- Modify socket mode
-		setFileMode unixSocket $
-			ownerReadMode .|. ownerWriteMode .|. ownerExecuteMode .|.
-			groupReadMode .|. groupWriteMode .|. groupExecuteMode
-
 		-- Launch Scotty
-		scottySocket def sock $ do
+		scotty scottyPort $ do
 			-- Static
 			get "/style.css" $ do
 				setHeader "Content-Type" "text/css"

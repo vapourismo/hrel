@@ -65,7 +65,7 @@ handleList db = do
 	html (H.renderHtml (listTemplate items))
 
 main :: IO ()
-main = withDatabase $ \ db -> scotty 8080 $ do
+main = withDatabase $ \ db -> scotty 3000 $ do
 	-- Static
 	get "/style.css" $ do
 		setHeader "Content-Type" "text/css"

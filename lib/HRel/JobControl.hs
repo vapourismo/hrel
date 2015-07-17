@@ -42,9 +42,11 @@ withJobControl a =
 		connectJobControl =
 			R.connect R.defaultConnectInfo
 
-queueFeedProcess :: JobControl -> Word64 -> IO Bool
-queueFeedProcess con fid = do
-	either (const False) (>= 0) <$> R.runRedis con (R.publish "hrel_feeds" (BC.pack (show fid)))
+queueFeedProcess :: (MonadIO m) => JobControl -> Word64 -> m Bool
+queueFeedProcess con fid =
+	liftIO (either (const False) (>= 0) <$> executeRedis)
+	where
+		executeRedis = R.runRedis con (R.publish "hrel_feeds" (BC.pack (show fid)))
 
 sourceChannel :: (MonadIO m) => JobControl -> [B.ByteString] -> Source m (B.ByteString, B.ByteString)
 sourceChannel con channels = do

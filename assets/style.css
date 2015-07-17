@@ -18,9 +18,15 @@ body {
 }
 
 .entry .box {
+	box-sizing: border-box;
 	display: table-cell;
+	border: none;
+	outline: 0;
+	font-family: monospace;
 	padding: 10px;
 	margin: 5px;
+	height: auto;
+	width: auto;
 	background-color: rgb(26, 26, 26);
 	color: rgb(175, 175, 175);
 	text-decoration: none;
@@ -31,6 +37,37 @@ body {
 	background: rgb(150, 55, 60);
 }
 
-.size, .link {
+.size, .link, .label {
 	text-align: center;
+}
+
+.input .text {
+	outline: 0;
+	background: transparent;
+	border: none;
+	min-width: 400px;
+	font-family: monospace;
+	color: rgb(175, 175, 175);
+}
+
+.footer {
+	padding: 20px;
+	text-align: center;
+}
+
+.footer .submit {
+	font-family: monospace;
+	background: transparent;
+	border: none;
+	color: rgb(100, 100, 100);
+	text-decoration: none;
+}
+
+.footer .submit:hover {
+	color: rgb(150, 55, 60);
+	cursor: pointer;
+}
+
+.footer .error {
+	color: rgb(150, 55, 60);
 }

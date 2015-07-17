@@ -32,6 +32,7 @@ import qualified Database.MySQL.Simple              as M
 import qualified Database.MySQL.Simple.QueryParams  as M
 import qualified Database.MySQL.Simple.QueryResults as M
 
+-- | Connection to a MySQL server
 type Database = M.Connection
 
 -- | Create a scope for the database connection.

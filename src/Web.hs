@@ -22,7 +22,7 @@ import           Network.HTTP.Client.TLS
 import           System.Environment
 
 import           HRel.Source.Feeds
-import           HRel.Processing
+import           HRel.JobControl
 import           HRel.Database
 import           HRel.Units
 
@@ -113,28 +113,16 @@ tryFeed db url =
 	withManager tlsManagerSettings $ \ mgr -> do
 		releases <- fromRSSTitles mgr url $$ C.consume
 
-		if length releases > 0 then do
+		if length releases > 0 then
 			-- Add to existing feeds
-			mbID <- runAction db (insert "INSERT INTO feeds (url) VALUES (?) \
-			                              \ ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"
-			                             (Only url))
-
-			case mbID of
-				Just fid -> do
-					-- Fetch torrents
-					runConduit $
-						C.sourceList (map ((,) fid) releases)
-							=$= trackReleases db
-							=$= findTorrents mgr
-							=$= trackTorrents db
-					pure (Just fid)
-
-				x -> pure x
+			runAction db (insert "INSERT INTO feeds (url) VALUES (?) \
+			                      \ ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"
+			                     (Only url))
 		else
 			pure Nothing
 
-handleSubmit :: Database -> ActionM ()
-handleSubmit db = do
+handleSubmit :: JobControl -> Database -> ActionM ()
+handleSubmit jctl db = do
 	url <- param "url"
 	let validURL = length url <= 255 && maybe False (const True) (parseURI url)
 
@@ -144,7 +132,9 @@ handleSubmit db = do
 
 		-- If insertion was successful, redirect to the new feed page
 		case mbID of
-			Just fid -> redirect (TL.pack ("/feed/" <> show fid))
+			Just fid -> do
+				queueFeedProcess jctl fid
+				redirect (TL.pack ("/feed/" <> show fid))
 			Nothing  -> handleForm True
 	else
 		handleForm True
@@ -159,7 +149,7 @@ main = do
 			[portStr] | all isDigit portStr -> read portStr
 			_ -> 3000
 
-	withDatabase $ \ db -> do
+	withDatabase $ \ db -> withJobControl $ \ jctl -> do
 		-- Launch Scotty
 		scotty scottyPort $ do
 			-- Static
@@ -172,7 +162,7 @@ main = do
 
 			-- Form
 			get "/submit" (handleForm False)
-			post "/submit" (handleSubmit db)
+			post "/submit" (handleSubmit jctl db)
 
 			-- Specify list
 			get "/feed/:fid" (handleList db)

@@ -70,7 +70,7 @@ listTemplate links =
 			when (null links) $
 				L.div_ [L.class_ "footer"] $
 					L.span_ [L.class_ "error"]
-						"Nothing listed yet? Don't worry. The feed might not have been processed."
+						"Nothing listed? Don't worry. The feed might not have been processed yet."
 
 listQuery :: Query
 listQuery =

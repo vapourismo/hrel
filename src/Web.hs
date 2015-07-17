@@ -8,9 +8,13 @@ import qualified Text.Blaze.Html.Renderer.Text as H
 
 import           Data.Word
 import           Data.Monoid
+import           Data.Default.Class
 import qualified Data.Text                     as T
 
 import           Web.Scotty
+import           Network.Socket
+
+import           System.Posix.Files
 
 import           HRel.Units
 import           HRel.Database
@@ -71,15 +75,30 @@ handleList db = do
 	items <- runAction db (query listQuery (Only (fid :: Word64)))
 	html (H.renderHtml (listTemplate items))
 
+unixSocket :: String
+unixSocket = "/tmp/hrel-web.sock"
+
 main :: IO ()
-main = withDatabase $ \ db -> scotty 3000 $ do
-	-- Static
-	get "/style.css" $ do
-		setHeader "Content-Type" "text/css"
-		file "assets/style.css"
+main =
+	withDatabase $ \ db -> do
+		-- Remove unix socket if it exists
+		socketExists <- fileExist unixSocket
+		when socketExists (removeLink unixSocket)
 
-	-- Index
-	get "/" (handleIndex db)
+		-- Setup socket
+		sock <- socket AF_UNIX Stream 0
+		bind sock (SockAddrUnix unixSocket)
+		listen sock sOMAXCONN
 
-	-- Specify list
-	get "/feed/:fid" (handleList db)
+		-- Launch Scotty
+		scottySocket def sock $ do
+			-- Static
+			get "/style.css" $ do
+				setHeader "Content-Type" "text/css"
+				file "assets/style.css"
+
+			-- Index
+			get "/" (handleIndex db)
+
+			-- Specify list
+			get "/feed/:fid" (handleList db)

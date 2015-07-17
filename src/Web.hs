@@ -7,6 +7,7 @@ import qualified Text.Blaze.Html5.Attributes   as H
 import qualified Text.Blaze.Html.Renderer.Text as H
 
 import           Data.Word
+import           Data.Bits
 import           Data.Monoid
 import           Data.Default.Class
 import qualified Data.Text                     as T
@@ -75,7 +76,7 @@ handleList db = do
 	items <- runAction db (query listQuery (Only (fid :: Word64)))
 	html (H.renderHtml (listTemplate items))
 
-unixSocket :: String
+unixSocket :: FilePath
 unixSocket = "/run/hrel/web.sock"
 
 main :: IO ()
@@ -89,6 +90,11 @@ main =
 		sock <- socket AF_UNIX Stream 0
 		bind sock (SockAddrUnix unixSocket)
 		listen sock sOMAXCONN
+
+		-- Modify socket mode
+		setFileMode unixSocket $
+			ownerReadMode .|. ownerWriteMode .|. ownerExecuteMode .|.
+			groupReadMode .|. groupWriteMode .|. groupExecuteMode
 
 		-- Launch Scotty
 		scottySocket def sock $ do

@@ -54,7 +54,7 @@ listTemplate links =
 handleList :: Database -> ActionM ()
 handleList db = do
 	fid <- param "fid"
-	items <- liftIO (runAction db (query "SELECT name, url, size FROM torrents t, releases r WHERE r.feed = ? AND t.rel = r.id ORDER BY t.id DESC" (Only (fid :: Word64))))
+	items <- liftIO (runAction db (query "SELECT name, url, size FROM torrents t, releases r WHERE r.feed = ? AND t.rel = r.id ORDER BY t.id DESC LIMIT 100" (Only (fid :: Word64))))
 	html (H.renderHtml (listTemplate items))
 
 main :: IO ()

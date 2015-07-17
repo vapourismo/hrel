@@ -24,4 +24,4 @@ fromRSSTitles mgr url =
 	            =$= markup xmlFilter =$= C.map nub =$= C.concat
 	where
 		xmlFilter =
-			relativeTag "feed" (foreachTag "entry" (forTag "title" (makeRelease <$> text)))
+			reverse <$> relativeTag "feed" (foreachTag "entry" (forTag "title" (makeRelease <$> text)))

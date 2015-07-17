@@ -78,7 +78,7 @@ execute_ q = do
 	con <- ask
 	lift (M.execute_ con q)
 
--- |
+-- | Execute a statement and return the last inserted ID.
 insert :: (M.QueryParams p) => M.Query -> p -> Action (Maybe Word64)
 insert q p = do
 	num <- execute q p

@@ -130,12 +130,14 @@ handleSubmit jctl db = do
 	if validURL then do
 		mbID <- liftIO (tryFeed db url)
 
-		-- If insertion was successful, redirect to the new feed page
+		-- If insertion was successful, queue feed and redirect to the new feed page
 		case mbID of
 			Just fid -> do
 				queueFeedProcess jctl fid
 				redirect (TL.pack ("/feed/" <> show fid))
-			Nothing  -> handleForm True
+
+			Nothing ->
+				handleForm True
 	else
 		handleForm True
 

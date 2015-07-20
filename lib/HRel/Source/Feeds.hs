@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HRel.Source.Feeds (
-	fromRSSTitles
+	fromAtomTitles
 ) where
 
 import           Control.Monad.Trans
@@ -17,9 +17,9 @@ import           HRel.Conduit
 import           HRel.Markup
 import           HRel.Release
 
--- | Extract releases from RSS entry titles.
-fromRSSTitles :: (MonadIO m, MonadThrow m) => Manager -> String -> Source m Release
-fromRSSTitles mgr url =
+-- | Extract releases from Atom entry titles.
+fromAtomTitles :: (MonadIO m, MonadThrow m) => Manager -> String -> Source m Release
+fromAtomTitles mgr url =
 	request url =$= fetch mgr =$= C.map T.decodeUtf8
 	            =$= markup xmlFilter =$= C.map nub =$= C.concat
 	where

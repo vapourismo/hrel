@@ -44,7 +44,7 @@ indexTemplate feeds =
 
 			L.div_ [L.class_ "footer"] $
 				L.a_ [L.href_ "/submit", L.class_ "submit"]
-					"Track my RSS feed!"
+					"Track my feed!"
 
 handleIndex :: Database -> ActionM ()
 handleIndex db = do
@@ -102,7 +102,7 @@ formTemplate invalidURL =
 				when invalidURL $
 					L.div_ [L.class_ "footer"] $
 						L.span_ [L.class_ "error"]
-							"The given URL is either invalid or points to an unusable RSS feed"
+							"The given URL is either invalid or points to an unusable feed"
 
 handleForm :: Bool -> ActionM ()
 handleForm =

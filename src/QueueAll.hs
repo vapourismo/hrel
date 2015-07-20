@@ -1,11 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import           HRel.JobControl
-import           HRel.Database
+import Control.Monad
+import Data.Word
+import Network.HenServer
+import HRel.Database
 
 main :: IO ()
 main = do
-	withDatabase $ \ db ->
-		withJobControl $ \ jctl -> do
-			feedIDs <- runAction db (query_ "SELECT id FROM feeds")
-			mapM_ (queueFeedProcess jctl . fromOnly) feedIDs
+	con <- connect (localhost 3300)
+	withDatabase $ \ db -> do
+		feedIDs <- runAction db (query_ "SELECT id FROM feeds") :: IO [Only Word64]
+		withConnection con $
+			forM_ feedIDs (sendSerialized . fromOnly)

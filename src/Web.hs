@@ -8,7 +8,7 @@ import qualified Lucid                   as L
 import           Data.Char
 import           Data.Word
 import           Data.Monoid
-import           Data.Conduit
+import           Data.Conduit            hiding (connect)
 import qualified Data.Conduit.List       as C
 import qualified Data.Text               as T
 import qualified Data.Text.Lazy          as TL
@@ -18,11 +18,11 @@ import           Web.Scotty
 import           Network.URI             hiding (query)
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
+import           Network.HenServer
 
 import           System.Environment
 
 import           HRel.Source.Feeds
-import           HRel.JobControl
 import           HRel.Database
 import           HRel.Units
 
@@ -111,7 +111,7 @@ handleForm =
 tryFeed :: Database -> String -> IO (Maybe Word64)
 tryFeed db url =
 	withManager tlsManagerSettings $ \ mgr -> do
-		releases <- fromRSSTitles mgr url $$ C.consume
+		releases <- fromAtomTitles mgr url $$ C.consume
 
 		if length releases > 0 then
 			-- Add to existing feeds
@@ -121,8 +121,8 @@ tryFeed db url =
 		else
 			pure Nothing
 
-handleSubmit :: JobControl -> Database -> ActionM ()
-handleSubmit jctl db = do
+handleSubmit :: Connection -> Database -> ActionM ()
+handleSubmit con db = do
 	url <- param "url"
 	let validURL = length url <= 255 && maybe False (const True) (parseURI url)
 
@@ -133,7 +133,7 @@ handleSubmit jctl db = do
 		-- If insertion was successful, queue feed and redirect to the new feed page
 		case mbID of
 			Just fid -> do
-				queueFeedProcess jctl fid
+				liftIO (withConnection con (sendSerialized fid))
 				redirect (TL.pack ("/feed/" <> show fid))
 
 			Nothing ->
@@ -151,7 +151,8 @@ main = do
 			[portStr] | all isDigit portStr -> read portStr
 			_ -> 3000
 
-	withDatabase $ \ db -> withJobControl $ \ jctl -> do
+	con <- connect (localhost 3300)
+	withDatabase $ \ db ->
 		-- Launch Scotty
 		scotty scottyPort $ do
 			-- Static
@@ -164,7 +165,7 @@ main = do
 
 			-- Form
 			get "/submit" (handleForm False)
-			post "/submit" (handleSubmit jctl db)
+			post "/submit" (handleSubmit con db)
 
 			-- Specify list
 			get "/feed/:fid" (handleList db)

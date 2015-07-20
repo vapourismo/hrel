@@ -19,8 +19,7 @@ library
                        exceptions,
                        bytestring
   exposed-modules:     HRel.Database,
-                       HRel.Processing,
-                       HRel.JobControl
+                       HRel.Processing
 
 executable hrel-jobs
   hs-source-dirs:      src
@@ -35,7 +34,8 @@ executable hrel-jobs
                        http-client,
                        http-client-tls,
                        conduit,
-                       exceptions
+                       exceptions,
+                       henserver
 
 executable hrel-queue-all
   hs-source-dirs:      src
@@ -44,7 +44,8 @@ executable hrel-queue-all
                        -fno-warn-unused-do-bind -fno-warn-tabs
   default-language:    Haskell2010
   build-depends:       base,
-                       hrel-apps
+                       hrel-apps,
+                       henserver
 
 executable hrel-web
   hs-source-dirs:      src
@@ -62,4 +63,5 @@ executable hrel-web
                        network-uri,
                        http-client,
                        http-client-tls,
-                       conduit
+                       conduit,
+                       henserver

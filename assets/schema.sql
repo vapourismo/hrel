@@ -25,20 +25,12 @@ DROP TABLE IF EXISTS `feeds`;
 CREATE TABLE `feeds` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `url` varchar(255) NOT NULL,
+  `insertTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `url` (`url`),
   KEY `id` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `feeds`
---
-
-LOCK TABLES `feeds` WRITE;
-/*!40000 ALTER TABLE `feeds` DISABLE KEYS */;
-/*!40000 ALTER TABLE `feeds` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `releases`
@@ -49,50 +41,14 @@ DROP TABLE IF EXISTS `releases`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `releases` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `feed` int(10) unsigned NOT NULL,
   `name` varchar(255) NOT NULL,
-  `track` tinyint(1) NOT NULL,
+  `insertTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updateTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updateCount` int(10) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_release_per_feed` (`feed`,`name`),
-  KEY `id` (`id`,`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=309 DEFAULT CHARSET=utf8;
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `releases`
---
-
-LOCK TABLES `releases` WRITE;
-/*!40000 ALTER TABLE `releases` DISABLE KEYS */;
-/*!40000 ALTER TABLE `releases` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `torrents`
---
-
-DROP TABLE IF EXISTS `torrents`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `torrents` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `rel` int(10) unsigned NOT NULL,
-  `url` varchar(255) NOT NULL,
-  `size` int(10) unsigned DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_rel_url` (`rel`,`url`),
-  KEY `id` (`id`,`url`)
-) ENGINE=InnoDB AUTO_INCREMENT=783 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `torrents`
---
-
-LOCK TABLES `torrents` WRITE;
-/*!40000 ALTER TABLE `torrents` DISABLE KEYS */;
-/*!40000 ALTER TABLE `torrents` ENABLE KEYS */;
-UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -103,4 +59,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-07-18  0:54:35
+-- Dump completed on 2015-07-23  0:28:17

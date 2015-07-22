@@ -26,11 +26,45 @@ import           Control.Monad.Reader
 
 import           Data.Int
 import           Data.Word
+import           Data.Typeable
+import qualified Data.ByteString.Char8              as BC
 
 import qualified Database.MySQL.Base.Types          as M
 import qualified Database.MySQL.Simple              as M
+import qualified Database.MySQL.Simple.Param        as M
 import qualified Database.MySQL.Simple.QueryParams  as M
+import qualified Database.MySQL.Simple.Result       as M
 import qualified Database.MySQL.Simple.QueryResults as M
+
+import           Network.URI                        hiding (query)
+
+-- | "TypeRef" for "URI"
+typeOfURI :: TypeRep
+typeOfURI =
+	typeOf (undefined :: URI)
+
+instance M.Result URI where
+	convert field Nothing =
+		throw (M.UnexpectedNull
+		           (show (M.fieldType field))
+		           (show typeOfURI)
+		           "UnexpectedNull")
+	convert field (Just value)
+		| M.fieldType field `elem` [M.VarChar, M.VarString, M.String] =
+			case parseURI (BC.unpack value) of
+				Just uri -> uri
+				Nothing  -> throw (M.ConversionFailed
+				                       (show (M.fieldType field))
+				                       (show typeOfURI)
+				                       "UnexpectedNull")
+		| otherwise =
+			throw (M.Incompatible
+			           (show (M.fieldType field))
+			           (show typeOfURI)
+			           "UnexpectedNull")
+
+instance M.Param URI where
+	render = M.render . show
 
 -- | Connection to a MySQL server
 type Database = M.Connection

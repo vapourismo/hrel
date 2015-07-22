@@ -84,4 +84,10 @@ findRelease rid = do
 -- |
 connectReleaseToFeed :: Word64 -> Word64 -> Action Int64
 connectReleaseToFeed rid fid =
-	execute "INSERT IGNORE INTO feed_contents (feed, rel) VALUES (?, ?)" (fid, rid)
+	execute qry (fid, rid, fid, rid, fid, rid)
+	where
+		qry = "INSERT IGNORE INTO feed_contents (feed, rel) \
+		       \  SELECT ?, ? FROM dual \
+		       \    WHERE EXISTS (SELECT * FROM feeds f WHERE f.id = ?) \
+		       \      AND EXISTS (SELECT * FROM releases r WHERE r.id = ?) \
+		       \      AND NOT EXISTS (SELECT * FROM feed_contents WHERE feed = ? AND rel = ?)"

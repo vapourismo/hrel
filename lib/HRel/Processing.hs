@@ -25,7 +25,7 @@ trackReleases :: (MonadIO m) => Database -> Conduit (Word64, Release) m (Word64,
 trackReleases db =
 	C.mapMaybeM $ \ (fid, rel) ->
 		runAction db $ do
-			mbReleaseID <- insert "INSERT INTO releases (feed, name, track) values (?, ?, true) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)" (fid, fromRelease rel)
+			mbReleaseID <- insert "INSERT INTO releases (feed, name) values (?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)" (fid, fromRelease rel)
 			case mbReleaseID of
 				Just releaseID -> do
 					mbTracks <- query "SELECT track FROM releases WHERE id = ?" (Only releaseID)

@@ -11,14 +11,16 @@ library
                        hrel,
                        mysql,
                        mysql-simple,
-                       hedis,
                        mtl,
                        http-client,
                        http-client-tls,
+                       network-uri,
                        conduit,
                        exceptions,
-                       bytestring
+                       bytestring,
+                       text
   exposed-modules:     HRel.Database,
+                       HRel.Data,
                        HRel.Processing
 
 executable hrel-jobs

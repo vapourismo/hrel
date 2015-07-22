@@ -12,8 +12,12 @@ module HRel.Data (
 	insertRelease,
 	createRelease,
 	findRelease,
+
+	-- * Extra
+	connectReleaseToFeed
 ) where
 
+import           Data.Int
 import           Data.Word
 import qualified Data.Text     as T
 
@@ -76,3 +80,8 @@ findRelease rid = do
 	case result of
 		[Only rel] -> pure (Just (Release rid rel))
 		_          -> pure Nothing
+
+-- |
+connectReleaseToFeed :: Word64 -> Word64 -> Action Int64
+connectReleaseToFeed rid fid =
+	execute "INSERT IGNORE INTO feed_contents (feed, rel) VALUES (?, ?)" (fid, rid)

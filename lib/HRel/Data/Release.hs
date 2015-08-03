@@ -13,12 +13,9 @@ module HRel.Data.Release (
 	findRelease
 ) where
 
-import           Data.Int
 import           Data.Word
 import           Data.Char
 import qualified Data.Text     as T
-
-import           Network.URI   hiding (query)
 
 import           HRel.Database
 

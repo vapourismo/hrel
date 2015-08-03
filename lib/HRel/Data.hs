@@ -15,7 +15,6 @@ module HRel.Data (
 ) where
 
 import           Data.Word
-import qualified Data.Text     as T
 
 import           Network.URI   hiding (query)
 

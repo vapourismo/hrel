@@ -4,8 +4,7 @@ module HRel.Source.Feeds (
 	-- * Atom Feeds
 	atomFeedFilter,
 	parseAtomFeed,
-	fetchAtomFeed,
-	fetchAtomFeed'
+	fetchAtomFeed
 ) where
 
 import qualified Data.ByteString      as B
@@ -42,6 +41,6 @@ fetchAtomFeed mgr url =
 fetchAtomFeed' :: Manager -> Request -> IO (Maybe [ReleaseName])
 fetchAtomFeed' mgr req = do
 	res <- httpLbs req mgr
-	case responseStatus res of
-		Status 200 _ -> pure (parseAtomFeed (BL.toStrict (responseBody res)))
-		_            -> pure Nothing
+	pure $ case responseStatus res of
+		Status 200 _ -> parseAtomFeed (BL.toStrict (responseBody res))
+		_            -> Nothing

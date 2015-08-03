@@ -4,8 +4,8 @@ module HRel.Source.Feeds (
 	-- * Atom Feeds
 	atomFeedFilter,
 	parseAtomFeed,
-	parseAtomFeedRequest,
-	parseAtomFeedURL
+	fetchAtomFeed,
+	fetchAtomFeed'
 ) where
 
 import qualified Data.ByteString      as B
@@ -31,17 +31,17 @@ parseAtomFeed :: B.ByteString -> Maybe [ReleaseName]
 parseAtomFeed contents =
 	runNodeFilter atomFeedFilter (fromMarkup' contents)
 
--- | Same as "parseAtomFeed" but does the download also.
-parseAtomFeedRequest :: Manager -> Request -> IO (Maybe [ReleaseName])
-parseAtomFeedRequest mgr req = do
+-- | Fetches the release names contained in an Atom feed.
+fetchAtomFeed :: Manager -> String -> IO (Maybe [ReleaseName])
+fetchAtomFeed mgr url =
+	case parseUrl url of
+		Just req -> fetchAtomFeed' mgr req
+		Nothing  -> pure Nothing
+
+-- | Fetches the release names contained in an Atom feed.
+fetchAtomFeed' :: Manager -> Request -> IO (Maybe [ReleaseName])
+fetchAtomFeed' mgr req = do
 	res <- httpLbs req mgr
 	case responseStatus res of
 		Status 200 _ -> pure (parseAtomFeed (BL.toStrict (responseBody res)))
 		_            -> pure Nothing
-
--- | Same as "parseAtomFeedRequest" but generates the request for you.
-parseAtomFeedURL :: Manager -> String -> IO (Maybe [ReleaseName])
-parseAtomFeedURL mgr url =
-	case parseUrl url of
-		Just req -> parseAtomFeedRequest mgr req
-		Nothing  -> pure Nothing

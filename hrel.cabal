@@ -26,14 +26,11 @@ library
                        lucid
   exposed-modules:     HRel.Source.Feeds,
                        HRel.Source.KickAssTorrents,
-                       HRel.Torrent,
-                       HRel.Release,
                        HRel.Units,
                        HRel.Conduit,
                        HRel.Markup,
                        HRel.Database,
                        HRel.Data,
-                       HRel.Processing,
                        HRel.Templates
 
 executable hrel

@@ -20,20 +20,17 @@ import           Network.HTTP.Client
 
 import           HRel.Conduit
 import           HRel.Markup
-import           HRel.Release
-import           HRel.Torrent
+import           HRel.Data.Release
+import           HRel.Data.Torrent
 
--- | Search for "Torrent"s which match the given "Release".
-kickAssSearch :: (MonadIO m, MonadThrow m) => Manager -> Conduit Release m Torrent
+-- | Search for torrents which match the given release name.
+kickAssSearch :: (MonadIO m, MonadThrow m) => Manager -> Conduit ReleaseName m TorrentInfo
 kickAssSearch mgr =
-	conduit
+	await >>= maybe (pure ()) (\ rel -> performSearch rel >> kickAssSearch mgr)
 	where
-		conduit =
-			await >>= maybe (pure ()) (\ rel -> performSearch rel >> conduit)
-
 		performSearch rel =
 			request ("https://kat.cr/usearch/"
-			         ++ escapeURIString isUnescapedInURI (T.unpack (fromRelease rel))
+			         ++ escapeURIString isUnescapedInURI (T.unpack (getReleaseName rel))
 			         ++ "/?rss=1")
 				=$= fetch mgr
 				=$= C.map T.decodeUtf8
@@ -41,13 +38,13 @@ kickAssSearch mgr =
 				=$= C.concat
 
 		xmlFilter cmpRelease =
-			relativeTag "rss" $ forTag "channel" $ foreachTag "item" $ do
+			fmap concat $ relativeTag "rss" $ forTag "channel" $ foreachTag "item" $ do
 				title   <- forTag "title"                 (T.strip <$> text)
 				size    <- forTag "torrent:contentLength" (T.strip <$> text)
 				magnet  <- forTag "torrent:magnetURI"     (T.strip <$> text)
 				torrent <- forTag "enclosure"             (T.strip <$> attr "url")
 
-				let release = makeRelease (T.copy title)
+				let release = normalizeReleaseName (T.copy title)
 				guard (release == cmpRelease)
 
 				let uris = catMaybes [makeURI magnet,
@@ -60,7 +57,7 @@ kickAssSearch mgr =
 					else
 						Nothing
 
-				pure (Torrent release uris sizeNum)
+				pure (map (\ uri -> TorrentInfo release uri sizeNum) uris)
 
 		cleanTorrentURI = fst . T.break (== '?')
 

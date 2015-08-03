@@ -8,22 +8,19 @@ module HRel.Data (
 	findFeed,
 
 	-- * Release
-	Release (..),
-	insertRelease,
-	createRelease,
-	findRelease,
+	module HRel.Data.Release,
 
 	-- * Extra
-	connectReleaseToFeed
+	--connectReleaseToFeed
 ) where
 
-import           Data.Int
 import           Data.Word
 import qualified Data.Text     as T
 
 import           Network.URI   hiding (query)
 
 import           HRel.Database
+import           HRel.Data.Release
 
 -- |
 data Feed = Feed {
@@ -51,43 +48,3 @@ findFeed fid = do
 	case result of
 		[Only uri] -> pure (Just (Feed fid uri))
 		_          -> pure Nothing
-
--- |
-data Release = Release {
-	releaseID   :: Word64,
-	releaseName :: T.Text
-} deriving (Show, Eq, Ord)
-
--- |
-insertRelease :: T.Text -> Action (Maybe Word64)
-insertRelease rel =
-	insert qry (Only rel)
-	where
-		qry = "INSERT INTO releases (name) VALUES (?) \
-		       \ ON DUPLICATE KEY UPDATE id          = LAST_INSERT_ID(id), \
-		       \                         updateTime  = CURRENT_TIMESTAMP, \
-		       \                         updateCount = updateCount + 1"
-
--- |
-createRelease :: T.Text -> Action (Maybe Release)
-createRelease rel =
-	fmap (\ mbrid -> Release <$> mbrid <*> pure rel) (insertRelease rel)
-
--- |
-findRelease :: Word64 -> Action (Maybe Release)
-findRelease rid = do
-	result <- query "SELECT url FROM releases WHERE id = ? LIMIT 1" (Only rid)
-	case result of
-		[Only rel] -> pure (Just (Release rid rel))
-		_          -> pure Nothing
-
--- |
-connectReleaseToFeed :: Word64 -> Word64 -> Action Int64
-connectReleaseToFeed rid fid =
-	execute qry (fid, rid, fid, rid, fid, rid)
-	where
-		qry = "INSERT IGNORE INTO feed_contents (feed, rel) \
-		       \  SELECT ?, ? FROM dual \
-		       \    WHERE EXISTS (SELECT * FROM feeds f WHERE f.id = ?) \
-		       \      AND EXISTS (SELECT * FROM releases r WHERE r.id = ?) \
-		       \      AND NOT EXISTS (SELECT * FROM feed_contents WHERE feed = ? AND rel = ?)"

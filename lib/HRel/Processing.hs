@@ -17,8 +17,8 @@ import qualified Data.Conduit.List as C
 import           Network.HTTP.Client
 
 import           HRel.Source.KickAssTorrents
-import           HRel.Release
-import           HRel.Torrent
+import           HRel.Data.Release
+import           HRel.Data.Torrent
 import           HRel.Database
 
 trackReleases :: (MonadIO m) => Database -> Conduit (Word64, Release) m (Word64, Release)

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.Web.Templates (
+module HRel.Templates (
 	indexTemplate,
 	listTemplate
 ) where

@@ -1,6 +1,6 @@
 module Main where
 
-import HRel.Web.Templates
+import HRel.Templates
 
 main :: IO ()
 main = pure ()

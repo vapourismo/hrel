@@ -34,7 +34,7 @@ library
                        HRel.Database,
                        HRel.Data,
                        HRel.Processing,
-                       HRel.Web.Templates
+                       HRel.Templates
 
 executable hrel
   hs-source-dirs:      src

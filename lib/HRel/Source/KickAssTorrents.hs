@@ -50,7 +50,7 @@ parseKickAssSearch :: B.ByteString -> Maybe [TorrentInfo]
 parseKickAssSearch contents =
 	runNodeFilter kickAssSearchFilter (fromMarkup' contents)
 
--- | Use KickAss Torrents RSS search to file torrents matching a given release name.
+-- | Use KickAss Torrents RSS search to find torrents matching a given release name.
 searchKickAss :: Manager -> ReleaseName -> IO (Maybe [TorrentInfo])
 searchKickAss mgr rel = do
 	req <- parseUrl requestURL

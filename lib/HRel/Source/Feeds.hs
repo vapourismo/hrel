@@ -2,9 +2,10 @@
 
 module HRel.Source.Feeds (
 	-- * Atom Feeds
+	atomFeedFilter,
 	parseAtomFeed,
 	parseAtomFeedRequest,
-	parseAtomFeedURL,
+	parseAtomFeedURL
 ) where
 
 import qualified Data.ByteString      as B
@@ -17,16 +18,18 @@ import           Network.HTTP.Types.Status
 import           HRel.Markup
 import           HRel.Data.Release
 
--- | Parse the contents of an Atom feed in order to extract the release names from entry titles.
-parseAtomFeed :: B.ByteString -> Maybe [ReleaseName]
-parseAtomFeed contents =
-	runNodeFilter rootFilter (fromMarkup' contents)
+-- | Filter for Atom feeds.
+atomFeedFilter :: NodeFilter B.ByteString [ReleaseName]
+atomFeedFilter =
+	reverse <$> relativeTag "feed" (foreachTag "entry" (forTag "title" titleFilter))
 	where
 		titleFilter =
 			normalizeReleaseName . T.decodeUtf8 <$> text
 
-		rootFilter =
-			reverse <$> relativeTag "feed" (foreachTag "entry" (forTag "title" titleFilter))
+-- | Parse the contents of an Atom feed in order to extract the release names from entry titles.
+parseAtomFeed :: B.ByteString -> Maybe [ReleaseName]
+parseAtomFeed contents =
+	runNodeFilter atomFeedFilter (fromMarkup' contents)
 
 -- | Same as "parseAtomFeed" but does the download also.
 parseAtomFeedRequest :: Manager -> Request -> IO (Maybe [ReleaseName])

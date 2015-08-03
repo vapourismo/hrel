@@ -22,7 +22,8 @@ library
                        network-uri,
                        conduit,
                        mysql,
-                       mysql-simple
+                       mysql-simple,
+                       lucid
   exposed-modules:     HRel.Source.Feeds,
                        HRel.Source.KickAssTorrents,
                        HRel.Torrent,
@@ -32,4 +33,12 @@ library
                        HRel.Markup,
                        HRel.Database,
                        HRel.Data,
-                       HRel.Processing
+                       HRel.Processing,
+                       HRel.Web.Templates
+
+executable hrel
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  ghc-options:         -O2 -j -Wall -fprof-auto -fno-warn-unused-do-bind -fno-warn-tabs
+  default-language:    Haskell2010
+  build-depends:       base, hrel

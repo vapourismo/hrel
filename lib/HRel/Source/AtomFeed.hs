@@ -7,15 +7,15 @@ module HRel.Source.AtomFeed (
 	fetchAtomFeed
 ) where
 
-import qualified Data.ByteString      as B
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.Text.Encoding   as T
+import qualified Data.ByteString           as B
+import qualified Data.ByteString.Lazy      as BL
+import qualified Data.Text.Encoding        as T
 
 import           Network.HTTP.Client
 import           Network.HTTP.Types.Status
 
-import           HRel.Markup
 import           HRel.Data.Release
+import           HRel.Markup
 
 -- | Filter for Atom feeds.
 atomFeedFilter :: NodeFilter B.ByteString [ReleaseName]

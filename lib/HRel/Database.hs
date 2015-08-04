@@ -24,17 +24,17 @@ module HRel.Database (
 import           Control.Exception
 import           Control.Monad.Reader
 
-import           Data.Int
-import           Data.Word
-import           Data.Typeable
 import qualified Data.ByteString.Char8              as BC
+import           Data.Int
+import           Data.Typeable
+import           Data.Word
 
 import qualified Database.MySQL.Base.Types          as M
 import qualified Database.MySQL.Simple              as M
 import qualified Database.MySQL.Simple.Param        as M
 import qualified Database.MySQL.Simple.QueryParams  as M
-import qualified Database.MySQL.Simple.Result       as M
 import qualified Database.MySQL.Simple.QueryResults as M
+import qualified Database.MySQL.Simple.Result       as M
 
 import           Network.URI                        hiding (query)
 

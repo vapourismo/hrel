@@ -7,12 +7,12 @@ module HRel.Templates (
 
 import           Control.Monad
 
-import           Data.Word
 import           Data.Monoid
 import qualified Data.Text     as T
+import           Data.Word
 
-import           Lucid
 import           HRel.Units
+import           Lucid
 
 sharedBodyTemplate :: Html () -> Html ()
 sharedBodyTemplate contents =

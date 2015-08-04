@@ -9,10 +9,8 @@ module HRel.Data.Feed (
 ) where
 
 import           Data.Word
-
-import           Network.URI   hiding (query)
-
 import           HRel.Database
+import           Network.URI   hiding (query)
 
 -- |
 data Feed = Feed {

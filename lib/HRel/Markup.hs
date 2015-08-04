@@ -36,9 +36,9 @@ import           Control.Applicative       hiding (empty)
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
 
+import           Data.Functor.Identity
 import           Data.List
 import           Data.Maybe
-import           Data.Functor.Identity
 
 import           Text.HTML.TagSoup
 import           Text.StringLike

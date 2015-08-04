@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.Source.Feeds (
+module HRel.Source.AtomFeed (
 	-- * Atom Feeds
 	atomFeedFilter,
 	parseAtomFeed,

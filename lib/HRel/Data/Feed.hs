@@ -20,7 +20,7 @@ data Feed = Feed {
 	feedURI :: URI
 } deriving (Show, Eq, Ord)
 
--- |
+-- | Insert a feed URI, but do not instantiate a "Feed".
 insertFeed :: URI -> Action (Maybe Word64)
 insertFeed uri =
 	insert qry (Only uri)
@@ -28,12 +28,12 @@ insertFeed uri =
 		qry = "INSERT INTO feeds (url) VALUES (?) \
 		       \ ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"
 
--- |
+-- | Create a "Feed" and make sure it exists in the database.
 createFeed :: URI -> Action (Maybe Feed)
 createFeed uri =
 	fmap (\ mbfid -> Feed <$> mbfid <*> pure uri) (insertFeed uri)
 
--- |
+-- | Find an existing feed.
 findFeed :: Word64 -> Action (Maybe Feed)
 findFeed fid = do
 	result <- query "SELECT url FROM feeds WHERE id = ? LIMIT 1" (Only fid)

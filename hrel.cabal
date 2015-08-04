@@ -23,7 +23,7 @@ library
                        mysql,
                        mysql-simple,
                        lucid
-  exposed-modules:     HRel.Source.Feeds,
+  exposed-modules:     HRel.Source.AtomFeed,
                        HRel.Source.KickAssTorrents,
                        HRel.Units,
                        HRel.Markup,
@@ -37,5 +37,6 @@ executable hrel
   hs-source-dirs:      src
   main-is:             Main.hs
   ghc-options:         -O2 -j -Wall -fprof-auto -fno-warn-unused-do-bind -fno-warn-tabs
+                       -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
   build-depends:       base, hrel

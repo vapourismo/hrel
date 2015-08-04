@@ -16,7 +16,7 @@ data ByteUnitPrefix
 	deriving (Eq, Ord, Enum)
 
 -- | Show a number as bytes including unit.
-showAsBytes :: Word -> String
+showAsBytes :: (Integral a) => a -> String
 showAsBytes n =
 	makle (fromIntegral n :: Float) NoBase2Suffix
 	where

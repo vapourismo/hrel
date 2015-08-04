@@ -28,7 +28,9 @@ library
                        HRel.Units,
                        HRel.Markup,
                        HRel.Database,
-                       HRel.Data,
+                       HRel.Data.Feed,
+                       HRel.Data.Release,
+                       HRel.Data.Torrent,
                        HRel.Templates
 
 executable hrel

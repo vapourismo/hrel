@@ -1,17 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.Data (
+module HRel.Data.Feed (
 	-- * Feed
 	Feed (..),
 	insertFeed,
 	createFeed,
 	findFeed,
-
-	-- * Release
-	module HRel.Data.Release,
-
-	-- * Extra
-	--connectReleaseToFeed
 ) where
 
 import           Data.Word
@@ -19,7 +13,6 @@ import           Data.Word
 import           Network.URI   hiding (query)
 
 import           HRel.Database
-import           HRel.Data.Release
 
 -- |
 data Feed = Feed {

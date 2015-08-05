@@ -8,20 +8,19 @@ module HRel.Source.KickAssTorrents (
 
 import           Control.Monad
 
-import qualified Data.ByteString           as B
-import qualified Data.ByteString.Lazy      as BL
 import           Data.Char
 import           Data.Maybe
+import qualified Data.ByteString           as B
 import qualified Data.Text                 as T
 import qualified Data.Text.Encoding        as T
 
-import           Network.HTTP.Client
-import           Network.HTTP.Types.Status
 import           Network.URI
 
 import           HRel.Data.Release
 import           HRel.Data.Torrent
+
 import           HRel.Markup
+import           HRel.HTTP
 
 -- | Filter for KickAss Torrents RSS search result.
 kickAssSearchFilter :: NodeFilter B.ByteString [TorrentInfo]
@@ -53,11 +52,7 @@ parseKickAssSearch contents =
 -- | Use KickAss Torrents RSS search to find torrents matching a given release name.
 searchKickAss :: Manager -> ReleaseName -> IO (Maybe [TorrentInfo])
 searchKickAss mgr rel = do
-	req <- parseUrl requestURL
-	res <- httpLbs req mgr
-	pure $ case responseStatus res of
-		Status 200 _ -> parseKickAssSearch (BL.toStrict (responseBody res))
-		_            -> Nothing
+	(>>= parseKickAssSearch) <$> download mgr requestURL
 	where
 		requestURL =
 			"https://kat.cr/usearch/"

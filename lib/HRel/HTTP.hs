@@ -32,8 +32,11 @@ download mgr url =
 -- | Download something.
 download' :: Manager -> Request -> IO (Maybe B.ByteString)
 download' mgr req =
-	handle (\ (_ :: HttpException) -> pure Nothing) $ do
+	handle (\ (e :: HttpException) -> noteException e >> pure Nothing) $ do
 		res <- httpLbs req mgr
 		pure $ case responseStatus res of
 			Status 200 _ -> Just (BL.toStrict (responseBody res))
 			_            -> Nothing
+	where
+		noteException e =
+			putStrLn ("download': " ++ show req ++ " threw " ++ show e)

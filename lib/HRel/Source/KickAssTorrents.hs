@@ -3,7 +3,8 @@
 module HRel.Source.KickAssTorrents (
 	kickAssSearchFilter,
 	parseKickAssSearch,
-	searchKickAss
+	searchKickAss,
+	fetchKickAssDump
 ) where
 
 import           Control.Monad
@@ -11,6 +12,7 @@ import           Control.Monad
 import           Data.Char
 import           Data.Maybe
 import qualified Data.ByteString           as B
+import qualified Data.ByteString.Char8     as BC
 import qualified Data.Text                 as T
 import qualified Data.Text.Encoding        as T
 
@@ -58,3 +60,23 @@ searchKickAss mgr rel = do
 			"https://kat.cr/usearch/"
 			++ escapeURIString isUnescapedInURI (T.unpack (getReleaseName rel))
 			++ "/?rss=1"
+
+-- | Download and parse a KickAss dump.
+fetchKickAssDump :: Manager -> String -> IO (Maybe [TorrentInfo])
+fetchKickAssDump mgr url =
+	fmap processDump <$> downloadGZip mgr url
+	where
+		processDump contents =
+			catMaybes (map processLine (BC.lines contents))
+
+		processLine line = do
+			(name, uriBS, sizeBS) <- case B.split 124 line of
+				[_, name, _, _, uri, size, _, _, _, _, _, _] ->
+					Just (name, uri, size)
+
+				_ -> Nothing
+
+			uri <- parseURI (BC.unpack uriBS)
+			guard (BC.all isDigit sizeBS)
+
+			pure (TorrentInfo (T.decodeUtf8 name) uri (Just (read (BC.unpack sizeBS))))

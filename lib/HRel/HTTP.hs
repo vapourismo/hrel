@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module HRel.HTTP (
 	Manager,
 	newManager,
@@ -30,7 +32,7 @@ download mgr url =
 -- | Download something.
 download' :: Manager -> Request -> IO (Maybe B.ByteString)
 download' mgr req =
-	handle (\ (SomeException _) -> pure Nothing) $ do
+	handle (\ (_ :: HttpException) -> pure Nothing) $ do
 		res <- httpLbs req mgr
 		pure $ case responseStatus res of
 			Status 200 _ -> Just (BL.toStrict (responseBody res))

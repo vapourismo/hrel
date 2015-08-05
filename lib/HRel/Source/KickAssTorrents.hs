@@ -41,7 +41,7 @@ kickAssSearchFilter =
 			else
 				Nothing
 
-		pure (map (\ uri -> TorrentInfo (normalizeReleaseName title) uri sizeNum) uris)
+		pure (map (\ uri -> TorrentInfo title uri sizeNum) uris)
 	where
 		cleanTorrentURL =  T.unpack . fst . T.break (== '?')
 

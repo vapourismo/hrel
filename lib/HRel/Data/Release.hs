@@ -10,7 +10,8 @@ module HRel.Data.Release (
 	Release (..),
 	insertRelease,
 	createRelease,
-	findRelease
+	findRelease,
+	addRelease
 ) where
 
 import           Data.Char
@@ -18,6 +19,7 @@ import qualified Data.Text     as T
 import           Data.Word
 
 import           HRel.Database
+import           HRel.Data.Feed
 
 -- | Release identfier name
 newtype ReleaseName = ReleaseName { getReleaseName :: T.Text }
@@ -70,3 +72,9 @@ findRelease rid = do
 	case result of
 		[Only rel] -> pure (Just (Release rid (ReleaseName rel)))
 		_          -> pure Nothing
+
+-- | Attach a release to a feed.
+addRelease :: Feed -> Release -> Action ()
+addRelease feed rel =
+	() <$ execute "INSERT IGNORE INTO feed_contents (feed, rel) VALUES (?, ?)"
+	              (feedID feed, releaseID rel)

@@ -22,7 +22,9 @@ library
                        network-uri,
                        mysql,
                        mysql-simple,
-                       lucid
+                       lucid,
+                       suspend,
+                       timers
   exposed-modules:     HRel.Source.AtomFeed,
                        HRel.Source.KickAssTorrents,
                        HRel.Units,

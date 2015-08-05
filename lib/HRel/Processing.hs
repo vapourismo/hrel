@@ -9,14 +9,18 @@ module HRel.Processing (
 	-- * Workers
 	WorkerCommand,
 	spawnWorkers,
+	spawnJobTimer,
 
 	-- * Directives
-	processAllFeeds
+	processAllFeeds,
 ) where
 
 import Control.Monad
 import Control.Monad.Trans
+
 import Control.Concurrent
+import Control.Concurrent.Suspend
+import Control.Concurrent.Timer
 
 import HRel.Database
 import HRel.HTTP
@@ -56,6 +60,10 @@ spawnWorkers Manifest {..} = do
 					ProcessFeed feed          -> processFeed mf feed
 					ProcessFeedEntry feed rel -> processFeedEntry mf feed rel
 					ProcessTorrent rel info   -> processTorrentInfo mf rel info
+
+spawnJobTimer :: Manifest -> IO TimerIO
+spawnJobTimer mf =
+	repeatedTimer (processAllFeeds mf) (mDelay 20)
 
 processAllFeeds :: Manifest -> IO ()
 processAllFeeds Manifest {..} =

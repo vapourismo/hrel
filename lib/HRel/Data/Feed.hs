@@ -6,13 +6,14 @@ module HRel.Data.Feed (
 	insertFeed,
 	createFeed,
 	findFeed,
+	findAllFeeds,
 ) where
 
 import           Data.Word
-import           HRel.Database
 import           Network.URI   hiding (query)
+import           HRel.Database
 
--- |
+-- | Feed
 data Feed = Feed {
 	feedID  :: Word64,
 	feedURI :: URI
@@ -38,3 +39,8 @@ findFeed fid = do
 	case result of
 		[Only uri] -> pure (Just (Feed fid uri))
 		_          -> pure Nothing
+
+-- | Find all existing feeds.
+findAllFeeds :: Action [Feed]
+findAllFeeds =
+	map (uncurry Feed) <$> query_ "SELECT id, url FROM feeds"

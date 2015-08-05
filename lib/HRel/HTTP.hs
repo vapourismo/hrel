@@ -3,6 +3,7 @@ module HRel.HTTP (
 	withManager,
 	withTLSManager,
 
+	Request,
 	download,
 	download'
 ) where

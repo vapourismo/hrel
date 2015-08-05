@@ -7,11 +7,15 @@ module HRel.Data.Feed (
 	createFeed,
 	findFeed,
 	findAllFeeds,
+	addRelease
 ) where
 
 import           Data.Word
+
 import           Network.URI   hiding (query)
+
 import           HRel.Database
+import           HRel.Data.Release
 
 -- | Feed
 data Feed = Feed {
@@ -44,3 +48,9 @@ findFeed fid = do
 findAllFeeds :: Action [Feed]
 findAllFeeds =
 	map (uncurry Feed) <$> query_ "SELECT id, url FROM feeds"
+
+-- | Attach a release to a feed.
+addRelease :: Feed -> Release -> Action ()
+addRelease feed rel =
+	() <$ execute "INSERT IGNORE INTO feed_contents (feed, rel) VALUES (?, ?)"
+	              (feedID feed, releaseID rel)

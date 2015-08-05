@@ -28,6 +28,7 @@ library
                        HRel.Units,
                        HRel.Markup,
                        HRel.Database,
+                       HRel.HTTP,
                        HRel.Data.Feed,
                        HRel.Data.Release,
                        HRel.Data.Torrent,

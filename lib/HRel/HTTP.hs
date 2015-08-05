@@ -7,7 +7,6 @@ module HRel.HTTP (
 
 	Request,
 	download,
-	download'
 ) where
 
 import           Control.Exception
@@ -27,15 +26,15 @@ newTLSManager =
 -- | Download something.
 download :: Manager -> String -> IO (Maybe B.ByteString)
 download mgr url =
-	maybe (pure Nothing) (download' mgr) (parseUrl url)
+	fmap BL.toStrict <$> maybe (pure Nothing) (download' mgr) (parseUrl url)
 
 -- | Download something.
-download' :: Manager -> Request -> IO (Maybe B.ByteString)
+download' :: Manager -> Request -> IO (Maybe BL.ByteString)
 download' mgr req =
 	handle (\ (e :: HttpException) -> noteException e >> pure Nothing) $ do
 		res <- httpLbs req mgr
 		pure $ case responseStatus res of
-			Status 200 _ -> Just (BL.toStrict (responseBody res))
+			Status 200 _ -> Just (responseBody res)
 			_            -> Nothing
 	where
 		noteException e =

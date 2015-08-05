@@ -4,8 +4,7 @@ module HRel.Source.AtomFeed (
 	-- * Atom Feeds
 	atomFeedFilter,
 	parseAtomFeed,
-	fetchAtomFeed,
-	fetchAtomFeed'
+	fetchAtomFeed
 ) where
 
 import qualified Data.ByteString           as B
@@ -32,8 +31,3 @@ parseAtomFeed contents =
 fetchAtomFeed :: Manager -> String -> IO (Maybe [ReleaseName])
 fetchAtomFeed mgr url =
 	(>>= parseAtomFeed) <$> download mgr url
-
--- | Fetches the release names contained in an Atom feed.
-fetchAtomFeed' :: Manager -> Request -> IO (Maybe [ReleaseName])
-fetchAtomFeed' mgr req = do
-	(>>= parseAtomFeed) <$> download' mgr req

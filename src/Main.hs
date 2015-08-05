@@ -10,6 +10,6 @@ import HRel.Processing
 main :: IO ()
 main = withManifest $ \ mf -> do
 	spawnWorkers mf
-	spawnJobTimers mf
+	spawnJobTimer mf
 	processAllFeeds mf
 	forever (threadDelay 1000 >> yield)

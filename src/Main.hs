@@ -16,6 +16,7 @@ import           Web.Scotty
 
 import           Network.URI         hiding (query)
 
+import           HRel.Config
 import           HRel.Processing
 import           HRel.Database
 import           HRel.Templates
@@ -81,7 +82,7 @@ main = withManifest $ \ mf -> do
 	spawnJobTimer mf
 	--processAllFeeds mf
 
-	scotty 3000 $ do
+	scotty confListenPort $ do
 		get "/style.css" $ do
 			setHeader "Content-Type" "text/css"
 			file "assets/style.css"

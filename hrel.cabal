@@ -24,7 +24,8 @@ library
                        mysql-simple,
                        lucid,
                        suspend,
-                       timers
+                       timers,
+                       aeson
   exposed-modules:     HRel.Source.AtomFeed,
                        HRel.Source.KickAssTorrents,
                        HRel.Units,
@@ -35,7 +36,8 @@ library
                        HRel.Data.Feed,
                        HRel.Data.Release,
                        HRel.Data.Torrent,
-                       HRel.Templates
+                       HRel.Templates,
+                       HRel.Config
 
 executable hrel
   hs-source-dirs:      src

@@ -92,7 +92,7 @@ type Action = ReaderT Database (MaybeT IO)
 -- | Perform the given actions.
 runAction :: (MonadIO m) => Database -> Action a -> m (Maybe a)
 runAction db a =
-	liftIO (runMaybeT (runReaderT a db) `catch` noteException)
+	liftIO (handle noteException (runMaybeT (runReaderT a db)))
 	where
 		noteException (SomeException e) = do
 			putStrLn ("runAction: " ++ show e)

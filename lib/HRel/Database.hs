@@ -13,6 +13,7 @@ module HRel.Database (
 	query1,
 	query1_,
 	execute,
+	executeMany,
 	execute_,
 	insert,
 
@@ -131,6 +132,12 @@ execute :: (M.QueryParams p) => M.Query -> p -> Action Int64
 execute q p = do
 	con <- ask
 	liftIO (M.execute con q p)
+
+-- | Execute many statements and return the number of rows affected.
+executeMany :: (M.QueryParams p) => M.Query -> [p] -> Action Int64
+executeMany q p = do
+	con <- ask
+	liftIO (M.executeMany con q p)
 
 -- | Same as "execute" but does not expect a query parameter.
 execute_ :: M.Query -> Action Int64

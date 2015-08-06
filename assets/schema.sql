@@ -43,7 +43,21 @@ CREATE TABLE `feeds` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `url` (`url`),
   KEY `id` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `release_links`
+--
+
+DROP TABLE IF EXISTS `release_links`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `release_links` (
+  `rel` int(10) unsigned NOT NULL,
+  `tor` int(10) unsigned NOT NULL,
+  UNIQUE KEY `rel_tor` (`rel`,`tor`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -61,7 +75,24 @@ CREATE TABLE `releases` (
   `updateCount` int(10) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=196 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `torrents`
+--
+
+DROP TABLE IF EXISTS `torrents`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `torrents` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `uri` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `size` int(10) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `uri` (`uri`)
+) ENGINE=InnoDB AUTO_INCREMENT=345 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -73,4 +104,4 @@ CREATE TABLE `releases` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-07-23  0:59:22
+-- Dump completed on 2015-08-06 14:55:12

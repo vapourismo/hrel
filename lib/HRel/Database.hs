@@ -10,6 +10,8 @@ module HRel.Database (
 
 	query,
 	query_,
+	query1,
+	query1_,
 	execute,
 	execute_,
 	insert,
@@ -23,11 +25,13 @@ module HRel.Database (
 
 import           Control.Exception
 import           Control.Monad.Reader
+import           Control.Monad.Trans.Maybe
 
-import qualified Data.ByteString.Char8              as BC
 import           Data.Int
-import           Data.Typeable
 import           Data.Word
+import           Data.Maybe
+import           Data.Typeable
+import qualified Data.ByteString.Char8              as BC
 
 import qualified Database.MySQL.Base.Types          as M
 import qualified Database.MySQL.Simple              as M
@@ -83,42 +87,64 @@ withDatabase =
 			})
 
 -- | Database action
-type Action = ReaderT Database IO
+type Action = ReaderT Database (MaybeT IO)
 
 -- | Perform the given actions.
-runAction :: (MonadIO m) => Database -> Action a -> m a
+runAction :: (MonadIO m) => Database -> Action a -> m (Maybe a)
 runAction db a =
-	liftIO (runReaderT a db)
+	liftIO (runMaybeT (runReaderT a db) `catch` noteException)
+	where
+		noteException (SomeException e) = do
+			putStrLn ("runAction: " ++ show e)
+			pure Nothing
+
+-- |
+liftAction :: IO (Maybe a) -> Action a
+liftAction = ReaderT . const . MaybeT
 
 -- | Query the database.
 query :: (M.QueryParams p, M.QueryResults r) => M.Query -> p -> Action [r]
 query q p = do
 	con <- ask
-	lift (M.query con q p)
+	liftIO (M.query con q p)
 
 -- | Query the database without parameters.
 query_ :: (M.QueryResults r) => M.Query -> Action [r]
 query_ q = do
 	con <- ask
-	lift (M.query_ con q)
+	liftIO (M.query_ con q)
+
+-- | Same as "query" but returns only the first result.
+query1 :: (M.QueryParams p, M.QueryResults r) => M.Query -> p -> Action r
+query1 q p = do
+	con <- ask
+	liftAction (fmap listToMaybe (M.query con q p))
+
+-- | Same as "query_" but returns only the first result.
+query1_ :: (M.QueryResults r) => M.Query -> Action r
+query1_ q = do
+	con <- ask
+	liftAction (fmap listToMaybe (M.query_ con q))
 
 -- | Execute a statement and return the number of rows affected.
 execute :: (M.QueryParams p) => M.Query -> p -> Action Int64
 execute q p = do
 	con <- ask
-	lift (M.execute con q p)
+	liftIO (M.execute con q p)
 
 -- | Same as "execute" but does not expect a query parameter.
 execute_ :: M.Query -> Action Int64
 execute_ q = do
 	con <- ask
-	lift (M.execute_ con q)
+	liftIO (M.execute_ con q)
 
 -- | Execute a statement and return the last inserted ID.
-insert :: (M.QueryParams p) => M.Query -> p -> Action (Maybe Word64)
+insert :: (M.QueryParams p) => M.Query -> p -> Action Word64
 insert q p = do
-	num <- execute q p
-	if num >= 0 then
-		Just <$> (ask >>= liftIO . M.insertID)
-	else
-		pure Nothing
+	con <- ask
+	liftAction $ do
+		num <- M.execute con q p
+		if num >= 0 then
+			Just <$> M.insertID con
+		else
+			pure Nothing

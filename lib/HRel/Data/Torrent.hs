@@ -30,7 +30,7 @@ data Torrent = Torrent {
 } deriving (Show, Eq, Ord)
 
 -- |
-insertTorrent :: TorrentInfo -> Action (Maybe Word64)
+insertTorrent :: TorrentInfo -> Action Word64
 insertTorrent (TorrentInfo name uri mbSize) =
 	insert qry (uri, name, mbSize)
 	where
@@ -38,9 +38,9 @@ insertTorrent (TorrentInfo name uri mbSize) =
 		       \ ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"
 
 -- |
-createTorrent :: TorrentInfo -> Action (Maybe Torrent)
+createTorrent :: TorrentInfo -> Action Torrent
 createTorrent info =
-	fmap (\ mbtid -> Torrent <$> mbtid <*> pure info) (insertTorrent info)
+	fmap (\ tid -> Torrent tid info) (insertTorrent info)
 
 -- |
 addTorrent :: Release -> Torrent -> Action ()

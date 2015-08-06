@@ -39,7 +39,7 @@ downloadGZip mgr url =
 -- | Download something.
 download' :: Manager -> Request -> IO (Maybe BL.ByteString)
 download' mgr req =
-	handle (\ (e :: HttpException) -> noteException e >> pure Nothing) $ do
+	handle (\ (SomeException e) -> noteException e >> pure Nothing) $ do
 		res <- httpLbs req mgr
 		pure $ case responseStatus res of
 			Status 200 _ -> Just (responseBody res)

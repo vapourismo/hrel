@@ -26,8 +26,8 @@ import           HRel.Source.AtomFeed
 
 handleIndex :: Manifest -> ActionM ()
 handleIndex Manifest {..} = do
-	feeds <- runAction mDatabase findAllFeeds
-	html (L.renderText (indexTemplate feeds))
+	mbFeeds <- runAction mDatabase findAllFeeds
+	html (L.renderText (indexTemplate (maybe [] id mbFeeds)))
 
 listQuery :: Query
 listQuery =
@@ -41,8 +41,8 @@ listQuery =
 handleList :: Manifest -> ActionM ()
 handleList Manifest {..} = do
 	fid <- param "fid"
-	items <- runAction mDatabase (query listQuery (Only (fid :: Word64)))
-	html (L.renderText (listTemplate items))
+	mbItems <- runAction mDatabase (query listQuery (Only (fid :: Word64)))
+	html (L.renderText (listTemplate (maybe [] id mbItems)))
 
 handleForm :: Bool -> ActionM ()
 handleForm =

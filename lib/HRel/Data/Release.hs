@@ -51,7 +51,7 @@ data Release = Release {
 } deriving (Show, Eq, Ord)
 
 -- |
-insertRelease :: ReleaseName -> Action (Maybe Word64)
+insertRelease :: ReleaseName -> Action Word64
 insertRelease (ReleaseName rel) =
 	insert qry (Only rel)
 	where
@@ -61,17 +61,15 @@ insertRelease (ReleaseName rel) =
 		       \                         updateCount = updateCount + 1"
 
 -- |
-createRelease :: ReleaseName -> Action (Maybe Release)
+createRelease :: ReleaseName -> Action Release
 createRelease rel =
-	fmap (\ mbrid -> Release <$> mbrid <*> pure rel) (insertRelease rel)
+	fmap (\ rid -> Release rid rel) (insertRelease rel)
 
 -- |
-findRelease :: Word64 -> Action (Maybe Release)
+findRelease :: Word64 -> Action Release
 findRelease rid = do
-	result <- query "SELECT url FROM releases WHERE id = ? LIMIT 1" (Only rid)
-	case result of
-		[Only rel] -> pure (Just (Release rid (ReleaseName rel)))
-		_          -> pure Nothing
+	fmap (\ (Only rel) -> Release rid (ReleaseName rel))
+	     (query1 "SELECT url FROM releases WHERE id = ? LIMIT 1" (Only rid))
 
 -- | Attach a release to a feed.
 addRelease :: Feed -> Release -> Action ()

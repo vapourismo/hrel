@@ -68,7 +68,7 @@ spawnJobTimer mf =
 
 processAllFeeds :: Manifest -> IO ()
 processAllFeeds mf@(Manifest {..}) =
-	runAction mDatabase findAllFeeds >>= mapM_ (queueProcessFeed mf)
+	runAction mDatabase findAllFeeds >>= maybe (pure ()) (mapM_ (queueProcessFeed mf))
 
 queueProcessFeed :: Manifest -> Feed -> IO ()
 queueProcessFeed Manifest {..} feed =
@@ -87,15 +87,12 @@ queueProcessFeedEntry Manifest {..} feed rel =
 processFeedEntry :: Manifest -> Feed -> ReleaseName -> IO ()
 processFeedEntry mf@(Manifest {..}) feed name = do
 	putStrLn ("processFeedEntry: " ++ show name)
-	runAction mDatabase $ do
-		mbRel <- createRelease name
-		case mbRel of
-			Just rel -> do
-				addRelease feed rel
-				liftIO (processRelease mf rel)
+	mbRel <- runAction mDatabase $ do
+		rel <- createRelease name
+		addRelease feed rel
+		pure rel
 
-			Nothing ->
-				pure ()
+	maybe (pure ()) (liftIO . processRelease mf) mbRel
 
 processRelease :: Manifest -> Release -> IO ()
 processRelease Manifest {..} rel = do
@@ -113,5 +110,5 @@ processRelease Manifest {..} rel = do
 processTorrentInfo :: Manifest -> Release -> TorrentInfo -> IO ()
 processTorrentInfo Manifest {..} rel info = do
 	putStrLn ("processTorrentInfo: " ++ show info)
-	runAction mDatabase $ do
-		createTorrent info >>= maybe (pure ()) (addTorrent rel)
+	void $ runAction mDatabase $ do
+		createTorrent info >>= addTorrent rel

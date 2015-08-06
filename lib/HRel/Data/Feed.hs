@@ -23,7 +23,7 @@ data Feed = Feed {
 } deriving (Show, Eq, Ord)
 
 -- | Insert a feed URI, but do not instantiate a "Feed".
-insertFeed :: URI -> Action (Maybe Word64)
+insertFeed :: URI -> Action Word64
 insertFeed uri =
 	insert qry (Only uri)
 	where
@@ -31,25 +31,22 @@ insertFeed uri =
 		       \ ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"
 
 -- | Create a "Feed" and make sure it exists in the database.
-createFeed :: URI -> Action (Maybe Feed)
+createFeed :: URI -> Action Feed
 createFeed uri =
-	fmap (\ mbfid -> Feed <$> mbfid <*> pure uri) (insertFeed uri)
+	fmap (\ fid -> Feed fid uri)
+	     (insertFeed uri)
 
 -- | Find an existing feed.
-findFeed :: Word64 -> Action (Maybe Feed)
+findFeed :: Word64 -> Action Feed
 findFeed fid = do
-	result <- query "SELECT url FROM feeds WHERE id = ? LIMIT 1" (Only fid)
-	pure $ case result of
-		[Only uri] -> Just (Feed fid uri)
-		_          -> Nothing
+	fmap (\ (Only uri) -> Feed fid uri)
+	     (query1 "SELECT url FROM feeds WHERE id = ? LIMIT 1" (Only fid))
 
 -- | Find an existing feed using its URI.
-findFeedByURI :: URI -> Action (Maybe Feed)
+findFeedByURI :: URI -> Action Feed
 findFeedByURI uri = do
-	result <- query "SELECT id FROM feeds WHERE url = ? LIMIT 1" (Only uri)
-	pure $ case result of
-		[Only fid] -> Just (Feed fid uri)
-		_          -> Nothing
+	fmap (\ (Only fid) -> Feed fid uri)
+	     (query1 "SELECT id FROM feeds WHERE url = ? LIMIT 1" (Only uri))
 
 -- | Find all existing feeds.
 findAllFeeds :: Action [Feed]

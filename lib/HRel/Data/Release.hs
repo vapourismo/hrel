@@ -39,6 +39,7 @@ normalizeReleaseName =
 
 		retrieveAuthor txt =
 			case splitProperly (== '-') txt of
+				[]   -> (T.empty, Nothing)
 				[rn] -> (rn, Nothing)
 				xs   -> (T.intercalate "-" (init xs),
 				         Just (fst (T.span (not . isSpace) (last xs))))

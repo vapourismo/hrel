@@ -89,6 +89,7 @@ CREATE TABLE `torrents` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `uri` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
+  `normalized` varchar(255) DEFAULT NULL,
   `size` int(10) unsigned DEFAULT NULL,
   `insertTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -105,4 +106,4 @@ CREATE TABLE `torrents` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-08-06 21:29:43
+-- Dump completed on 2015-08-07  1:59:02

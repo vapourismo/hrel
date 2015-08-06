@@ -6,6 +6,7 @@ module HRel.Data.Feed (
 	insertFeed,
 	createFeed,
 	findFeed,
+	findFeedByURI,
 	findAllFeeds
 ) where
 
@@ -38,9 +39,17 @@ createFeed uri =
 findFeed :: Word64 -> Action (Maybe Feed)
 findFeed fid = do
 	result <- query "SELECT url FROM feeds WHERE id = ? LIMIT 1" (Only fid)
-	case result of
-		[Only uri] -> pure (Just (Feed fid uri))
-		_          -> pure Nothing
+	pure $ case result of
+		[Only uri] -> Just (Feed fid uri)
+		_          -> Nothing
+
+-- | Find an existing feed using its URI.
+findFeedByURI :: URI -> Action (Maybe Feed)
+findFeedByURI uri = do
+	result <- query "SELECT id FROM feeds WHERE url = ? LIMIT 1" (Only uri)
+	pure $ case result of
+		[Only fid] -> Just (Feed fid uri)
+		_          -> Nothing
 
 -- | Find all existing feeds.
 findAllFeeds :: Action [Feed]

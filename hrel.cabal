@@ -1,5 +1,5 @@
 name:                hrel
-version:             0.0.0
+version:             0
 build-type:          Simple
 cabal-version:       >= 1.10
 

@@ -13,7 +13,7 @@ module HRel.Processing (
 
 	-- * Directives
 	queueProcessFeed,
-	processAllFeeds,
+	queueProcessFeedEntry
 ) where
 
 import Control.Monad
@@ -67,18 +67,22 @@ spawnJobTimer mf =
 	repeatedTimer (processAllFeeds mf) (mDelay 20)
 
 processAllFeeds :: Manifest -> IO ()
-processAllFeeds Manifest {..} =
-	runAction mDatabase findAllFeeds >>= mapM_ (writeChan mChannel . ProcessFeed)
+processAllFeeds mf@(Manifest {..}) =
+	runAction mDatabase findAllFeeds >>= mapM_ (queueProcessFeed mf)
 
 queueProcessFeed :: Manifest -> Feed -> IO ()
 queueProcessFeed Manifest {..} feed =
 	writeChan mChannel (ProcessFeed feed)
 
 processFeed :: Manifest -> Feed -> IO ()
-processFeed Manifest {..} feed = do
+processFeed mf@(Manifest {..}) feed = do
 	putStrLn ("processFeed: " ++ show feed)
 	mbRels <- fetchAtomFeed mManager (show (feedURI feed))
-	maybe (pure ()) (mapM_ (writeChan mChannel . ProcessFeedEntry feed)) mbRels
+	maybe (pure ()) (mapM_ (queueProcessFeedEntry mf feed)) mbRels
+
+queueProcessFeedEntry :: Manifest -> Feed -> ReleaseName -> IO ()
+queueProcessFeedEntry Manifest {..} feed rel =
+	writeChan mChannel (ProcessFeedEntry feed rel)
 
 processFeedEntry :: Manifest -> Feed -> ReleaseName -> IO ()
 processFeedEntry mf@(Manifest {..}) feed name = do

@@ -3,6 +3,7 @@
 
 module Main where
 
+import           Control.Monad
 import           Control.Monad.Trans
 
 import           Data.Word
@@ -48,11 +49,13 @@ handleForm =
 	html . L.renderText . formTemplate
 
 tryFeed :: Manifest -> String -> IO (Maybe Feed)
-tryFeed Manifest {..} url = do
+tryFeed mf@(Manifest {..}) url = do
 	mbRels <- fetchAtomFeed mManager url
-	case mbRels of
-		Just rels | length rels > 0 ->
-			runAction mDatabase (createFeed (fromJust (parseURI url)))
+	case (,) <$> mbRels <*> parseURI url of
+		Just (rels, uri) | length rels > 0 -> do
+			r <- runAction mDatabase (createFeed uri)
+			when (isJust r) (mapM_ (queueProcessFeedEntry mf (fromJust r)) rels)
+			pure r
 
 		_ -> pure Nothing
 
@@ -80,7 +83,6 @@ main :: IO ()
 main = withManifest $ \ mf -> do
 	spawnWorkers mf
 	spawnJobTimer mf
-	--processAllFeeds mf
 
 	scotty confListenPort $ do
 		get "/style.css" $ do

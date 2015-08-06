@@ -79,7 +79,9 @@ fetchKickAssDump mgr url =
 			uri <- parseURI (BC.unpack uriBS)
 			guard (BC.all isDigit sizeBS)
 
-			let nameText = T.decodeUtf8 name
+			let nameText = T.strip (T.decodeUtf8 name)
+			guard (not (T.null nameText))
+
 			pure (TorrentInfo nameText
 			                  (normalizeReleaseName nameText)
 			                  uri

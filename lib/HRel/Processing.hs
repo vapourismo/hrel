@@ -12,6 +12,7 @@ module HRel.Processing (
 	spawnJobTimer,
 
 	-- * Directives
+	queueProcessFeed,
 	processAllFeeds,
 ) where
 
@@ -68,6 +69,10 @@ spawnJobTimer mf =
 processAllFeeds :: Manifest -> IO ()
 processAllFeeds Manifest {..} =
 	runAction mDatabase findAllFeeds >>= mapM_ (writeChan mChannel . ProcessFeed)
+
+queueProcessFeed :: Manifest -> Feed -> IO ()
+queueProcessFeed Manifest {..} feed =
+	writeChan mChannel (ProcessFeed feed)
 
 processFeed :: Manifest -> Feed -> IO ()
 processFeed Manifest {..} feed = do

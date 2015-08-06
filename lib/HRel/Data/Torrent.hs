@@ -4,10 +4,12 @@ module HRel.Data.Torrent (
 	TorrentInfo (..),
 	Torrent (..),
 	insertTorrent,
+	insertTorrents,
 	createTorrent,
 	addTorrent
 ) where
 
+import           Data.Int
 import           Data.Word
 import qualified Data.Text         as T
 
@@ -35,6 +37,17 @@ insertTorrent :: TorrentInfo -> Action Word64
 insertTorrent (TorrentInfo name normalized uri mbSize) =
 	insert qry (uri, name, getReleaseName normalized, mbSize)
 	where
+		qry = "INSERT INTO torrents (uri, name, normalized, size) VALUES (?, ?, ?, ?) \
+		       \ ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"
+
+-- |
+insertTorrents :: [TorrentInfo] -> Action Int64
+insertTorrents infos =
+	executeMany qry (map row infos)
+	where
+		row (TorrentInfo name normalized uri mbSize) =
+			(uri, name, getReleaseName normalized, mbSize)
+
 		qry = "INSERT INTO torrents (uri, name, normalized, size) VALUES (?, ?, ?, ?) \
 		       \ ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"
 

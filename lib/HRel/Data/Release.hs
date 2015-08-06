@@ -11,12 +11,14 @@ module HRel.Data.Release (
 	insertRelease,
 	createRelease,
 	findRelease,
-	addRelease
+	addRelease,
+	addReleases
 ) where
 
+import           Data.Int
+import           Data.Word
 import           Data.Char
 import qualified Data.Text     as T
-import           Data.Word
 
 import           HRel.Database
 import           HRel.Data.Feed
@@ -71,8 +73,17 @@ findRelease rid = do
 	fmap (\ (Only rel) -> Release rid (ReleaseName rel))
 	     (query1 "SELECT url FROM releases WHERE id = ? LIMIT 1" (Only rid))
 
+-- |
+addReleaseStatement :: Query
+addReleaseStatement =
+	"INSERT IGNORE INTO feed_contents (feed, rel) VALUES (?, ?)"
+
 -- | Attach a release to a feed.
-addRelease :: Feed -> Release -> Action ()
+addRelease :: Feed -> Release -> Action Int64
 addRelease feed rel =
-	() <$ execute "INSERT IGNORE INTO feed_contents (feed, rel) VALUES (?, ?)"
-	              (feedID feed, releaseID rel)
+	execute addReleaseStatement (feedID feed, releaseID rel)
+
+-- | Attach multiple releases to a feed.
+addReleases :: Feed -> [Release] -> Action Int64
+addReleases feed rels =
+	executeMany addReleaseStatement (map ((,) (feedID feed) . releaseID) rels)

@@ -3,11 +3,10 @@
 
 module Main where
 
-import           Control.Monad
 import           Control.Monad.Trans
+import           Control.Applicative
 
 import           Data.Word
-import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text.Lazy      as TL
 
@@ -18,10 +17,13 @@ import           Web.Scotty
 import           Network.URI         hiding (query)
 
 import           HRel.Config
-import           HRel.Processing
 import           HRel.Database
 import           HRel.Templates
+import           HRel.Processing
+
 import           HRel.Data.Feed
+import           HRel.Data.Release
+
 import           HRel.Source.AtomFeed
 
 handleIndex :: Manifest -> ActionM ()
@@ -49,15 +51,20 @@ handleForm =
 	html . L.renderText . formTemplate
 
 tryFeed :: Manifest -> String -> IO (Maybe Feed)
-tryFeed mf@(Manifest {..}) url = do
+tryFeed Manifest {..} url = do
 	mbRels <- fetchAtomFeed mManager url
 	case (,) <$> mbRels <*> parseURI url of
-		Just (rels, uri) | length rels > 0 -> do
-			r <- runAction mDatabase (createFeed uri)
-			when (isJust r) (mapM_ (queueProcessFeedEntry mf (fromJust r)) rels)
-			pure r
+		Just (names, uri) | length names > 0 ->
+			runAction mDatabase (findFeedByURI uri <|> createNew uri names)
 
 		_ -> pure Nothing
+	where
+		createNew uri names = do
+			feed <- createFeed uri
+			rels <- mapM createRelease names
+			addReleases feed rels
+			pure feed
+
 
 handleSubmit :: Manifest -> ActionM ()
 handleSubmit mf@(Manifest {..}) = do
@@ -70,8 +77,7 @@ handleSubmit mf@(Manifest {..}) = do
 
 		-- If insertion was successful, queue feed and redirect to the new feed page
 		case mbFeed of
-			Just feed -> do
-				liftIO (queueProcessFeed mf feed)
+			Just feed ->
 				redirect (TL.pack ("/feed/" <> show (feedID feed)))
 
 			Nothing ->

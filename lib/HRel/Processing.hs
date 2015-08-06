@@ -12,12 +12,11 @@ module HRel.Processing (
 	spawnJobTimer,
 
 	-- * Directives
-	queueProcessFeed,
-	queueProcessFeedEntry
+	queueProcessAllFeeds,
+	queueProcessFeed
 ) where
 
 import Control.Monad
-import Control.Monad.Trans
 
 import Control.Concurrent
 import Control.Concurrent.Suspend
@@ -29,10 +28,8 @@ import HRel.HTTP
 
 import HRel.Data.Feed
 import HRel.Data.Release
-import HRel.Data.Torrent
 
 import HRel.Source.AtomFeed
-import HRel.Source.KickAssTorrents
 
 data Manifest = Manifest {
 	mDatabase :: Database,
@@ -45,9 +42,8 @@ withManifest action =
 	withDatabase (\ db -> Manifest db <$> newTLSManager <*> newChan >>= action)
 
 data WorkerCommand
-	= ProcessFeed Feed
-	| ProcessFeedEntry Feed ReleaseName
-	| ProcessTorrent Release TorrentInfo
+	= ProcessAllFeeds
+	| ProcessFeed Feed
 
 spawnWorkers :: Manifest -> IO [ThreadId]
 spawnWorkers Manifest {..} = do
@@ -59,24 +55,19 @@ spawnWorkers Manifest {..} = do
 			in forever $ do
 				msg <- readChan mChannel
 				case msg of
-					ProcessFeed feed          -> processFeed mf feed
-					ProcessFeedEntry feed rel -> processFeedEntry mf feed rel
-					ProcessTorrent rel info   -> processTorrentInfo mf rel info
+					ProcessFeed feed -> processFeed mf feed
+					ProcessAllFeeds  -> processAllFeeds mf
 
 spawnJobTimer :: Manifest -> IO ()
 spawnJobTimer mf = do
-	repeatedTimer (processAllFeeds mf) (mDelay 20)
+	repeatedTimer (queueProcessAllFeeds mf) (mDelay 20)
 
 	case confHourlyDump of
-		Just dump -> void $ do
-			repeatedTimer (processHourlyDump mf dump) (hDelay 1)
-			forkIO (processHourlyDump mf dump)
-
-		Nothing ->
-			pure ()
+		Just dump -> void (repeatedTimer (processHourlyDump mf dump) (hDelay 1))
+		Nothing   -> pure ()
 
 processHourlyDump :: Manifest -> String -> IO ()
-processHourlyDump Manifest {..} url = do
+processHourlyDump _ _ = do
 	pure ()
 	--mbTors <- fetchKickAssDump mManager url
 	--case mbTors of
@@ -92,6 +83,10 @@ processHourlyDump Manifest {..} url = do
 	--	Nothing ->
 	--		pure ()
 
+queueProcessAllFeeds :: Manifest -> IO ()
+queueProcessAllFeeds Manifest {..} =
+	writeChan mChannel ProcessAllFeeds
+
 processAllFeeds :: Manifest -> IO ()
 processAllFeeds mf@(Manifest {..}) =
 	runAction mDatabase findAllFeeds >>= maybe (pure ()) (mapM_ (queueProcessFeed mf))
@@ -101,39 +96,11 @@ queueProcessFeed Manifest {..} feed =
 	writeChan mChannel (ProcessFeed feed)
 
 processFeed :: Manifest -> Feed -> IO ()
-processFeed mf@(Manifest {..}) feed = do
-	putStrLn ("processFeed: " ++ show feed)
-	mbRels <- fetchAtomFeed mManager (show (feedURI feed))
-	maybe (pure ()) (mapM_ (queueProcessFeedEntry mf feed)) mbRels
-
-queueProcessFeedEntry :: Manifest -> Feed -> ReleaseName -> IO ()
-queueProcessFeedEntry Manifest {..} feed rel =
-	writeChan mChannel (ProcessFeedEntry feed rel)
-
-processFeedEntry :: Manifest -> Feed -> ReleaseName -> IO ()
-processFeedEntry mf@(Manifest {..}) feed name = do
-	putStrLn ("processFeedEntry: " ++ show name)
-	mbRel <- runAction mDatabase $ do
-		rel <- createRelease name
-		addRelease feed rel
-		pure rel
-
-	maybe (pure ()) (liftIO . processRelease mf) mbRel
-
-processRelease :: Manifest -> Release -> IO ()
-processRelease Manifest {..} rel = do
-	putStrLn ("processRelease: " ++ show rel)
-	mbTors <- searchKickAss mManager (releaseName rel)
-	case mbTors of
-		Just tors -> do
-			mapM_ (writeChan mChannel . ProcessTorrent rel)
-			      (filter (\ info -> torrentInfoNormalized info == releaseName rel) tors)
+processFeed Manifest {..} feed = do
+	mbNames <- fetchAtomFeed mManager (show (feedURI feed))
+	case mbNames of
+		Just names ->
+			() <$ runAction mDatabase (mapM createRelease names >>= addReleases feed)
 
 		Nothing ->
 			pure ()
-
-processTorrentInfo :: Manifest -> Release -> TorrentInfo -> IO ()
-processTorrentInfo Manifest {..} rel info = do
-	putStrLn ("processTorrentInfo: " ++ show info)
-	void $ runAction mDatabase $ do
-		createTorrent info >>= addTorrent rel

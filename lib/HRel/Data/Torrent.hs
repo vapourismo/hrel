@@ -9,6 +9,7 @@ module HRel.Data.Torrent (
 ) where
 
 import           Data.Word
+import qualified Data.Text         as T
 
 import           Network.URI
 
@@ -17,7 +18,8 @@ import           HRel.Data.Release
 
 -- | TorrentInfo
 data TorrentInfo = TorrentInfo {
-	torrentInfoName        :: ReleaseName,
+	torrentInfoName        :: T.Text,
+	torrentInfoNormalized  :: ReleaseName,
 	torrentInfoSource      :: URI,
 	torrentInfoContentSize :: Maybe Word
 } deriving (Show, Eq, Ord)
@@ -30,10 +32,10 @@ data Torrent = Torrent {
 
 -- |
 insertTorrent :: TorrentInfo -> Action Word64
-insertTorrent (TorrentInfo name uri mbSize) =
-	insert qry (uri, getReleaseName name, mbSize)
+insertTorrent (TorrentInfo name normalized uri mbSize) =
+	insert qry (uri, name, getReleaseName normalized, mbSize)
 	where
-		qry = "INSERT INTO torrents (uri, name, size) VALUES (?, ?, ?) \
+		qry = "INSERT INTO torrents (uri, name, normalized, size) VALUES (?, ?, ?, ?) \
 		       \ ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"
 
 -- |

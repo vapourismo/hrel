@@ -121,7 +121,7 @@ processRelease Manifest {..} rel = do
 	case mbTors of
 		Just tors -> do
 			mapM_ (writeChan mChannel . ProcessTorrent rel)
-			      (filter (\ info -> torrentInfoName info == releaseName rel) tors)
+			      (filter (\ info -> torrentInfoNormalized info == releaseName rel) tors)
 
 		Nothing ->
 			pure ()

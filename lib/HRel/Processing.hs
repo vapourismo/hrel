@@ -13,7 +13,8 @@ module HRel.Processing (
 
 	-- * Directives
 	queueProcessAllFeeds,
-	queueProcessFeed
+	queueProcessFeed,
+	processHourlyDump
 ) where
 
 import Control.Monad
@@ -28,8 +29,10 @@ import HRel.HTTP
 
 import HRel.Data.Feed
 import HRel.Data.Release
+import HRel.Data.Torrent
 
 import HRel.Source.AtomFeed
+import HRel.Source.KickAssTorrents
 
 data Manifest = Manifest {
 	mDatabase :: Database,
@@ -67,21 +70,23 @@ spawnJobTimer mf = do
 		Nothing   -> pure ()
 
 processHourlyDump :: Manifest -> String -> IO ()
-processHourlyDump _ _ = do
-	pure ()
-	--mbTors <- fetchKickAssDump mManager url
-	--case mbTors of
-	--	Just infos -> void $ do
-	--		mb <- runAction mDatabase (insertTorrents infos)
-	--		case mb of
-	--			Just num ->
-	--				putStrLn ("processHourlyDump: Inserted " ++ show num ++ "/" ++ show (length infos))
+processHourlyDump Manifest {..} url = do
+	mbTors <- fetchKickAssDump mManager url
+	case mbTors of
+		Just infos -> void $ do
+			mb <- runAction mDatabase (sum <$> mapM insertTorrents (makeChunks infos))
+			case mb of
+				Just num ->
+					putStrLn ("processHourlyDump: Inserted " ++ show num ++ "/" ++ show (length infos))
 
-	--			Nothing ->
-	--				putStrLn ("processHourlyDump: Failed to insert all of " ++ show (length infos) ++ " received torrents")
+				Nothing ->
+					putStrLn ("processHourlyDump: Failed to insert all of " ++ show (length infos) ++ " received torrents")
 
-	--	Nothing ->
-	--		pure ()
+		Nothing ->
+			putStrLn "processHourlyDump: No dump available"
+	where
+		makeChunks [] = []
+		makeChunks xs = take 16 xs : makeChunks (drop 16 xs)
 
 queueProcessAllFeeds :: Manifest -> IO ()
 queueProcessAllFeeds Manifest {..} =

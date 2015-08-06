@@ -6,7 +6,8 @@ module HRel.Data.Torrent (
 	insertTorrent,
 	insertTorrents,
 	createTorrent,
-	addTorrent
+	addTorrent,
+	addMatchingTorrents
 ) where
 
 import           Data.Int
@@ -60,3 +61,9 @@ createTorrent info =
 addTorrent :: Release -> Torrent -> Action ()
 addTorrent rel tor =
 	() <$ execute "INSERT IGNORE INTO release_links (rel, tor) VALUES (?, ?)" (releaseID rel, torrentID tor)
+
+-- |
+addMatchingTorrents :: Action Int64
+addMatchingTorrents =
+	execute_ "INSERT IGNORE INTO release_links (rel, tor) \
+	          \ SELECT r.id, t.id from releases r, torrents t WHERE t.normalized = r.name"

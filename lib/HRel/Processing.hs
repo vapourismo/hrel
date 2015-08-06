@@ -82,6 +82,8 @@ processHourlyDump Manifest {..} url = do
 				Nothing ->
 					putStrLn ("processHourlyDump: Failed to insert all of " ++ show (length infos) ++ " received torrents")
 
+			runAction mDatabase addMatchingTorrents
+
 		Nothing ->
 			putStrLn "processHourlyDump: No dump available"
 	where

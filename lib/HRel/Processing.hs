@@ -3,7 +3,7 @@
 
 module HRel.Processing (
 	-- * Manifest
-	Manifest,
+	Manifest (..),
 	withManifest,
 
 	-- * Workers

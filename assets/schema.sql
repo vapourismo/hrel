@@ -87,11 +87,10 @@ DROP TABLE IF EXISTS `torrents`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `torrents` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `uri` varchar(255) NOT NULL,
+  `uri` varchar(255) NOT NULL UNIQUE,
   `name` varchar(255) NOT NULL,
   `size` int(10) unsigned DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `uri` (`uri`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=345 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

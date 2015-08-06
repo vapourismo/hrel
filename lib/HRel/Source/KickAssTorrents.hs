@@ -42,7 +42,7 @@ kickAssSearchFilter =
 			else
 				Nothing
 
-		pure (map (\ uri -> TorrentInfo title uri sizeNum) uris)
+		pure (map (\ uri -> TorrentInfo (normalizeReleaseName title) uri sizeNum) uris)
 	where
 		cleanTorrentURL =  T.unpack . fst . T.break (== '?')
 
@@ -79,4 +79,6 @@ fetchKickAssDump mgr url =
 			uri <- parseURI (BC.unpack uriBS)
 			guard (BC.all isDigit sizeBS)
 
-			pure (TorrentInfo (T.decodeUtf8 name) uri (Just (read (BC.unpack sizeBS))))
+			pure (TorrentInfo (normalizeReleaseName (T.decodeUtf8 name))
+			                  uri
+			                  (Just (read (BC.unpack sizeBS))))

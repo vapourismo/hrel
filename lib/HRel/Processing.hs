@@ -24,6 +24,7 @@ import Control.Concurrent.Suspend
 import Control.Concurrent.Timer
 
 import HRel.Database
+import HRel.Config
 import HRel.HTTP
 
 import HRel.Data.Feed
@@ -62,9 +63,28 @@ spawnWorkers Manifest {..} = do
 					ProcessFeedEntry feed rel -> processFeedEntry mf feed rel
 					ProcessTorrent rel info   -> processTorrentInfo mf rel info
 
-spawnJobTimer :: Manifest -> IO TimerIO
-spawnJobTimer mf =
+spawnJobTimer :: Manifest -> IO ()
+spawnJobTimer mf = do
 	repeatedTimer (processAllFeeds mf) (mDelay 20)
+
+	case confHourlyDump of
+		Just dump -> void $ do
+			repeatedTimer (processHourlyDump mf dump) (hDelay 1)
+			forkIO (processHourlyDump mf dump)
+
+		Nothing ->
+			pure ()
+
+processHourlyDump :: Manifest -> String -> IO ()
+processHourlyDump Manifest {..} url = do
+	mbTors <- fetchKickAssDump mManager url
+	case mbTors of
+		Just infos -> void $ do
+			putStrLn ("processHourlyDump: Received " ++ show (length infos) ++ " torrents")
+			runAction mDatabase (mapM insertTorrent infos)
+
+		Nothing ->
+			pure ()
 
 processAllFeeds :: Manifest -> IO ()
 processAllFeeds mf@(Manifest {..}) =
@@ -101,8 +121,7 @@ processRelease Manifest {..} rel = do
 	case mbTors of
 		Just tors -> do
 			mapM_ (writeChan mChannel . ProcessTorrent rel)
-			      (filter (\ info -> normalizeReleaseName (torrentInfoName info) == releaseName rel)
-			              tors)
+			      (filter (\ info -> torrentInfoName info == releaseName rel) tors)
 
 		Nothing ->
 			pure ()

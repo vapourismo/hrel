@@ -77,14 +77,20 @@ spawnJobTimer mf = do
 
 processHourlyDump :: Manifest -> String -> IO ()
 processHourlyDump Manifest {..} url = do
-	mbTors <- fetchKickAssDump mManager url
-	case mbTors of
-		Just infos -> void $ do
-			putStrLn ("processHourlyDump: Received " ++ show (length infos) ++ " torrents")
-			runAction mDatabase (mapM insertTorrent infos)
+	pure ()
+	--mbTors <- fetchKickAssDump mManager url
+	--case mbTors of
+	--	Just infos -> void $ do
+	--		mb <- runAction mDatabase (insertTorrents infos)
+	--		case mb of
+	--			Just num ->
+	--				putStrLn ("processHourlyDump: Inserted " ++ show num ++ "/" ++ show (length infos))
 
-		Nothing ->
-			pure ()
+	--			Nothing ->
+	--				putStrLn ("processHourlyDump: Failed to insert all of " ++ show (length infos) ++ " received torrents")
+
+	--	Nothing ->
+	--		pure ()
 
 processAllFeeds :: Manifest -> IO ()
 processAllFeeds mf@(Manifest {..}) =

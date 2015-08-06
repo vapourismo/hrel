@@ -31,11 +31,11 @@ handleIndex Manifest {..} = do
 
 listQuery :: Query
 listQuery =
-	"SELECT t.name, t.uri, t.size \
+	"SELECT t.name, t.uri, t.size, t.insertTime \
 	 \ FROM releases r, feed_contents c, release_links l, torrents t \
 	 \ WHERE c.feed = ? AND c.rel = r.id AND l.rel = r.id AND t.id = l.tor \
 	 \ GROUP BY t.id \
-	 \ ORDER BY r.updateTime DESC \
+	 \ ORDER BY t.insertTime DESC, r.name ASC \
 	 \ LIMIT 200"
 
 handleList :: Manifest -> ActionM ()

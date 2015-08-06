@@ -25,7 +25,8 @@ library
                        lucid,
                        suspend,
                        timers,
-                       aeson
+                       aeson,
+                       time
   exposed-modules:     HRel.Source.AtomFeed,
                        HRel.Source.KickAssTorrents,
                        HRel.Units,

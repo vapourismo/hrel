@@ -8,6 +8,7 @@ module HRel.Templates (
 
 import           Control.Monad
 
+import           Data.Time
 import           Data.Monoid
 import qualified Data.Text     as T
 
@@ -36,19 +37,25 @@ indexTemplate feeds =
 				a_ [href_ "/submit", class_ "submit"]
 					"Track my feed!"
 
-listTemplate :: [(T.Text, T.Text, Maybe Word)] -> Html ()
+formatTimeString :: UTCTime -> String
+formatTimeString =
+	formatTime defaultTimeLocale "%c"
+
+listTemplate :: [(T.Text, T.Text, Maybe Word, UTCTime)] -> Html ()
 listTemplate links =
 	sharedBodyTemplate $
 		div_ [class_ "content"] $ do
-			forM_ links $ \ (name, link, mbSize) -> do
-				let premLink = "https://www.premiumize.me/downloader?magnet=" <> link
+			forM_ links $ \ (name, link, mbSize, insertTime) -> do
 				div_ [class_ "entry"] $ do
 					div_ [class_ "box name"] $
 						toHtml name
 					div_ [class_ "box size"] $
 						toHtml (maybe "unknown" showAsBytes mbSize)
+					div_ [class_ "box time"] $
+						toHtml (formatTimeString insertTime)
 					a_ [class_ "box link", href_ link]
 						"link"
+					let premLink = "https://www.premiumize.me/downloader?magnet=" <> link
 					a_ [class_ "box link", href_ premLink, target_ "blank"]
 						"add"
 

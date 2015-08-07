@@ -9,7 +9,12 @@ module HRel.Processing (
 	-- * Workers
 	WorkerCommand,
 	spawnWorkers,
-	spawnJobTimer
+	spawnJobTimer,
+
+	-- * Directives
+	queueProcessAllFeeds,
+	queueProcessHourlyDump,
+	queueMatchTorrentsFor
 ) where
 
 import Control.Monad
@@ -43,6 +48,7 @@ data WorkerCommand
 	= ProcessAllFeeds
 	| ProcessFeed Feed
 	| ProcessHourlyDump String
+	| MatchTorrentsFor Feed
 
 spawnWorkers :: Manifest -> IO [ThreadId]
 spawnWorkers Manifest {..} = do
@@ -54,9 +60,10 @@ spawnWorkers Manifest {..} = do
 			in forever $ do
 				msg <- readChan mChannel
 				case msg of
-					ProcessFeed feed      -> processFeed mf feed
 					ProcessAllFeeds       -> processAllFeeds mf
+					ProcessFeed feed      -> processFeed mf feed
 					ProcessHourlyDump url -> processHourlyDump mf url
+					MatchTorrentsFor feed -> matchTorrentsFor mf feed
 
 spawnJobTimer :: Manifest -> IO ()
 spawnJobTimer mf = do
@@ -74,7 +81,7 @@ processHourlyDump :: Manifest -> String -> IO ()
 processHourlyDump Manifest {..} url = do
 	mbTors <- fetchKickAssDump mManager url
 	case mbTors of
-		Just infos -> void $ do
+		Just infos -> do
 			mb <- runAction mDatabase (sum <$> mapM insertTorrents (makeChunks infos))
 			case mb of
 				Just num ->
@@ -83,7 +90,13 @@ processHourlyDump Manifest {..} url = do
 				Nothing ->
 					putStrLn ("processHourlyDump: Failed to insert all of " ++ show (length infos) ++ " received torrents")
 
-			runAction mDatabase addMatchingTorrents
+			mbNum <- runAction mDatabase addMatchingTorrents
+			case mbNum of
+				Just num ->
+					putStrLn ("processHourlyDump: Matched " ++ show num ++ " torrents")
+
+				Nothing ->
+					putStrLn "processHourlyDump: Could not connect any torrents"
 
 		Nothing ->
 			putStrLn "processHourlyDump: No dump available"
@@ -104,7 +117,7 @@ queueProcessFeed Manifest {..} feed =
 	writeChan mChannel (ProcessFeed feed)
 
 processFeed :: Manifest -> Feed -> IO ()
-processFeed Manifest {..} feed = do
+processFeed mf@(Manifest {..}) feed = do
 	mbNames <- fetchAtomFeed mManager (show (feedURI feed))
 	case mbNames of
 		Just names -> void $ do
@@ -116,7 +129,21 @@ processFeed Manifest {..} feed = do
 				Nothing ->
 					putStrLn ("processFeed: Failed to insert releases for " ++ show (feedID feed))
 
-			runAction mDatabase (addMatchingTorrentsFor feed)
+			matchTorrentsFor mf feed
 
 		Nothing ->
 			pure ()
+
+queueMatchTorrentsFor :: Manifest -> Feed -> IO ()
+queueMatchTorrentsFor Manifest {..} feed =
+	writeChan mChannel (MatchTorrentsFor feed)
+
+matchTorrentsFor :: Manifest -> Feed -> IO ()
+matchTorrentsFor Manifest {..} feed = do
+	mbNum <- runAction mDatabase (addMatchingTorrentsFor feed)
+	case mbNum of
+		Just num ->
+			putStrLn ("matchTorrentsFor: Matched " ++ show num ++ " torrents for " ++ show (feedID feed))
+
+		Nothing ->
+			putStrLn ("matchTorrentsFor: Could not connect any torrents for " ++ show (feedID feed))

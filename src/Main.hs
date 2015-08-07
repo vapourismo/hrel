@@ -51,11 +51,13 @@ handleForm =
 	html . L.renderText . formTemplate
 
 tryFeed :: Manifest -> String -> IO (Maybe Feed)
-tryFeed Manifest {..} url = do
+tryFeed mf@(Manifest {..}) url = do
 	mbRels <- fetchAtomFeed mManager url
 	case (,) <$> mbRels <*> parseURI url of
-		Just (names, uri) | length names > 0 ->
-			runAction mDatabase (findFeedByURI uri <|> createNew uri names)
+		Just (names, uri) | length names > 0 -> do
+			mbFeed <- runAction mDatabase (findFeedByURI uri <|> createNew uri names)
+			maybe (pure ()) (queueMatchTorrentsFor mf) mbFeed
+			pure mbFeed
 
 		_ -> pure Nothing
 	where
@@ -89,6 +91,9 @@ main :: IO ()
 main = withManifest $ \ mf -> do
 	spawnWorkers mf
 	spawnJobTimer mf
+
+	queueProcessAllFeeds mf
+	maybe (pure ()) (queueProcessHourlyDump mf) confHourlyDump
 
 	scotty confListenPort $ do
 		get "/style.css" $ do

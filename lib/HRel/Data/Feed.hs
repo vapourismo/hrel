@@ -33,8 +33,7 @@ insertFeed uri =
 -- | Create a "Feed" and make sure it exists in the database.
 createFeed :: URI -> Action Feed
 createFeed uri =
-	fmap (\ fid -> Feed fid uri)
-	     (insertFeed uri)
+	fmap (flip Feed uri) (insertFeed uri)
 
 -- | Find an existing feed.
 findFeed :: Word64 -> Action Feed

@@ -53,7 +53,7 @@ data Release = Release {
 	releaseName :: ReleaseName
 } deriving (Show, Eq, Ord)
 
--- |
+-- | Insert release name into database.
 insertRelease :: ReleaseName -> Action Word64
 insertRelease (ReleaseName rel) =
 	insert qry (Only rel)
@@ -63,18 +63,18 @@ insertRelease (ReleaseName rel) =
 		       \                         updateTime  = CURRENT_TIMESTAMP, \
 		       \                         updateCount = updateCount + 1"
 
--- |
+-- | Create a "Release" and make sure it exists in the database.
 createRelease :: ReleaseName -> Action Release
 createRelease rel =
 	fmap (\ rid -> Release rid rel) (insertRelease rel)
 
--- |
+-- | Find a release using its ID.
 findRelease :: Word64 -> Action Release
 findRelease rid = do
 	fmap (\ (Only rel) -> Release rid (ReleaseName rel))
 	     (query1 "SELECT url FROM releases WHERE id = ? LIMIT 1" (Only rid))
 
--- |
+-- | SQL statement used to attach releases to a feed.
 addReleaseStatement :: Query
 addReleaseStatement =
 	"INSERT IGNORE INTO feed_contents (feed, rel) VALUES (?, ?)"

@@ -9,12 +9,7 @@ module HRel.Processing (
 	-- * Workers
 	WorkerCommand,
 	spawnWorkers,
-	spawnJobTimer,
-
-	-- * Directives
-	queueProcessAllFeeds,
-	queueProcessFeed,
-	processHourlyDump
+	spawnJobTimer
 ) where
 
 import Control.Monad
@@ -47,6 +42,7 @@ withManifest action =
 data WorkerCommand
 	= ProcessAllFeeds
 	| ProcessFeed Feed
+	| ProcessHourlyDump String
 
 spawnWorkers :: Manifest -> IO [ThreadId]
 spawnWorkers Manifest {..} = do
@@ -58,16 +54,21 @@ spawnWorkers Manifest {..} = do
 			in forever $ do
 				msg <- readChan mChannel
 				case msg of
-					ProcessFeed feed -> processFeed mf feed
-					ProcessAllFeeds  -> processAllFeeds mf
+					ProcessFeed feed      -> processFeed mf feed
+					ProcessAllFeeds       -> processAllFeeds mf
+					ProcessHourlyDump url -> processHourlyDump mf url
 
 spawnJobTimer :: Manifest -> IO ()
 spawnJobTimer mf = do
 	repeatedTimer (queueProcessAllFeeds mf) (mDelay 20)
 
 	case confHourlyDump of
-		Just dump -> void (repeatedTimer (processHourlyDump mf dump) (hDelay 1))
+		Just dump -> void (repeatedTimer (queueProcessHourlyDump mf dump) (hDelay 1))
 		Nothing   -> pure ()
+
+queueProcessHourlyDump :: Manifest -> String -> IO ()
+queueProcessHourlyDump Manifest {..} url =
+	writeChan mChannel (ProcessHourlyDump url)
 
 processHourlyDump :: Manifest -> String -> IO ()
 processHourlyDump Manifest {..} url = do
@@ -107,7 +108,14 @@ processFeed Manifest {..} feed = do
 	mbNames <- fetchAtomFeed mManager (show (feedURI feed))
 	case mbNames of
 		Just names -> void $ do
-			runAction mDatabase (mapM createRelease names >>= addReleases feed)
+			mb <- runAction mDatabase (mapM createRelease names >>= addReleases feed)
+			case mb of
+				Just num ->
+					putStrLn ("processFeed: Inserted " ++ show num ++ " for " ++ show (feedID feed))
+
+				Nothing ->
+					putStrLn ("processFeed: Failed to insert releases for " ++ show (feedID feed))
+
 			runAction mDatabase (addMatchingTorrentsFor feed)
 
 		Nothing ->

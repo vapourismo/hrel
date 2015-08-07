@@ -49,6 +49,7 @@ data WorkerCommand
 	| ProcessFeed Feed
 	| ProcessHourlyDump String
 	| MatchTorrentsFor Feed
+	| CleanDatabase
 
 spawnWorkers :: Manifest -> IO [ThreadId]
 spawnWorkers Manifest {..} = do
@@ -64,10 +65,12 @@ spawnWorkers Manifest {..} = do
 					ProcessFeed feed      -> processFeed mf feed
 					ProcessHourlyDump url -> processHourlyDump mf url
 					MatchTorrentsFor feed -> matchTorrentsFor mf feed
+					CleanDatabase         -> cleanDatabase mf
 
 spawnJobTimer :: Manifest -> IO ()
 spawnJobTimer mf = do
 	repeatedTimer (queueProcessAllFeeds mf) (mDelay 20)
+	repeatedTimer (queueCleanDatabase mf) (hDelay 12)
 
 	case confHourlyDump of
 		Just dump -> void (repeatedTimer (queueProcessHourlyDump mf dump) (hDelay 1))
@@ -147,3 +150,17 @@ matchTorrentsFor Manifest {..} feed = do
 
 		Nothing ->
 			putStrLn ("matchTorrentsFor: Could not connect any torrents for " ++ show (feedID feed))
+
+queueCleanDatabase :: Manifest -> IO ()
+queueCleanDatabase Manifest {..} =
+	writeChan mChannel CleanDatabase
+
+cleanDatabase :: Manifest -> IO ()
+cleanDatabase Manifest {..} = do
+	mbNum <- runAction mDatabase removeUnusedTorrents
+	case mbNum of
+		Just num ->
+			putStrLn ("cleanDatabase: Removed " ++ show num ++ " torrents")
+
+		Nothing ->
+			putStrLn "cleanDatabase: Could not remove unused torrents"

@@ -7,12 +7,12 @@ module HRel.Source.AtomFeed (
 	fetchAtomFeed
 ) where
 
-import qualified Data.ByteString           as B
-import qualified Data.Text.Encoding        as T
+import qualified Data.ByteString    as B
+import qualified Data.Text.Encoding as T
 
 import           HRel.Data.Release
-import           HRel.Markup
 import           HRel.HTTP
+import           HRel.Markup
 
 -- | Filter for Atom feeds.
 atomFeedFilter :: NodeFilter B.ByteString [ReleaseName]

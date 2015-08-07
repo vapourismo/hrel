@@ -9,20 +9,20 @@ module HRel.Source.KickAssTorrents (
 
 import           Control.Monad
 
+import qualified Data.ByteString       as B
+import qualified Data.ByteString.Char8 as BC
 import           Data.Char
 import           Data.Maybe
-import qualified Data.ByteString           as B
-import qualified Data.ByteString.Char8     as BC
-import qualified Data.Text                 as T
-import qualified Data.Text.Encoding        as T
+import qualified Data.Text             as T
+import qualified Data.Text.Encoding    as T
 
 import           Network.URI
 
 import           HRel.Data.Release
 import           HRel.Data.Torrent
 
-import           HRel.Markup
 import           HRel.HTTP
+import           HRel.Markup
 
 -- | Filter for KickAss Torrents RSS search result.
 kickAssSearchFilter :: NodeFilter B.ByteString [TorrentInfo]

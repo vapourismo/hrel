@@ -1,19 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module HRel.Config (
 	confListenPort,
 	confHourlyDump
 ) where
 
-import           Control.Monad
 import           Control.Exception
+import           Control.Monad
 
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as BL
 
-import           System.IO.Unsafe
 import           System.Environment
+import           System.IO.Unsafe
 
 data Config = Config {
 	_confListenPort :: Int,

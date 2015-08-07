@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module HRel.Processing (
 	-- * Manifest
@@ -13,22 +13,22 @@ module HRel.Processing (
 	spawnJobTimer
 ) where
 
-import Control.Monad
+import           Control.Monad
 
-import Control.Concurrent
-import Control.Concurrent.Suspend
-import Control.Concurrent.Timer
+import           Control.Concurrent
+import           Control.Concurrent.Suspend
+import           Control.Concurrent.Timer
 
-import HRel.Database
-import HRel.Config
-import HRel.HTTP
+import           HRel.Config
+import           HRel.Database
+import           HRel.HTTP
 
-import HRel.Data.Feed
-import HRel.Data.Release
-import HRel.Data.Torrent
+import           HRel.Data.Feed
+import           HRel.Data.Release
+import           HRel.Data.Torrent
 
-import HRel.Source.AtomFeed
-import HRel.Source.KickAssTorrents
+import           HRel.Source.AtomFeed
+import           HRel.Source.KickAssTorrents
 
 data Manifest = Manifest {
 	mDatabase :: Database,

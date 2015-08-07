@@ -1,25 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module Main where
 
-import           Control.Monad.Trans
 import           Control.Applicative
+import           Control.Monad.Trans
 
-import           Data.Word
 import           Data.Monoid
-import qualified Data.Text.Lazy      as TL
+import qualified Data.Text.Lazy       as TL
+import           Data.Word
 
-import qualified Lucid               as L
+import qualified Lucid                as L
 
 import           Web.Scotty
 
-import           Network.URI         hiding (query)
+import           Network.URI          hiding (query)
 
 import           HRel.Config
 import           HRel.Database
-import           HRel.Templates
 import           HRel.Processing
+import           HRel.Templates
 
 import           HRel.Data.Feed
 import           HRel.Data.Release

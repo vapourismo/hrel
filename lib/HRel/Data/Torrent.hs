@@ -13,14 +13,14 @@ module HRel.Data.Torrent (
 ) where
 
 import           Data.Int
-import           Data.Word
 import qualified Data.Text         as T
+import           Data.Word
 
 import           Network.URI
 
-import           HRel.Database
-import           HRel.Data.Release
 import           HRel.Data.Feed
+import           HRel.Data.Release
+import           HRel.Database
 
 -- | Torrent information
 data TorrentInfo = TorrentInfo {

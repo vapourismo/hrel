@@ -28,11 +28,11 @@ import           Control.Exception
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
 
+import qualified Data.ByteString.Char8              as BC
 import           Data.Int
-import           Data.Word
 import           Data.Maybe
 import           Data.Typeable
-import qualified Data.ByteString.Char8              as BC
+import           Data.Word
 
 import qualified Database.MySQL.Base.Types          as M
 import qualified Database.MySQL.Simple              as M

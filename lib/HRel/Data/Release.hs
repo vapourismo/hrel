@@ -15,13 +15,13 @@ module HRel.Data.Release (
 	addReleases
 ) where
 
-import           Data.Int
-import           Data.Word
 import           Data.Char
-import qualified Data.Text     as T
+import           Data.Int
+import qualified Data.Text      as T
+import           Data.Word
 
-import           HRel.Database
 import           HRel.Data.Feed
+import           HRel.Database
 
 -- | Release identfier name
 newtype ReleaseName = ReleaseName { getReleaseName :: T.Text }

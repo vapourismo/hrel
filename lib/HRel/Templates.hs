@@ -8,14 +8,14 @@ module HRel.Templates (
 
 import           Control.Monad
 
-import           Data.Time
 import           Data.Monoid
-import qualified Data.Text     as T
+import qualified Data.Text      as T
+import           Data.Time
 
 import           Lucid
 
-import           HRel.Units
 import           HRel.Data.Feed
+import           HRel.Units
 
 sharedBodyTemplate :: Html () -> Html ()
 sharedBodyTemplate contents =

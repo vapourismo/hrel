@@ -38,7 +38,7 @@ data Manifest = Manifest {
 
 withManifest :: (Manifest -> IO a) -> IO a
 withManifest action =
-	withDatabase (\ db -> Manifest db <$> newTLSManager <*> newChan >>= action)
+	Manifest <$> connectDatabase <*> newTLSManager <*> newChan >>= action
 
 data WorkerCommand
 	= ProcessAllFeeds
@@ -56,9 +56,10 @@ spawnWorkers Manifest {..} = do
 	num <- getNumCapabilities
 	replicateM (max 1 num) (forkIO worker)
 	where
-		worker = withDatabase $ \ db ->
+		worker = do
+			db <- connectDatabase
 			let mf = Manifest db mManager mChannel
-			in forever $ do
+			forever $ do
 				msg <- readChan mChannel
 				case msg of
 					ProcessAllFeeds       -> processAllFeeds mf

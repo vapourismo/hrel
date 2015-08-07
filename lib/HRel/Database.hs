@@ -2,7 +2,7 @@
 
 module HRel.Database (
 	-- * Connection
-	withDatabase,
+	connectDatabase,
 
 	-- * Actions
 	Action,
@@ -75,17 +75,14 @@ instance M.Param URI where
 type Database = M.Connection
 
 -- | Create a scope for the database connection.
-withDatabase :: (Database -> IO a) -> IO a
-withDatabase =
-	bracket connectDatabase M.close
-	where
-		connectDatabase =
-			M.connect (M.defaultConnectInfo {
-				M.connectHost     = "localhost",
-				M.connectDatabase = "hrelwa03",
-				M.connectUser     = "root", -- Change later
-				M.connectOptions  = [M.Reconnect True]
-			})
+connectDatabase :: IO Database
+connectDatabase =
+	M.connect M.defaultConnectInfo {
+		M.connectHost     = "localhost",
+		M.connectDatabase = "hrelwa03",
+		M.connectUser     = "root",
+		M.connectOptions  = [M.Reconnect True]
+	}
 
 -- | Database action
 type Action = ReaderT Database (MaybeT IO)

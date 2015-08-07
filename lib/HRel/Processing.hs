@@ -7,14 +7,10 @@ module HRel.Processing (
 	withManifest,
 
 	-- * Workers
-	WorkerCommand,
+	WorkerCommand (..),
+	queueCommand,
 	spawnWorkers,
-	spawnJobTimer,
-
-	-- * Directives
-	queueProcessAllFeeds,
-	queueProcessHourlyDump,
-	queueMatchTorrentsFor
+	spawnJobTimer
 ) where
 
 import Control.Monad
@@ -51,6 +47,10 @@ data WorkerCommand
 	| MatchTorrentsFor Feed
 	| CleanDatabase
 
+queueCommand :: Manifest -> WorkerCommand -> IO ()
+queueCommand Manifest {..} =
+	writeChan mChannel
+
 spawnWorkers :: Manifest -> IO [ThreadId]
 spawnWorkers Manifest {..} = do
 	num <- getNumCapabilities
@@ -69,16 +69,12 @@ spawnWorkers Manifest {..} = do
 
 spawnJobTimer :: Manifest -> IO ()
 spawnJobTimer mf = do
-	repeatedTimer (queueProcessAllFeeds mf) (mDelay 20)
-	repeatedTimer (queueCleanDatabase mf) (hDelay 12)
+	repeatedTimer (queueCommand mf ProcessAllFeeds) (mDelay 20)
+	repeatedTimer (queueCommand mf CleanDatabase) (hDelay 12)
 
 	case confHourlyDump of
-		Just dump -> void (repeatedTimer (queueProcessHourlyDump mf dump) (hDelay 1))
+		Just dump -> void (repeatedTimer (queueCommand mf (ProcessHourlyDump dump)) (hDelay 1))
 		Nothing   -> pure ()
-
-queueProcessHourlyDump :: Manifest -> String -> IO ()
-queueProcessHourlyDump Manifest {..} url =
-	writeChan mChannel (ProcessHourlyDump url)
 
 processHourlyDump :: Manifest -> String -> IO ()
 processHourlyDump Manifest {..} url = do
@@ -107,17 +103,9 @@ processHourlyDump Manifest {..} url = do
 		makeChunks [] = []
 		makeChunks xs = take 16 xs : makeChunks (drop 16 xs)
 
-queueProcessAllFeeds :: Manifest -> IO ()
-queueProcessAllFeeds Manifest {..} =
-	writeChan mChannel ProcessAllFeeds
-
 processAllFeeds :: Manifest -> IO ()
 processAllFeeds mf@(Manifest {..}) =
-	runAction mDatabase findAllFeeds >>= maybe (pure ()) (mapM_ (queueProcessFeed mf))
-
-queueProcessFeed :: Manifest -> Feed -> IO ()
-queueProcessFeed Manifest {..} feed =
-	writeChan mChannel (ProcessFeed feed)
+	runAction mDatabase findAllFeeds >>= maybe (pure ()) (mapM_ (queueCommand mf . ProcessFeed))
 
 processFeed :: Manifest -> Feed -> IO ()
 processFeed mf@(Manifest {..}) feed = do
@@ -137,10 +125,6 @@ processFeed mf@(Manifest {..}) feed = do
 		Nothing ->
 			pure ()
 
-queueMatchTorrentsFor :: Manifest -> Feed -> IO ()
-queueMatchTorrentsFor Manifest {..} feed =
-	writeChan mChannel (MatchTorrentsFor feed)
-
 matchTorrentsFor :: Manifest -> Feed -> IO ()
 matchTorrentsFor Manifest {..} feed = do
 	mbNum <- runAction mDatabase (addMatchingTorrentsFor feed)
@@ -150,10 +134,6 @@ matchTorrentsFor Manifest {..} feed = do
 
 		Nothing ->
 			putStrLn ("matchTorrentsFor: Could not connect any torrents for " ++ show (feedID feed))
-
-queueCleanDatabase :: Manifest -> IO ()
-queueCleanDatabase Manifest {..} =
-	writeChan mChannel CleanDatabase
 
 cleanDatabase :: Manifest -> IO ()
 cleanDatabase Manifest {..} = do

@@ -56,7 +56,7 @@ tryFeed mf@(Manifest {..}) url = do
 	case (,) <$> mbRels <*> parseURI url of
 		Just (names, uri) | length names > 0 -> do
 			mbFeed <- runAction mDatabase (findFeedByURI uri <|> createNew uri names)
-			maybe (pure ()) (queueMatchTorrentsFor mf) mbFeed
+			maybe (pure ()) (queueCommand mf . MatchTorrentsFor) mbFeed
 			pure mbFeed
 
 		_ -> pure Nothing
@@ -92,8 +92,8 @@ main = withManifest $ \ mf -> do
 	spawnWorkers mf
 	spawnJobTimer mf
 
-	queueProcessAllFeeds mf
-	maybe (pure ()) (queueProcessHourlyDump mf) confHourlyDump
+	queueCommand mf ProcessAllFeeds
+	maybe (pure ()) (queueCommand mf . ProcessHourlyDump) confHourlyDump
 
 	scotty confListenPort $ do
 		get "/style.css" $ do

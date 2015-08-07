@@ -88,7 +88,9 @@ handleSubmit mf@(Manifest {..}) = do
 		handleForm True
 
 main :: IO ()
-main = withManifest $ \ mf -> do
+main = do
+	mf <- newManifest
+
 	spawnWorkers mf
 	spawnJobTimer mf
 

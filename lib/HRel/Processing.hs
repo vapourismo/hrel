@@ -4,7 +4,7 @@
 module HRel.Processing (
 	-- * Manifest
 	Manifest (..),
-	withManifest,
+	newManifest,
 
 	-- * Workers
 	WorkerCommand (..),
@@ -36,9 +36,9 @@ data Manifest = Manifest {
 	mChannel  :: Chan WorkerCommand
 }
 
-withManifest :: (Manifest -> IO a) -> IO a
-withManifest action =
-	Manifest <$> connectDatabase <*> newTLSManager <*> newChan >>= action
+newManifest :: IO Manifest
+newManifest =
+	Manifest <$> connectDatabase <*> newTLSManager <*> newChan
 
 data WorkerCommand
 	= ProcessAllFeeds

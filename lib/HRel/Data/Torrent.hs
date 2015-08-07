@@ -8,7 +8,8 @@ module HRel.Data.Torrent (
 	createTorrent,
 	addTorrent,
 	addMatchingTorrents,
-	addMatchingTorrentsFor
+	addMatchingTorrentsFor,
+	removeUnusedTorrents
 ) where
 
 import           Data.Int
@@ -77,3 +78,8 @@ addMatchingTorrentsFor feed =
 	         \ SELECT r.id, t.id from releases r, torrents t, feed_contents l \
 	         \ WHERE t.normalized = r.name AND l.feed = ? AND l.rel = r.id"
 	        (Only (feedID feed))
+
+-- |
+removeUnusedTorrents :: Action Int64
+removeUnusedTorrents =
+	execute_ "DELETE FROM torrents WHERE NOT EXISTS (SELECT tor FROM release_links l WHERE l.tor = id)"

@@ -106,8 +106,9 @@ processFeed :: Manifest -> Feed -> IO ()
 processFeed Manifest {..} feed = do
 	mbNames <- fetchAtomFeed mManager (show (feedURI feed))
 	case mbNames of
-		Just names ->
-			() <$ runAction mDatabase (mapM createRelease names >>= addReleases feed)
+		Just names -> void $ do
+			runAction mDatabase (mapM createRelease names >>= addReleases feed)
+			runAction mDatabase (addMatchingTorrentsFor feed)
 
 		Nothing ->
 			pure ()

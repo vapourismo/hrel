@@ -7,7 +7,8 @@ module HRel.Data.Torrent (
 	insertTorrents,
 	createTorrent,
 	addTorrent,
-	addMatchingTorrents
+	addMatchingTorrents,
+	addMatchingTorrentsFor
 ) where
 
 import           Data.Int
@@ -18,6 +19,7 @@ import           Network.URI
 
 import           HRel.Database
 import           HRel.Data.Release
+import           HRel.Data.Feed
 
 -- | TorrentInfo
 data TorrentInfo = TorrentInfo {
@@ -67,3 +69,11 @@ addMatchingTorrents :: Action Int64
 addMatchingTorrents =
 	execute_ "INSERT IGNORE INTO release_links (rel, tor) \
 	          \ SELECT r.id, t.id from releases r, torrents t WHERE t.normalized = r.name"
+
+-- |
+addMatchingTorrentsFor :: Feed -> Action Int64
+addMatchingTorrentsFor feed =
+	execute "INSERT IGNORE INTO release_links (rel, tor) \
+	         \ SELECT r.id, t.id from releases r, torrents t, feed_contents l \
+	         \ WHERE t.normalized = r.name AND l.feed = ? AND l.rel = r.id"
+	        (Only (feedID feed))

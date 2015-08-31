@@ -28,6 +28,7 @@ library
                        aeson,
                        time
   exposed-modules:     HRel.Source.AtomFeed,
+                       HRel.Source.RSSFeed,
                        HRel.Source.KickAssTorrents,
                        HRel.Units,
                        HRel.HTTP,

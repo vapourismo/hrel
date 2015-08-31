@@ -17,7 +17,7 @@ import           HRel.Markup
 -- | Filter for Atom feeds.
 atomFeedFilter :: NodeFilter B.ByteString [ReleaseName]
 atomFeedFilter =
-	reverse <$> relativeTag "feed" (foreachTag "entry" (forTag "title" titleFilter))
+	relativeTag "feed" (foreachTag "entry" (forTag "title" titleFilter))
 	where
 		titleFilter =
 			normalizeReleaseName . T.decodeUtf8 <$> text

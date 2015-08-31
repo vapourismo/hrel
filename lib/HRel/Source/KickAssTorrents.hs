@@ -8,6 +8,7 @@ module HRel.Source.KickAssTorrents (
 ) where
 
 import           Control.Monad
+import           Control.Exception
 
 import qualified Data.ByteString       as B
 import qualified Data.ByteString.Char8 as BC
@@ -64,7 +65,7 @@ searchKickAss mgr rel = do
 -- | Download and parse a KickAss dump.
 fetchKickAssDump :: Manager -> String -> IO (Maybe [TorrentInfo])
 fetchKickAssDump mgr url =
-	fmap processDump <$> downloadGZip mgr url
+	handle handleException (fmap processDump <$> downloadGZip mgr url)
 	where
 		processDump contents =
 			catMaybes (map processLine (BC.lines contents))
@@ -86,3 +87,7 @@ fetchKickAssDump mgr url =
 			                  (normalizeReleaseName nameText)
 			                  uri
 			                  (Just (read (BC.unpack sizeBS))))
+
+		handleException (SomeException e) = do
+			putStrLn ("fetchKickAssDump: " ++ show e)
+			pure Nothing

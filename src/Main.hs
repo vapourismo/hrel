@@ -24,8 +24,6 @@ import           HRel.Templates
 import           HRel.Data.Feed
 import           HRel.Data.Release
 
-import           HRel.Source.AtomFeed
-
 handleIndex :: Manifest -> ActionM ()
 handleIndex Manifest {..} = do
 	mbFeeds <- runAction mDatabase findAllFeeds
@@ -52,7 +50,7 @@ handleForm =
 
 tryFeed :: Manifest -> String -> IO (Maybe Feed)
 tryFeed mf@(Manifest {..}) url = do
-	mbRels <- fetchAtomFeed mManager url
+	mbRels <- fetchFeed mManager url
 	case (,) <$> mbRels <*> parseURI url of
 		Just (names, uri) | length names > 0 -> do
 			mbFeed <- runAction mDatabase (findFeedByURI uri <|> createNew uri names)

@@ -6,6 +6,10 @@ module HRel.Processing (
 	Manifest (..),
 	newManifest,
 
+	-- * Utilities
+	parseFeed,
+	fetchFeed,
+
 	-- * Workers
 	WorkerCommand (..),
 	queueCommand,
@@ -14,19 +18,24 @@ module HRel.Processing (
 ) where
 
 import           Control.Monad
+import           Control.Applicative
 
 import           Control.Concurrent
 import           Control.Concurrent.Suspend
 import           Control.Concurrent.Timer
 
+import qualified Data.ByteString as B
+
 import           HRel.Config
 import           HRel.Database
 import           HRel.HTTP
+import           HRel.Markup
 
 import           HRel.Data.Feed
 import           HRel.Data.Release
 import           HRel.Data.Torrent
 
+import           HRel.Source.RSSFeed
 import           HRel.Source.AtomFeed
 import           HRel.Source.KickAssTorrents
 
@@ -108,9 +117,17 @@ processAllFeeds :: Manifest -> IO ()
 processAllFeeds mf@(Manifest {..}) =
 	runAction mDatabase findAllFeeds >>= maybe (pure ()) (mapM_ (queueCommand mf . ProcessFeed))
 
+parseFeed :: B.ByteString -> Maybe [ReleaseName]
+parseFeed contents =
+	runNodeFilter (rssFeedFilter <|> atomFeedFilter) (fromMarkup' contents)
+
+fetchFeed :: Manager -> String -> IO (Maybe [ReleaseName])
+fetchFeed mgr url =
+	(>>= parseFeed) <$> download mgr url
+
 processFeed :: Manifest -> Feed -> IO ()
 processFeed mf@(Manifest {..}) feed = do
-	mbNames <- fetchAtomFeed mManager (show (feedURI feed))
+	mbNames <- fetchFeed mManager (show (feedURI feed))
 	case mbNames of
 		Just names -> void $ do
 			mb <- runAction mDatabase (mapM createRelease names >>= addReleases feed)

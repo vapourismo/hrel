@@ -21,7 +21,7 @@ sharedBodyTemplate :: Html () -> Html ()
 sharedBodyTemplate contents =
 	doctypehtml_ $ do
 		head_ $
-			link_ [href_ "/style.css", rel_  "stylesheet", type_ "text/css"]
+			link_ [href_ "/static/style.css", rel_  "stylesheet", type_ "text/css"]
 		body_ contents
 
 indexTemplate :: [Feed] -> Html ()

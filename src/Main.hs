@@ -96,10 +96,6 @@ main = do
 	maybe (pure ()) (queueCommand mf . ProcessHourlyDump) confHourlyDump
 
 	scotty confListenPort $ do
-		get "/style.css" $ do
-			setHeader "Content-Type" "text/css"
-			file "assets/style.css"
-
 		-- Index
 		get "/" (handleIndex mf)
 

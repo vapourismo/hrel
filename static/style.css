@@ -1,8 +1,10 @@
+@import url(https://fonts.googleapis.com/css?family=Inconsolata);
+
 body {
 	background-color: rgb(20, 20, 20);
 	padding: 0;
 	margin: 0;
-	font-family: monospace;
+	font-family: "Inconsolata";
 }
 
 .content {
@@ -22,7 +24,7 @@ body {
 	display: table-cell;
 	border: none;
 	outline: 0;
-	font-family: monospace;
+	font-family: "Inconsolata";
 	padding: 10px;
 	margin: 5px;
 	height: auto;
@@ -50,7 +52,7 @@ body {
 	background: transparent;
 	border: none;
 	min-width: 400px;
-	font-family: monospace;
+	font-family: "Inconsolata";
 	color: rgb(175, 175, 175);
 }
 
@@ -60,7 +62,7 @@ body {
 }
 
 .footer .submit {
-	font-family: monospace;
+	font-family: "Inconsolata";
 	background: transparent;
 	border: none;
 	color: rgb(100, 100, 100);

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 
-module HRel.Config (
+module Config (
 	confListenPort,
 	confHourlyDump
 ) where

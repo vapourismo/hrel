@@ -3,35 +3,25 @@ module HRel.Units (
 ) where
 
 -- | Prefix for byte units
-data ByteUnitPrefix
-	= NoBase2Suffix
-	| Kibi
-	| Mebi
-	| Gibi
-	| Tebi
-	| Pebi
-	| Exbi
-	| Zebi
-	| Yobi
-	deriving (Eq, Ord, Enum)
+data ByteSuffix
+	= B
+	| KiB
+	| MiB
+	| GiB
+	| TiB
+	| PiB
+	| EiB
+	| ZiB
+	| YiB
+	deriving (Show, Eq, Ord, Enum)
 
 -- | Show a number as bytes including unit.
 showAsBytes :: (Integral a) => a -> String
 showAsBytes n =
-	makle (fromIntegral n :: Float) NoBase2Suffix
+	makle (fromIntegral n :: Float) B
 	where
 		makle x p
-			| x >= 1000 && p < Yobi =
+			| x >= 1000 && p < YiB =
 				makle (x / 1000) (succ p)
 			| otherwise =
-				show (fromInteger (round (x * 100)) / 100 :: Float) ++
-				case p of
-					NoBase2Suffix -> " B"
-					Kibi          -> " KiB"
-					Mebi          -> " MiB"
-					Gibi          -> " GiB"
-					Tebi          -> " TiB"
-					Pebi          -> " PiB"
-					Exbi          -> " EiB"
-					Zebi          -> " ZiB"
-					Yobi          -> " YiB"
+				show (fromInteger (round (x * 100)) / 100 :: Float) ++ ' ' : show p

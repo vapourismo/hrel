@@ -2,7 +2,13 @@
 
 module Main where
 
-import Config ()
+import HRel.Database
 
 main :: IO ()
-main = pure ()
+main = do
+	con <- connectDatabase
+
+	rows <- listFeeds con
+	print rows
+
+	closeDatabase con

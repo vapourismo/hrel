@@ -12,6 +12,7 @@ library
                     HRel.Sources.TorrentInfo,
                     HRel.Sources.ReleaseFeeds,
                     HRel.Sources.KickAssTorrents
+  other-modules:    HRel.Sources.Markup
 
 executable hrel
   hs-source-dirs:   src

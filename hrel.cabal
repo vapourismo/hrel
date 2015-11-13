@@ -11,7 +11,8 @@ library
   exposed-modules:  HRel.Sources.ReleaseName,
                     HRel.Sources.TorrentInfo,
                     HRel.Sources.ReleaseFeeds,
-                    HRel.Sources.KickAssTorrents
+                    HRel.Sources.KickAssTorrents,
+                    HRel.Sources
   other-modules:    HRel.Sources.Markup
 
 executable hrel

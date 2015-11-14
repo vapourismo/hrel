@@ -7,6 +7,11 @@ module HRel.Database (
 	closeDatabase,
 	P.query,
 	P.query_,
+	P.execute,
+	P.execute_,
+	P.executeMany,
+	P.Only (..),
+	P.In (..),
 
 	-- * URI
 	URIField (..),

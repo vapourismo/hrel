@@ -56,10 +56,10 @@ instance P.ToField URIField where
 data FeedRow = FeedRow {
 	feedID         :: Int,
 	feedURI        :: B.ByteString,
-	feedLastUpdate :: LocalTime
+	feedLastUpdate :: UTCTime
 } deriving (Show, Eq, Ord)
 
-constructFeed :: (Int, B.ByteString, LocalTime) -> FeedRow
+constructFeed :: (Int, B.ByteString, UTCTime) -> FeedRow
 constructFeed (fid, uri, lastUpdate) = FeedRow fid uri lastUpdate
 
 -- | Find all feeds.

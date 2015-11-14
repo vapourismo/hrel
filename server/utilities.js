@@ -95,12 +95,10 @@ var loggers = config.colorLogging ? {error: errorColor, warn: warnColor, inform:
                                   : {error: errorPlain, warn: warnPlain, inform: informPlain, debug: debugPlain};
 
 /**
- * Log an error and exit the process.
- * @param {String} tag Log tag
+ *
  */
-function abort(tag, ...args) {
-	loggers.error(tag, ...args);
-	process.exit(1);
+function logError(error) {
+	loggers.error("error", error instanceof Error ? error.stack : error);
 }
 
 /*
@@ -181,7 +179,7 @@ Object.defineProperty(Object.prototype, "map", {
 module.exports = {
 	iterateFiles,
 	validateSchema,
-	abort
+	logError
 };
 
 Object.assign(module.exports, loggers);

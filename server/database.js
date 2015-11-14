@@ -10,7 +10,7 @@ const db = new pg.Client(config.database || {});
 db.connect();
 
 // Async query method
-const queryAsync = function (...args) {
+const query = function (...args) {
 	return new Promise(function (accept, reject) {
 		this.query(...args, function (err, result) {
 			if (err) reject(err);
@@ -70,7 +70,7 @@ Row.prototype.update = function* (data) {
 		values.push(sanitizeName(column) + " = $" + params.length);
 	});
 
-	const results = yield queryAsync(
+	const results = yield query(
 		"UPDATE " + sanitizeName(this.table.name) + " SET " + values.join(", ") + " WHERE " + sanitizeName(this.table.key) + " = $1 RETURNING *",
 		params
 	);
@@ -84,7 +84,7 @@ Row.prototype.delete = function* () {
 	if (key === undefined)
 		throw new Error("Cannot delete rows without a primary key");
 
-	const results = yield queryAsync(
+	const results = yield query(
 		"DELETE FROM " + sanitizeName(this.table.name) + " WHERE " + sanitizeName(this.table.key) + " = $1 RETURNING *",
 		[key]
 	);
@@ -135,7 +135,7 @@ class Table {
 }
 
 Table.prototype.load = function* () {
-	const results = yield queryAsync("SELECT * FROM " + sanitizeName(this.name));
+	const results = yield query("SELECT * FROM " + sanitizeName(this.name));
 	return results.rows.map(row => new Row(this, row));
 }.async;
 
@@ -153,7 +153,7 @@ Table.prototype.insert = function* (data) {
 		values.push("$" + params.length);
 	});
 
-	const results = yield queryAsync(
+	const results = yield query(
 		"INSERT INTO " + sanitizeName(this.name) + " (" + columns.join(", ") + ") VALUES (" + values.join(", ") + ") RETURNING *",
 		params
 	);
@@ -173,7 +173,7 @@ Table.prototype.find = function* (criteria) {
 		clauses.push(sanitizeName(column) + " = $" + params.length);
 	});
 
-	const result = yield queryAsync(
+	const result = yield query(
 		"SELECT * FROM " + sanitizeName(this.name) + " WHERE " + clauses.join(", "),
 		params
 	);
@@ -182,5 +182,5 @@ Table.prototype.find = function* (criteria) {
 }.async;
 
 module.exports = {
-	Row, Table, queryAsync
+	Row, Table, query
 };

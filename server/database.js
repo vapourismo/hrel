@@ -12,7 +12,7 @@ db.connect();
 // Async query method
 const query = function (...args) {
 	return new Promise(function (accept, reject) {
-		this.query(...args, function (err, result) {
+		db.query(...args, function (err, result) {
 			if (err) reject(err);
 			else     accept(result);
 		});

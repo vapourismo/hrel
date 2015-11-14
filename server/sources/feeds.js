@@ -34,7 +34,7 @@ function normalizeReleaseName(name) {
 	const segments = name.split("-");
 	if (segments.length > 1) segments.pop();
 
-	return segments.join(" ").replace(/([^a-zA-Z0-9])/g, " ").trim().toLowerCase();
+	return segments.join(" ").replace(/([^a-zA-Z0-9])/g, " ").replace(/\s\s+/g, " ").trim().toLowerCase();
 }
 
 const parseFeed = function* (contents) {

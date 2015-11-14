@@ -1,6 +1,11 @@
 const fs = require("fs");
 
 const defaultConfig = {
+	database: {
+		host: "localhost",
+		user: "hrel",
+		database: "hrel"
+	},
 	colorLogging: true
 };
 

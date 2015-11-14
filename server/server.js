@@ -3,6 +3,7 @@
 const http  = require("http");
 const https = require("https");
 const zlib  = require("zlib");
+const db    = require("./database");
 const util  = require("./utilities");
 const feeds = require("./sources/feeds");
 

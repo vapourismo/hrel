@@ -1,7 +1,7 @@
 "use strict";
 
 const EventEmitter = require("events");
-const pg           = require("pg");
+const pg           = require("pg").native;
 const config       = require("./config");
 const util         = require("./utilities");
 

@@ -214,10 +214,12 @@ Table.prototype.upsert = function* (data, uniqueCols) {
 			upsertCond.push(groupCond.join(" AND "));
 	});
 
-	yield query(
-		"INSERT INTO " + sanitizeName(this.name) + " (" + columns.join(", ") + ") SELECT " + values.join(", ") + " WHERE NOT EXISTS (SELECT * FROM " + sanitizeName(this.name) + " WHERE " + upsertCond.join(" OR ") + ")",
+	const result = yield query(
+		"INSERT INTO " + sanitizeName(this.name) + " (" + columns.join(", ") + ") SELECT " + values.join(", ") + " WHERE NOT EXISTS (SELECT * FROM " + sanitizeName(this.name) + " WHERE " + upsertCond.join(" OR ") + ") RETURNING *",
 		params
 	);
+
+	return result.rows.map(row => new Row(this, row));
 }.async;
 
 module.exports = {

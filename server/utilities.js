@@ -120,8 +120,16 @@ function serve(iter, step, accept, reject) {
 				}
 			},
 			function (error) {
+				let n;
+
 				try {
-					serve(iter, iter.throw(error), accept, reject);
+					n = iter.throw(error);
+				} catch (_) {
+					reject(error);
+				}
+
+				try {
+					serve(iter, n, accept, reject);
 				} catch (error) {
 					reject(error);
 				}

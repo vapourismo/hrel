@@ -9,7 +9,11 @@ const util         = require("./utilities");
 const db = new pg.Client(config.database || {});
 db.connect();
 
-// Async query method
+/**
+ * Asynchronously query the database.
+ * @param {String} query SQL statement
+ * @returns {Promise<Object>}
+ */
 const query = function (...args) {
 	return new Promise(function (accept, reject) {
 		db.query(...args, function (err, result) {
@@ -19,10 +23,16 @@ const query = function (...args) {
 	}.bind(this));
 };
 
+/**
+ * Terminate the database connection.
+ */
 function end() {
 	db.end();
 }
 
+/**
+ * Clean a an identifier which shall be used in a SQL statement.
+ */
 function sanitizeName(name) {
 	return '"' + name.replace('"', "") + '"';
 }
@@ -129,6 +139,13 @@ class Table {
 	 * @returns {Promise<Row>} Newly inserted row
 	 */
 	insert(data) {}
+
+	/**
+	 * Insert a new row unless not UNIQUE confilcts exist.
+	 * @param {Object} data Row data
+	 * @param {Array<Array>} uniqueCols Groups of unique (or uniquely connected) columns
+	 */
+	upsert(data, uniqueCols) {}
 
 	/**
 	 * Find a row with the given criteria.

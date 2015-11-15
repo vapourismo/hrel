@@ -61,12 +61,7 @@ const feedsTable = new db.Table("feeds", "id", ["uri"]);
 const feedContentsTable = new db.Table("feed_contents", null, ["feed", "release"]);
 
 const attachRelease = function* (feed, release) {
-	try {
-		yield feedContentsTable.insert({feed, release});
-	} catch (error) {
-		if (error.code != 23505 || error.constraint != "feed_contents_feed_release_key")
-			util.logError(err);
-	}
+	yield feedContentsTable.upsert({feed, release});
 }.async;
 
 const processFeed = function* (feed) {
@@ -76,9 +71,9 @@ const processFeed = function* (feed) {
 		const rels = yield parseFeed(yield http.download(feed.uri));
 		util.inform("feed: " + feed.id, "Found " + rels.length + " names");
 
-		rels.forEach(function* (name) {
+		yield* rels.map(function* (name) {
 			const rel = yield releases.insert(name);
-			attachRelease(feed.id, rel.data.id);
+			yield attachRelease(feed.id, rel.data.id);
 		}.async);
 	} catch (error) {
 		util.logError(error);

@@ -2,7 +2,6 @@
 
 const db    = require("./database");
 const util  = require("./utilities");
-const http  = require("./http");
 const feeds = require("./feeds");
 const dumps = require("./dumps");
 

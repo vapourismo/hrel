@@ -1,14 +1,18 @@
 "use strict";
 
-const http  = require("http");
 const https = require("https");
+const http  = require("http");
 const zlib  = require("zlib");
+const url   = require("url");
 
-function download(url) {
+function download(options) {
+	if (!(options instanceof Object))
+		options = url.parse(options);
+
+	let schema = options.protocol == "https:" ? https : http;
+
 	return new Promise(function (accept, reject) {
-		const schema = /^https:\/\//.test(url) ? https : http;
-
-		const req = schema.request(url, function (res) {
+		const req = schema.request(options, function (res) {
 			const chunks = [];
 
 			res.on("data", function (chunk) {

@@ -95,7 +95,7 @@ var loggers = config.colorLogging ? {error: errorColor, warn: warnColor, inform:
                                   : {error: errorPlain, warn: warnPlain, inform: informPlain, debug: debugPlain};
 
 /**
- *
+ * Log an instance of 'Error'.
  */
 function logError(error) {
 	loggers.error("error", error instanceof Error ? error.stack : error);

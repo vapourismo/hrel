@@ -2,6 +2,11 @@
 
 const db = require("./database");
 
+/**
+ * Normalize a release name so that it is properly comparable.
+ * @param {String} name Release name
+ * @returns {String} Normalized release name
+ */
 function normalize(name) {
 	const segments = name.split("-");
 	if (segments.length > 1) segments.pop();
@@ -11,9 +16,17 @@ function normalize(name) {
 
 const table = new db.Table("releases", "id", ["name"]);
 
+/**
+ * Insert a new release.
+ * @param {String} name Normalized release name
+ */
 const insert = function* (name) {
-	yield db.query("INSERT INTO releases (name) SELECT $1 :: varchar WHERE NOT EXISTS (SELECT * FROM releases WHERE name = $1 :: varchar)", [name]);
-	return (yield table.find({name})).pop();
+	const rows = yield table.upsert({name});
+
+	if (rows.length > 0)
+		return rows.pop();
+	else
+		return (yield table.find({name})).pop();
 }.async;
 
 module.exports = {

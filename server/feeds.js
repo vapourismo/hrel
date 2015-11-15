@@ -33,24 +33,17 @@ const RSSSchema = {
 	}
 };
 
-function normalizeReleaseName(name) {
-	const segments = name.split("-");
-	if (segments.length > 1) segments.pop();
-
-	return segments.join(" ").replace(/([^a-zA-Z0-9])/g, " ").replace(/\s\s+/g, " ").trim().toLowerCase();
-}
-
 const parseFeed = function* (contents) {
 	const object = yield parseXML(contents);
 
 	if (util.validateSchema(AtomSchema, object))
 		return object.feed.entry.map(
-			entry => normalizeReleaseName(entry.title.join(""))
+			entry => releases.normalize(entry.title.join(""))
 		);
 	else if (util.validateSchema(RSSSchema, object))
 		return [].concat(...object.rss.channel.map(
 			channel => channel.item.map(
-				item => normalizeReleaseName(item.title.join(""))
+				item => releases.normalize(item.title.join(""))
 			)
 		));
 	else

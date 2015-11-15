@@ -2,6 +2,13 @@
 
 const db = require("./database");
 
+function normalize(name) {
+	const segments = name.split("-");
+	if (segments.length > 1) segments.pop();
+
+	return segments.join(" ").replace(/([^a-zA-Z0-9])/g, " ").replace(/\s\s+/g, " ").trim().toLowerCase();
+}
+
 const table = new db.Table("releases", "id", ["name"]);
 
 const insert = function* (name) {
@@ -10,5 +17,6 @@ const insert = function* (name) {
 }.async;
 
 module.exports = {
+	normalize,
 	insert
 };

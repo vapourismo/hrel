@@ -5,6 +5,11 @@ const http  = require("http");
 const zlib  = require("zlib");
 const url   = require("url");
 
+/**
+ * Download via HTTP. Also decode the contents.
+ * @param {Object or String} options Requested URL or request options
+ * @returns {Promise<Buffer>}
+ */
 function download(options) {
 	if (!(options instanceof Object))
 		options = url.parse(options);

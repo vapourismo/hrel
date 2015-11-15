@@ -6,6 +6,11 @@ const http     = require("./http");
 const util     = require("./utilities");
 const releases = require("./releases");
 
+/**
+ * Summon Satan,
+ * @param {Buffer} xml XML data
+ * @returns {Promise<Object>}
+ */
 function parseXML(xml) {
 	return new Promise(function (accept, reject) {
 		xml2js.parseString(xml, function (err, result) {
@@ -33,6 +38,11 @@ const RSSSchema = {
 	}
 };
 
+/**
+ * Parse a RSS or Atom feed in order to retrieve release names from it.
+ * @param {Buffer} contents Raw feed contents
+ * @returns {Promise<Array<String>>} List of release names
+ */
 const parseFeed = function* (contents) {
 	const object = yield parseXML(contents);
 
@@ -53,11 +63,22 @@ const parseFeed = function* (contents) {
 const feedsTable = new db.Table("feeds", "id", ["uri"]);
 const feedContentsTable = new db.Table("feed_contents", null, ["feed", "release"]);
 
+/**
+ * Connect a release to a feed.
+ * @param {Number} feed    Feed ID
+ * @param {Number} release Release ID
+ * @returns {Promise<Number>} Number of newly connected releases
+ */
 const attachRelease = function* (feed, release) {
 	const rows = yield feedContentsTable.upsert({feed, release});
 	return rows.length;
 }.async;
 
+/**
+ * Process a feed.
+ * @param {Object} feed Row data
+ * @return {Promise}
+ */
 const processFeed = function* (feed) {
 	util.inform("feed: " + feed.id, "Processing '" + feed.uri + "'");
 
@@ -73,6 +94,9 @@ const processFeed = function* (feed) {
 	util.inform("feed: " + feed.id, "Found " + insertedReleases + " new releases");
 }.async;
 
+/**
+ * Scan all feeds and collect the contained release names.
+ */
 const scan = function* () {
 	const rows = yield feedsTable.load();
 	yield* rows.map(row => processFeed(row.data));

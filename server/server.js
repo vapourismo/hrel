@@ -9,6 +9,8 @@ const dumps = require("./dumps");
 const scan = function* () {
 	yield feeds.scan();
 	yield dumps.scan();
+
+	db.end();
 }.async;
 
 scan().catch(util.logError);

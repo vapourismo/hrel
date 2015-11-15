@@ -18,8 +18,10 @@ const decompressGZip = function (contents) {
 	});
 };
 
-const processKickAssDump = function* (uri) {
-	const req = url.parse(uri);
+const processKickAssDump = function* (dump) {
+	util.inform("dump: " + dump.id, "Processing '" + dump.uri + "'");
+
+	const req = url.parse(dump.uri);
 
 	req.headers = {
 		"Accept": "application/x-gzip"
@@ -27,7 +29,6 @@ const processKickAssDump = function* (uri) {
 
 	const buf = yield decompressGZip(yield http.download(req));
 	const contents = buf.toString("utf8");
-
 	let insertedTorrents = 0;
 
 	yield* contents.split("\n").map(function* (line) {
@@ -42,14 +43,13 @@ const processKickAssDump = function* (uri) {
 		insertedTorrents += result.rows.length;
 	}.async);
 
-	return insertedTorrents;
+	util.inform("dump: " + dump.id, "Found " + insertedTorrents + " new torrents");
 }.async;
 
 const processDump = function* (dump) {
 	switch (dump.type) {
 		case "kat":
-			const num = yield processKickAssDump(dump.uri);
-			util.inform("dump: " + dump.id, "Found " + num + " new torrents");
+			yield processKickAssDump(dump);
 			break;
 
 		default:

@@ -59,22 +59,18 @@ const attachRelease = function* (feed, release) {
 }.async;
 
 const processFeed = function* (feed) {
-	util.inform("feed: " + feed.id, "Parsing '" + feed.uri + "'");
+	util.inform("feed: " + feed.id, "Processing '" + feed.uri + "'");
 
-	try {
-		const rels = yield parseFeed(yield http.download(feed.uri));
+	const rels = yield parseFeed(yield http.download(feed.uri));
+	let insertedReleases = 0;
 
-		let insertedReleases = 0;
+	yield* rels.map(function* (name) {
+		const rel = yield releases.insert(name);
+		const num = yield attachRelease(feed.id, rel.data.id);
+		insertedReleases += num;
+	}.async);
 
-		yield* rels.map(function* (name) {
-			const rel = yield releases.insert(name);
-			insertedReleases += yield attachRelease(feed.id, rel.data.id);
-		}.async);
-
-		util.inform("feed: " + feed.id, "Found " + insertedReleases + " new releases");
-	} catch (error) {
-		util.logError(error);
-	}
+	util.inform("feed: " + feed.id, "Found " + insertedReleases + " new releases");
 }.async;
 
 const scan = function* () {

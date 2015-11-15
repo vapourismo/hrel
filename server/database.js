@@ -19,6 +19,10 @@ const query = function (...args) {
 	}.bind(this));
 };
 
+function end() {
+	db.end();
+}
+
 function sanitizeName(name) {
 	return '"' + name.replace('"', "") + '"';
 }
@@ -223,5 +227,5 @@ Table.prototype.upsert = function* (data, uniqueCols) {
 }.async;
 
 module.exports = {
-	Row, Table, query
+	Row, Table, query, end
 };

@@ -181,6 +181,45 @@ Table.prototype.find = function* (criteria) {
 	return result.rows.map(row => new Row(this, row));
 }.async;
 
+Table.prototype.upsert = function* (data, uniqueCols) {
+	uniqueCols = uniqueCols || [Object.keys(data)];
+
+	const columns = [];
+	const values = [];
+	const params = [];
+
+	this.columns.forEach(function (column) {
+		if (!(column in data))
+			return;
+
+		columns.push(sanitizeName(column));
+		params.push(data[column]);
+		values.push("$" + params.length);
+	});
+
+	const upsertCond = [];
+
+	uniqueCols.forEach(function (uniqueColGroup) {
+		const groupCond = [];
+
+		uniqueColGroup.forEach(function (uniqueCol) {
+			if (!(uniqueCol in data))
+				return;
+
+			params.push(data[uniqueCol]);
+			groupCond.push(sanitizeName(uniqueCol) + " = $" + params.length);
+		});
+
+		if (groupCond.length > 0)
+			upsertCond.push(groupCond.join(" AND "));
+	});
+
+	yield query(
+		"INSERT INTO " + sanitizeName(this.name) + " (" + columns.join(", ") + ") SELECT " + values.join(", ") + " WHERE NOT EXISTS (SELECT * FROM " + sanitizeName(this.name) + " WHERE " + upsertCond.join(" OR ") + ")",
+		params
+	);
+}.async;
+
 module.exports = {
 	Row, Table, query
 };

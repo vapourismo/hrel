@@ -9,6 +9,11 @@ const releases = require("./releases");
 
 const table = new db.Table("dumps", "id", ["uri", "type"]);
 
+/**
+ * Decompress gzipped data.
+ * @param {Buffer} contents GZipped data
+ * @returns {Buffer} Gunzipped data
+ */
 const decompressGZip = function (contents) {
 	return new Promise(function (accept, reject) {
 		zlib.gunzip(contents, function (error, result) {
@@ -18,6 +23,11 @@ const decompressGZip = function (contents) {
 	});
 };
 
+/**
+ * Process a KickAss dump.
+ * @param {Object} dump Row data
+ * @returns {Promise}
+ */
 const processKickAssDump = function* (dump) {
 	util.inform("dump: " + dump.id, "Processing '" + dump.uri + "'");
 
@@ -46,6 +56,11 @@ const processKickAssDump = function* (dump) {
 	util.inform("dump: " + dump.id, "Found " + insertedTorrents + " new torrents");
 }.async;
 
+/**
+ * Process a dump.
+ * @param {Object} dump Row data
+ * @returns {Promise}
+ */
 const processDump = function* (dump) {
 	switch (dump.type) {
 		case "kat":
@@ -58,6 +73,10 @@ const processDump = function* (dump) {
 	}
 }.async;
 
+/**
+ * Scan all dumps and collect the contained torrents.
+ * @returns {Promise}
+ */
 const scan = function* () {
 	const rows = yield table.load();
 	yield* rows.map(row => processDump(row.data));

@@ -6,7 +6,8 @@ const defaultConfig = {
 		user: "hrel",
 		database: "hrel"
 	},
-	colorLogging: true
+	colorLogging: true,
+	usePGNative: true
 };
 
 function validateObject(schema, instance) {

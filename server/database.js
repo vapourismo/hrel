@@ -1,8 +1,8 @@
 "use strict";
 
 const EventEmitter = require("events");
-const pg           = require("pg").native;
 const config       = require("./config");
+const pg           = config.usePGNative ? require("pg").native : require("pg");
 const util         = require("./utilities");
 
 // Connect

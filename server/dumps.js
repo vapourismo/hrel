@@ -39,8 +39,7 @@ const processKickAssDump = function* (uri) {
 			[segments[1], segments[4], segments[5], releases.normalize(segments[1])]
 		);
 
-		if (result.rows)
-			insertedTorrents += result.rows.length > 0
+		insertedTorrents += result.rows.length;
 	}.async);
 
 	return insertedTorrents;

@@ -14,4 +14,7 @@ const scan = function* () {
 	db.end();
 }.async;
 
-scan().catch(util.logError);
+scan().catch(error => {
+	util.logError(error);
+	process.exit(1);
+});

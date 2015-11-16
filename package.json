@@ -12,9 +12,6 @@
     "hrel-scan": "./bin/scan",
     "hrel-web": "./bin/web"
   },
-  "scripts": {
-    "install": "./assets/build.sh"
-  },
   "dependencies": {
     "express": "^4.13.3",
     "page": "^1.6.4",
@@ -23,12 +20,7 @@
     "react": "^0.14.2",
     "react-dom": "^0.14.2",
     "superagent": "^1.4.0",
-    "xml2js": "^0.4.15"
-  },
-  "engines": {
-    "node": ">= 5.0.0"
-  },
-  "devDependencies": {
+    "xml2js": "^0.4.15",
     "babel-core": "^6.1.21",
     "babel-loader": "^6.1.0",
     "babel-plugin-transform-runtime": "^6.1.18",
@@ -39,5 +31,8 @@
     "sass-loader": "^3.1.1",
     "style-loader": "^0.13.0",
     "webpack": "^1.12.6"
+  },
+  "engines": {
+    "node": ">= 5.0.0"
   }
 }

@@ -81,7 +81,8 @@ ALTER TABLE feed_contents OWNER TO hrel;
 
 CREATE TABLE feeds (
     id integer NOT NULL,
-    uri character varying(255) NOT NULL
+    uri character varying(255) NOT NULL,
+    title character varying(255)
 );
 
 

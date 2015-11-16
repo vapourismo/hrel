@@ -12,7 +12,7 @@
     "hrel-scan": "./bin/scan"
   },
   "scripts": {
-    "build": "./assets/build.sh"
+    "install": "./assets/build.sh"
   },
   "dependencies": {
     "express": "^4.13.3",

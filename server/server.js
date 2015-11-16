@@ -36,12 +36,12 @@ server.get("/feeds", function (req, res) {
 
 server.listen(3102, "127.0.0.1");
 
-const scan = function* () {
-	yield feeds.scan();
-	yield dumps.scan();
-}.async;
+// const scan = function* () {
+// 	yield feeds.scan();
+// 	yield dumps.scan();
+// }.async;
 
-scan().catch(error => {
-	util.logError(error);
-	process.exit(1);
-});
+// scan().catch(error => {
+// 	util.logError(error);
+// 	process.exit(1);
+// });

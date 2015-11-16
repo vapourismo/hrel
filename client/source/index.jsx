@@ -1,11 +1,13 @@
-"use strict";
+const React    = require("react");
+const ReactDOM = require("react-dom");
 
 // Styles
 require("./index.scss");
 
-// Navigation
-
-// Main
+// Load event
 window.addEventListener("load", function () {
-	console.log("Hello World");
+	ReactDOM.render(
+		<div>Hello World</div>,
+		document.getElementById("canvas")
+	);
 });

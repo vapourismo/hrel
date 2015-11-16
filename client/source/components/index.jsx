@@ -12,17 +12,13 @@ function fetchFeeds(callback) {
 }
 
 const Feed = React.createClass({
-	openFeed() {
-		page("/feed/" + this.props.data.id);
-	},
-
 	render() {
 		return (
-			<div className="feed" onClick={this.openFeed}>
+			<a className="row" href={"/feeds/" + this.props.data.id}>
 				<div className="cell title">{this.props.data.title}</div>
 				<div className="cell uri">{this.props.data.uri}</div>
 				<div className="cell count">{this.props.data.count}</div>
-			</div>
+			</a>
 		);
 	}
 });
@@ -44,7 +40,7 @@ const Index = React.createClass({
 
 		return (
 			<div className="index">
-				<div className="feeds">
+				<div className="table">
 					{feeds}
 				</div>
 			</div>

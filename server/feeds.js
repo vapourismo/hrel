@@ -122,16 +122,20 @@ const scan = function* () {
  * Retrieve all feeds.
  */
 const all = function* () {
-	const results = yield db.query("SELECT f.id, f.uri, f.title, COUNT(fc.release) AS count FROM feeds f, feed_contents fc WHERE f.id = fc.feed GROUP BY f.id");
-	return results.rows.map(row => ({
-		id: row.id,
-		uri: row.uri,
-		title: row.title,
-		count: row.count
-	}));
+	const result = yield db.query("SELECT f.id, f.uri, f.title, COUNT(fc.release) AS count FROM feeds f, feed_contents fc WHERE f.id = fc.feed GROUP BY f.id");
+	return result.rows;
+}.async;
+
+/**
+ * Retrieve information for a feed.
+ */
+const one = function* (fid) {
+	const result = yield db.query("SELECT t.id, t.title, t.uri, t.size FROM feed_contents fc, releases r, torrents t WHERE fc.feed = $1 AND fc.release = r.id AND r.id = t.release ORDER BY t.id DESC LIMIT 100", [fid]);
+	return {releases: result.rows};
 }.async;
 
 module.exports = {
 	scan,
-	all
+	all,
+	one
 };

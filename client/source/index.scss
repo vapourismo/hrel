@@ -12,39 +12,58 @@ body {
 	font-family: monospace;
 }
 
+a:link {
+	color: #fff;
+	text-decoration: none;
+	font-family: monospace;
+};
+
+/* Table */
+.table {
+	display: table;
+	border-spacing: 5px;
+
+	.row {
+		display: table-row;
+		.cell {
+			display: table-cell;
+			padding: 10px;
+			background-color: rgb(26, 26, 26);
+			color: rgb(175, 175, 175);
+			transition: all 200ms;
+		}
+
+		&:hover .cell {
+			background-color: rgb(150, 55, 60);
+			color: rgb(200, 200, 200);
+		}
+	}
+}
+
 /* Index */
 .index {
 	display: flex;
 	justify-content: center;
 
-	.feeds {
-		display: table;
-		border-spacing: 5px;
+	.table .row {
+		cursor: pointer;
+	}
 
-		.feed {
-			display: table-row;
-			cursor: pointer;
+	.table .row .cell.title {
+		text-align: right;
+	}
 
-			.cell {
-				display: table-cell;
-				padding: 10px;
-				background-color: rgb(26, 26, 26);
-				color: rgb(175, 175, 175);
-				transition: all 333ms;
+	.table .row .cell.count {
+		text-align: center;
+	}
+}
 
-				&.title {
-					text-align: right;
-				}
+/* Feed */
+.feed {
+	display: flex;
+	justify-content: center;
 
-				&.count {
-					text-align: center;
-				}
-			}
-
-			&:hover .cell {
-				background-color: rgb(150, 55, 60);
-				color: rgb(200, 200, 200);
-			}
-		}
+	.table .row .cell.size {
+		text-align: center;
 	}
 }

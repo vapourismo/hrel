@@ -2,6 +2,7 @@ const page     = require("page");
 const React    = require("react");
 const ReactDOM = require("react-dom");
 const Index    = require("./components/index.jsx");
+const Feed     = require("./components/feed.jsx");
 
 // Styles
 require("./index.scss");
@@ -11,11 +12,12 @@ function render(element) {
 	ReactDOM.render(element, document.getElementById("canvas"));
 }
 
-page("/", ctx => render(<Index />));
+page(/^\/feeds\/(\d+)$/, ctx => render(<Feed id={Number.parseInt(ctx.params[0])}/>));
+page("/",                ctx => render(<Index />));
 
 page(ctx => page.redirect("/"));
 
 // Load event
 window.addEventListener("load", function () {
-	page({click: false});
+	page();
 });

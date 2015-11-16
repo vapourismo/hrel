@@ -10,6 +10,18 @@ const dumps   = require("./dumps");
 
 var server = Express();
 
+server.get(/^\/feeds\/(\d+)$/, function (req, res) {
+	feeds.one(Number.parseInt(req.params[0])).then(
+		result => {
+			res.json(result);
+		},
+		error => {
+			res.status(500).end();
+			util.logError(error);
+		}
+	);
+});
+
 server.get("/feeds", function (req, res) {
 	feeds.all().then(
 		result => {

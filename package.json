@@ -9,7 +9,8 @@
     "url": "https://github.com/vapourismo/hrel"
   },
   "bin": {
-    "hrel-scan": "./bin/scan"
+    "hrel-scan": "./bin/scan",
+    "hrel-web": "./bin/web"
   },
   "scripts": {
     "install": "./assets/build.sh"

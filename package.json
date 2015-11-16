@@ -1,0 +1,22 @@
+{
+	"name": "hrel",
+	"version": "0.0.0",
+	"author": "Ole Krüger <ole@vprsm.de>",
+	"license": "UNLICENSED",
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/vapourismo/hrel"
+	},
+	"bin": {
+		"hrel-scan": "./bin/scan"
+	},
+	"dependencies": {
+		"pg": "^4.4.3",
+		"pg-native": "^1.9.0",
+		"pg-native": "^0.4.15"
+	},
+	"engines": {
+		"node": ">= 5.0.0"
+	}
+}

@@ -1,3 +1,41 @@
+/* General */
 body {
-	background-color: #222;
+	display: flex;
+	flex-wrap: nowrap;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	background-color: rgb(20, 20, 20);
+	color: #fff;
+	font-family: monospace;
+}
+
+/* Index */
+.index {
+	display: flex;
+	justify-content: center;
+
+	.feeds {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		padding: 2.5px;
+
+		.feed {
+			background-color: rgb(26, 26, 26);
+			color: rgb(175, 175, 175);
+			cursor: pointer;
+			padding: 10px;
+			margin: 2.5px;
+			width: 100%;
+			transition: all 333ms;
+
+			&:hover {
+				background-color: rgb(150, 55, 60);
+				color: rgb(200, 200, 200);
+			}
+		}
+	}
 }

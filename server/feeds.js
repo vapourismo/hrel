@@ -104,6 +104,18 @@ const scan = function* () {
 	yield* rows.map(row => processFeed(row.data));
 }.async;
 
+/**
+ * Retrieve all feeds.
+ */
+const all = function* () {
+	const rows = yield feedsTable.load();
+	return rows.map(row => ({
+		id: row.data.id,
+		uri: row.data.uri
+	}));
+}.async;
+
 module.exports = {
-	scan
+	scan,
+	all
 };

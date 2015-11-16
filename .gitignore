@@ -1,2 +1,8 @@
+# Node Dependencies
 node_modules/
+
+# Development Server
 .devserver.pid
+
+# Webpack Output
+client/static/index.js

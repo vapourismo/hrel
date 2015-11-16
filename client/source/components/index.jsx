@@ -19,7 +19,9 @@ const Feed = React.createClass({
 	render() {
 		return (
 			<div className="feed" onClick={this.openFeed}>
-				{this.props.data.uri}
+				<div className="cell title">{this.props.data.title}</div>
+				<div className="cell uri">{this.props.data.uri}</div>
+				<div className="cell count">{this.props.data.count}</div>
 			</div>
 		);
 	}
@@ -44,7 +46,6 @@ const Index = React.createClass({
 			<div className="index">
 				<div className="feeds">
 					{feeds}
-					<Feed data={{id: 1338, uri: "http://short/feed"}}/>
 				</div>
 			</div>
 		);

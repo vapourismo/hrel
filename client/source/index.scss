@@ -18,21 +18,30 @@ body {
 	justify-content: center;
 
 	.feeds {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		padding: 2.5px;
+		display: table;
+		border-spacing: 5px;
 
 		.feed {
-			background-color: rgb(26, 26, 26);
-			color: rgb(175, 175, 175);
+			display: table-row;
 			cursor: pointer;
-			padding: 10px;
-			margin: 2.5px;
-			width: 100%;
-			transition: all 333ms;
 
-			&:hover {
+			.cell {
+				display: table-cell;
+				padding: 10px;
+				background-color: rgb(26, 26, 26);
+				color: rgb(175, 175, 175);
+				transition: all 333ms;
+
+				&.title {
+					text-align: right;
+				}
+
+				&.count {
+					text-align: center;
+				}
+			}
+
+			&:hover .cell {
 				background-color: rgb(150, 55, 60);
 				color: rgb(200, 200, 200);
 			}

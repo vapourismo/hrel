@@ -24,6 +24,7 @@ function parseXML(xml) {
 
 const AtomSchema = {
 	feed: {
+		title: ["string"],
 		entry: [{
 			title: ["string"]
 		}]
@@ -33,6 +34,7 @@ const AtomSchema = {
 const RSSSchema = {
 	rss: {
 		channel: [{
+			title: ["string"],
 			item: [{
 				title: ["string"]
 			}]
@@ -48,21 +50,30 @@ const RSSSchema = {
 const parseFeed = function* (contents) {
 	const object = yield parseXML(contents);
 
-	if (util.validateSchema(AtomSchema, object))
-		return object.feed.entry.map(
+	let title = null, names = [];
+
+	if (util.validateSchema(AtomSchema, object)) {
+		title = object.feed.title.join("");
+		names = object.feed.entry.map(
 			entry => releases.normalize(entry.title.join(""))
 		);
-	else if (util.validateSchema(RSSSchema, object))
-		return [].concat(...object.rss.channel.map(
-			channel => channel.item.map(
-				item => releases.normalize(item.title.join(""))
-			)
-		));
-	else
+	} else if (util.validateSchema(RSSSchema, object)) {
+		object.rss.channel.map(
+			channel => {
+				title = channel.title.join("");
+				names.concat(channel.item.map(
+					item => releases.normalize(item.title.join(""))
+				));
+			}
+		);
+	} else {
 		throw new Error("Unrecognized feed schema");
+	}
+
+	return {title, names};
 }.async;
 
-const feedsTable = new db.Table("feeds", "id", ["uri"]);
+const feedsTable = new db.Table("feeds", "id", ["uri", "title"]);
 const feedContentsTable = new db.Table("feed_contents", null, ["feed", "release"]);
 
 /**
@@ -82,18 +93,21 @@ const attachRelease = function* (feed, release) {
  * @return {Promise}
  */
 const processFeed = function* (feed) {
-	util.inform("feed: " + feed.id, "Processing '" + feed.uri + "'");
+	util.inform("feed: " + feed.data.id, "Processing '" + feed.data.uri + "'");
 
-	const rels = yield parseFeed(yield http.download(feed.uri));
+	const result = yield parseFeed(yield http.download(feed.data.uri));
+
+	if (result.title)
+		yield feed.update({title: result.title});
+
 	let insertedReleases = 0;
-
-	yield* rels.map(function* (name) {
+	yield* result.names.map(function* (name) {
 		const rel = yield releases.insert(name);
-		const num = yield attachRelease(feed.id, rel.data.id);
+		const num = yield attachRelease(feed.data.id, rel.data.id);
 		insertedReleases += num;
 	}.async);
 
-	util.inform("feed: " + feed.id, "Found " + insertedReleases + " new releases");
+	util.inform("feed: " + feed.data.id, "Found " + insertedReleases + " new releases");
 }.async;
 
 /**
@@ -101,17 +115,19 @@ const processFeed = function* (feed) {
  */
 const scan = function* () {
 	const rows = yield feedsTable.load();
-	yield* rows.map(row => processFeed(row.data));
+	yield* rows.map(processFeed);
 }.async;
 
 /**
  * Retrieve all feeds.
  */
 const all = function* () {
-	const rows = yield feedsTable.load();
-	return rows.map(row => ({
-		id: row.data.id,
-		uri: row.data.uri
+	const results = yield db.query("SELECT f.id, f.uri, f.title, COUNT(fc.release) AS count FROM feeds f, feed_contents fc WHERE f.id = fc.feed GROUP BY f.id");
+	return results.rows.map(row => ({
+		id: row.id,
+		uri: row.uri,
+		title: row.title,
+		count: row.count
 	}));
 }.async;
 

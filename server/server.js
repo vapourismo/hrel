@@ -3,8 +3,10 @@
 "use strict";
 
 const Express = require("express");
+const process = require("process");
 const util    = require("./utilities");
 const feeds   = require("./feeds");
+const dumps   = require("./dumps");
 
 var server = Express();
 
@@ -21,3 +23,13 @@ server.get("/feeds", function (req, res) {
 });
 
 server.listen(3102, "127.0.0.1");
+
+const scan = function* () {
+	yield feeds.scan();
+	yield dumps.scan();
+}.async;
+
+scan().catch(error => {
+	util.logError(error);
+	process.exit(1);
+});

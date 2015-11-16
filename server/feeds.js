@@ -130,7 +130,7 @@ const all = function* () {
  * Retrieve information for a feed.
  */
 const one = function* (fid) {
-	const result = yield db.query("SELECT t.id, t.title, t.uri, t.size FROM feed_contents fc, releases r, torrents t WHERE fc.feed = $1 AND fc.release = r.id AND r.id = t.release ORDER BY t.inserted DESC LIMIT 100", [fid]);
+	const result = yield db.query("SELECT t.id, t.title, t.uri, t.size, t.inserted FROM feed_contents fc, releases r, torrents t WHERE fc.feed = $1 AND fc.release = r.id AND r.id = t.release ORDER BY t.inserted DESC LIMIT 100", [fid]);
 	return {releases: result.rows};
 }.async;
 

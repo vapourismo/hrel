@@ -17,6 +17,7 @@ const Release = React.createClass({
 			<div className="row">
 				<div className="cell title">{this.props.data.title}</div>
 				<div className="cell size">{this.props.data.size}</div>
+				<div className="cell inserted">{new Date(this.props.data.inserted).toLocaleString()}</div>
 				<a className="cell link" href={this.props.data.uri}>link</a>
 				<a className="cell add" target="blank" href={"https://www.premiumize.me/downloader?magnet=" + this.props.data.uri}>add</a>
 			</div>

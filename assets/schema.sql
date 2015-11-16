@@ -152,7 +152,7 @@ CREATE TABLE torrents (
     uri character varying(255) NOT NULL,
     release integer NOT NULL,
     size bigint NOT NULL,
-    inserted timestamp without time zone DEFAULT now() NOT NULL
+    inserted timestamp with time zone DEFAULT now() NOT NULL
 );
 
 

@@ -15,10 +15,12 @@
     "build": "./assets/build.sh"
   },
   "dependencies": {
+    "express": "^4.13.3",
     "pg": "^4.4.3",
     "pg-native": "^1.9.0",
     "react": "^0.14.2",
     "react-dom": "^0.14.2",
+    "superagent": "^1.4.0",
     "xml2js": "^0.4.15"
   },
   "engines": {

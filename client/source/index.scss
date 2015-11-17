@@ -9,16 +9,10 @@ body {
 	width: 100%;
 	margin: 0;
 	padding: 0;
-	background-color: rgb(20, 20, 20);
+	background-color: #141414;
 	color: #fff;
 	font-family: monospace;
 }
-
-a:link {
-	color: #fff;
-	text-decoration: none;
-	font-family: monospace;
-};
 
 /* Table */
 .table {
@@ -30,29 +24,29 @@ a:link {
 		.cell {
 			display: table-cell;
 			padding: 10px;
-			background-color: rgb(26, 26, 26);
-			color: rgb(175, 175, 175);
+			background-color: #1a1a1a;
+			color: #afafaf;
 			transition: all 200ms;
 		}
 
 		&:hover .cell, &:active .cell, &:focus .cell {
-			background-color: rgb(150, 55, 60);
-			color: rgb(200, 200, 200);
+			background-color: #96373c;
+			color: #c8c8c8;
 		}
 	}
 }
 
 @keyframes waiting-pulse {
 	0% {
-		color: rgb(200, 200, 200);
+		color: #c8c8c8;
 	}
 
 	50% {
-		color: rgb(100, 100, 100);
+		color: #646464;
 	}
 
 	100% {
-		color: rgb(200, 200, 200);
+		color: #c8c8c8;
 	}
 }
 
@@ -71,19 +65,19 @@ a:link {
 			outline: none;
 			font-family: monospace;
 			padding: 10px;
-			background-color: rgb(26, 26, 26);
-			color: rgb(175, 175, 175);
+			background-color: #1a1a1a;
+			color: #afafaf;
 			transition: all 200ms;
 			width: 500px;
 
 			&:hover, &:active, &:focus {
-				background-color: rgb(150, 55, 60);
-				color: rgb(200, 200, 200);
+				background-color: #96373c;
+				color: #c8c8c8;
 			}
 		}
 
 		.error {
-			color: rgb(150, 55, 60);
+			color: #96373c;
 			text-align: center;
 			padding: 10px;
 		}
@@ -97,18 +91,21 @@ a:link {
 
 	.table {
 		padding: 15px;
-	}
 
-	.table .row {
-		cursor: pointer;
-	}
+		.row {
+			cursor: pointer;
+			text-decoration: none;
 
-	.table .row .cell.title {
-		text-align: right;
-	}
+			.cell {
+				&.title {
+					text-align: right;
+				}
 
-	.table .row .cell.count {
-		text-align: center;
+				&.count {
+					text-align: center;
+				}
+			}
+		}
 	}
 }
 
@@ -117,7 +114,31 @@ a:link {
 	display: flex;
 	justify-content: center;
 
-	.table .row .cell.size {
-		text-align: center;
+	.table .row .cell {
+		cursor: text;
+		text-decoration: none;
+
+		&.link, &.add {
+			cursor: pointer;
+		}
+	}
+}
+
+/* Footer */
+.footer {
+	text-align: center;
+	padding: 10px;
+
+	.link {
+		padding: 5px;
+		transition: all 500ms;
+		text-decoration: none;
+		font-size: 0.9em;
+		color: #afafaf;
+
+		&:hover {
+			color: #fff;
+			background-color: #96373c;
+		}
 	}
 }

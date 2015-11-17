@@ -61,9 +61,9 @@ const parseFeed = function* (contents) {
 		object.rss.channel.map(
 			channel => {
 				title = channel.title.join("");
-				names.concat(channel.item.map(
-					item => releases.normalize(item.title.join(""))
-				));
+				channel.item.forEach(
+					item => names.push(releases.normalize(item.title.join("")))
+				);
 			}
 		);
 	} else {

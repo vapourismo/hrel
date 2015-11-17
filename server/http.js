@@ -66,6 +66,35 @@ function download(options, maxContentLength) {
 	});
 }
 
+function stream(options) {
+	if (!(options instanceof Object))
+		options = url.parse(options);
+
+	let schema = options.protocol == "https:" ? https : http;
+
+	return new Promise(function (accept, reject) {
+		const req = schema.request(options, function (res) {
+			switch (res.headers["content-encoding"]) {
+				case "gzip":
+					accept(res.pipe(zlib.createGunzip()));
+					break;
+
+				case "deflate":
+					accept(res.pipe(zlib.createInflate()));
+					break;
+
+				default:
+					accept(res);
+					break;
+			}
+		});
+
+		req.on("error", reject);
+		req.end();
+	});
+}
+
 module.exports = {
-	download
+	download,
+	stream
 };

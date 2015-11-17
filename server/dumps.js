@@ -4,6 +4,7 @@
 
 const url      = require("url");
 const zlib     = require("zlib");
+const Lazy     = require("lazy");
 const db       = require("./database");
 const http     = require("./http");
 const util     = require("./utilities");
@@ -11,19 +12,19 @@ const releases = require("./releases");
 
 const table = new db.Table("dumps", "id", ["uri", "type"]);
 
-/**
- * Decompress gzipped data.
- * @param {Buffer} contents GZipped data
- * @returns {Buffer} Gunzipped data
- */
-const decompressGZip = function (contents) {
-	return new Promise(function (accept, reject) {
-		zlib.gunzip(contents, function (error, result) {
-			if (error) reject(error);
-			else       accept(result);
-		});
-	});
-};
+// /**
+//  * Decompress gzipped data.
+//  * @param {Buffer} contents GZipped data
+//  * @returns {Buffer} Gunzipped data
+//  */
+// const decompressGZip = function (contents) {
+// 	return new Promise(function (accept, reject) {
+// 		zlib.gunzip(contents, function (error, result) {
+// 			if (error) reject(error);
+// 			else       accept(result);
+// 		});
+// 	});
+// };
 
 /**
  * Process a KickAss dump.
@@ -39,23 +40,34 @@ const processKickAssDump = function* (dump) {
 		"Accept": "application/x-gzip"
 	};
 
-	const buf = yield decompressGZip(yield http.download(req));
-	const contents = buf.toString("utf8");
-	let insertedTorrents = 0;
+	const stream = yield http.stream(req);
+	const input = stream.pipe(zlib.createGunzip());
+	const proc = new Lazy(input);
 
-	yield* contents.split("\n").map(function* (line) {
-		const segments = line.split("|");
-		if (segments.length < 12) return;
+	yield new Promise(function (accept, reject) {
+		let insertedTorrents = 0;
 
-		const result = yield db.query(
-			"INSERT INTO torrents (title, uri, release, size) SELECT $1 :: varchar, $2 :: varchar, r.id, $3 :: bigint FROM releases r WHERE r.name = $4 :: varchar AND NOT EXISTS (SELECT * FROM torrents WHERE uri = $2 :: varchar) RETURNING id",
-			[segments[1], segments[4], segments[5], releases.normalize(segments[1])]
-		);
+		proc.lines.map(function* (line) {
+			const segments = line.toString("utf8").split("|");
+			if (segments.length < 12) return;
 
-		insertedTorrents += result.rows.length;
-	}.async);
+			const result = yield db.query(
+				"INSERT INTO torrents (title, uri, release, size) SELECT $1 :: varchar, $2 :: varchar, r.id, $3 :: bigint FROM releases r WHERE r.name = $4 :: varchar AND NOT EXISTS (SELECT * FROM torrents WHERE uri = $2 :: varchar) RETURNING id",
+				[segments[1], segments[4], segments[5], releases.normalize(segments[1])]
+			);
 
-	util.inform("dump: " + dump.id, "Found " + insertedTorrents + " new torrents");
+			insertedTorrents += result.rows.length;
+		}.async).join(function* (ps) {
+			try {
+				yield* ps;
+				accept();
+			} catch (error) {
+				reject(error);
+			}
+
+			util.inform("dump: " + dump.id, "Found " + insertedTorrents + " new torrents");
+		}.async);
+	});
 }.async;
 
 /**

@@ -123,6 +123,7 @@ function serve(iter, step, accept, reject) {
 			},
 			function (error) {
 				try {
+					logError(error);
 					serve(iter, iter.throw(error), accept, reject);
 				} catch (error) {
 					reject(error);

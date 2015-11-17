@@ -12,7 +12,7 @@ const url   = require("url");
  * @param {Object or String} options Requested URL or request options
  * @returns {Promise<Buffer>}
  */
-function download(options) {
+function download(options, maxContentLength) {
 	if (!(options instanceof Object))
 		options = url.parse(options);
 
@@ -20,11 +20,21 @@ function download(options) {
 
 	return new Promise(function (accept, reject) {
 		const req = schema.request(options, function (res) {
+			let received = 0;
 			const chunks = [];
 
+			if (maxContentLength && "content-length" in res.headers && res.headers["content-length"] > maxContentLength)
+				return reject(new Error("Content too long"));
+
 			res.on("data", function (chunk) {
+				if (maxContentLength && received + chunk.length > maxContentLength) {
+					res.removeAllListeners();
+					return reject(new Error("Content too long"));
+				}
+
 				chunks.push(chunk);
-			})
+				received += chunk.length;
+			});
 
 			res.on("end", function () {
 				const data = Buffer.concat(chunks);

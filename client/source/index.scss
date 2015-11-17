@@ -33,17 +33,69 @@ a:link {
 			transition: all 200ms;
 		}
 
-		&:hover .cell {
+		&:hover .cell, &:active .cell, &:focus .cell {
 			background-color: rgb(150, 55, 60);
 			color: rgb(200, 200, 200);
 		}
 	}
 }
 
+@keyframes waiting-pulse {
+	0% {
+		color: rgb(200, 200, 200);
+	}
+
+	50% {
+		color: rgb(100, 100, 100);
+	}
+
+	100% {
+		color: rgb(200, 200, 200);
+	}
+}
+
 /* Index */
 .index {
 	display: flex;
-	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+
+	.insert {
+		padding: 15px;
+		margin: 0;
+
+		.uri {
+			border: none;
+			outline: none;
+			font-family: monospace;
+			padding: 10px;
+			background-color: rgb(26, 26, 26);
+			color: rgb(175, 175, 175);
+			transition: all 200ms;
+			width: 500px;
+
+			&:hover, &:active, &:focus {
+				background-color: rgb(150, 55, 60);
+				color: rgb(200, 200, 200);
+			}
+		}
+
+		.error {
+			color: rgb(150, 55, 60);
+			text-align: center;
+			padding: 10px;
+		}
+
+		.waiting {
+			padding: 10px;
+			animation: waiting-pulse 2s;
+			animation-iteration-count: infinite;
+		}
+	}
+
+	.table {
+		padding: 15px;
+	}
 
 	.table .row {
 		cursor: pointer;

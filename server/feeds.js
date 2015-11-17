@@ -3,6 +3,7 @@
 "use strict";
 
 const xml2js   = require("xml2js");
+const validURL = require("valid-url");
 const db       = require("./database");
 const http     = require("./http");
 const util     = require("./utilities");
@@ -134,8 +135,42 @@ const one = function* (fid) {
 	return {releases: result.rows};
 }.async;
 
+/**
+ * Add a new feed.
+ */
+const add = function* (uri) {
+	if (!validURL.isHttpUri(uri) && !validURL.isHttpsUri(uri))
+		throw new Error("Invalid URI");
+
+	const contents = yield http.download(uri, 10485760);
+	let result;
+
+	try {
+		result = yield parseFeed(contents);
+	} catch (error) {
+		throw new Error("Given URI does not point to a valid RSS or Atom feed");
+	}
+
+	let feed = (yield feedsTable.upsert(result.title ? {uri, title: result.title} : {uri})).pop();
+
+	if (!feed) feed = (yield feedsTable.find({uri: uri})).pop();
+	if (!feed) throw new Error("Could not find feed");
+
+	let insertedReleases = 0;
+	yield* result.names.map(function* (name) {
+		const rel = yield releases.insert(name);
+		const num = yield attachRelease(feed.data.id, rel.data.id);
+		insertedReleases += num;
+	}.async);
+
+	util.inform("feed: " + feed.data.id, "Found " + insertedReleases + " new releases");
+
+	return {id: feed.data.id};
+}.async;
+
 module.exports = {
 	scan,
 	all,
-	one
+	one,
+	add
 };

@@ -1,3 +1,5 @@
+/* Copyright (C) 2015, Ole Krüger <ole@vprsm.de> */
+
 const kibi = 1024;
 const mebi = kibi * kibi;
 const gibi = mebi * kibi;

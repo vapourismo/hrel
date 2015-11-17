@@ -1,3 +1,5 @@
+/* Copyright (C) 2015, Ole Krüger <ole@vprsm.de> */
+
 const page       = require("page");
 const React      = require("react");
 const superagent = require("superagent");

@@ -12,19 +12,15 @@ const releases = require("./releases");
 
 const table = new db.Table("dumps", "id", ["uri", "type"]);
 
-// /**
-//  * Decompress gzipped data.
-//  * @param {Buffer} contents GZipped data
-//  * @returns {Buffer} Gunzipped data
-//  */
-// const decompressGZip = function (contents) {
-// 	return new Promise(function (accept, reject) {
-// 		zlib.gunzip(contents, function (error, result) {
-// 			if (error) reject(error);
-// 			else       accept(result);
-// 		});
-// 	});
-// };
+/**
+ * Insert torrent and match it with a release.
+ */
+const insertTorrent = function (title, uri, size) {
+	return db.query(
+		"INSERT INTO torrents (title, uri, release, size) SELECT $1 :: varchar, $2 :: varchar, r.id, $3 :: bigint FROM releases r WHERE r.name = $4 :: varchar AND NOT EXISTS (SELECT * FROM torrents WHERE uri = $2 :: varchar) RETURNING id",
+		[title, uri, size, releases.normalize(title)]
+	);
+};
 
 /**
  * Process a KickAss dump.
@@ -51,9 +47,10 @@ const processKickAssDump = function* (dump) {
 			const segments = line.toString("utf8").split("|");
 			if (segments.length < 12) return;
 
-			const result = yield db.query(
-				"INSERT INTO torrents (title, uri, release, size) SELECT $1 :: varchar, $2 :: varchar, r.id, $3 :: bigint FROM releases r WHERE r.name = $4 :: varchar AND NOT EXISTS (SELECT * FROM torrents WHERE uri = $2 :: varchar) RETURNING id",
-				[segments[1], segments[4], segments[5], releases.normalize(segments[1])]
+			const result = yield insertTorrent(
+				segments[1], // Title
+				segments[4], // URI
+				segments[5]  // Size
 			);
 
 			insertedTorrents += result.rows.length;

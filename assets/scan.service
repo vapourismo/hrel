@@ -1,0 +1,13 @@
+[Unit]
+Description=HRel Feed Scanner
+Requires=postgresql.service
+After=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/hrel-scan
+User=hrel
+Group=hrel
+
+[Install]
+WantedBy=default.target

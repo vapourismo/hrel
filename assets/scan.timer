@@ -1,0 +1,11 @@
+[Unit]
+Description=HRel Feed Scanner
+Requires=postgresql.service
+After=postgresql.service
+
+[Timer]
+OnBootSec=30min
+OnUnitActiveSec=30min
+
+[Install]
+WantedBy=timers.target

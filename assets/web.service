@@ -1,0 +1,15 @@
+[Unit]
+Description=HRel Feed Scanner
+Requires=postgresql.service
+After=postgresql.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/hrel-web
+WorkingDirectory=/var/hrel
+User=hrel
+Group=hrel
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

@@ -122,7 +122,7 @@ const scan = function* () {
  * Retrieve all feeds.
  */
 const all = function* () {
-	const result = yield db.query("SELECT f.id, f.uri, f.title, COUNT(fc.release) AS count FROM feeds f, feed_contents fc WHERE f.id = fc.feed GROUP BY f.id");
+	const result = yield db.query("SELECT f.id, f.uri, f.title, (SELECT COUNT(t.id) FROM feed_contents fc, torrents t WHERE fc.feed = f.id AND fc.release = t.release) AS count FROM feeds f ORDER BY f.title ASC");
 	return result.rows;
 }.async;
 

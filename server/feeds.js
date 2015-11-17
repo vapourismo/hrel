@@ -142,19 +142,23 @@ const add = function* (uri) {
 	if (!validURL.isHttpUri(uri) && !validURL.isHttpsUri(uri))
 		throw new Error("Invalid URI");
 
+	// Check if the feed already exists
+	let feed = (yield feedsTable.find({uri})).pop();
+	if (feed) return {id: feed.data.id};
+
+	// Download feeds up to 10M
 	const contents = yield http.download(uri, 10485760);
 	let result;
 
+	// Parse the feed, catch exceptions to notify the user of invalid feeds
 	try {
 		result = yield parseFeed(contents);
 	} catch (error) {
 		throw new Error("Given URI does not point to a valid RSS or Atom feed");
 	}
 
-	let feed = (yield feedsTable.upsert(result.title ? {uri, title: result.title} : {uri})).pop();
-
-	if (!feed) feed = (yield feedsTable.find({uri: uri})).pop();
-	if (!feed) throw new Error("Could not find feed");
+	// Insert the new release
+	feed = yield feedsTable.insert(result.title ? {uri, title: result.title} : {uri});
 
 	let insertedReleases = 0;
 	yield* result.names.map(function* (name) {

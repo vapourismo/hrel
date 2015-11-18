@@ -24,76 +24,36 @@ function iterateFiles(base, callback) {
 	});
 }
 
-function indexBuffers(index, ...buffers) {
-	for (let i = 0; i < buffers.length; i++) {
-		let buffer = buffers[i];
-
-		if (index < buffer.length)
-			return buffer[index];
-		else
-			index -= buffer.length;
-	}
-}
-
-function sliceBuffers(start, end, ...buffers) {
-	const result = new Buffer(end - start);
-	let offset = 0;
-
-	for (let i = 0; i < buffers.length; i++) {
-		let buffer = buffers[i];
-
-		if (start < buffer.length) {
-			if (end < buffer.length) {
-				// Entire slice in buffer
-				buffer.copy(result, offset, start, end);
-				return result;
-			} else {
-				// Part of the slice in buffer
-				buffer.copy(result, offset, start, buffer.length);
-				offset += buffer.length - start;
-			}
-		} else {
-			// Slice is somewhere else
-			start -= buffer.length;
-			end -= buffer.length;
-		}
-	}
-
-	// Only part of the slice could be found
-	return result.slice(0, offset);
-}
-
-function splitBuffers(symbol, ...buffers) {
-	const length = buffers.reduce((num, buf) => num + buf.length, 0);
+function splitBuffer(buffer, symbol) {
+	const length = buffer.length;
 	const chunks = [];
 	let start = 0;
 
 	for (let i = 0; i < length; i++) {
-		if (indexBuffers(i, ...buffers) == symbol) {
-			chunks.push(sliceBuffers(start, i, ...buffers));
+		if (buffer[i] == symbol) {
+			chunks.push(buffer.slice(start, i));
 			start = i + 1;
 		}
 	}
 
-	// Space remaining
 	if (start <= length)
-		chunks.push(sliceBuffers(start, length, ...buffers));
+		chunks.push(buffer.slice(start, length));
 
 	return chunks;
 }
 
-function splitStream(stream, symbol, callback) {
-	let buf = new Buffer(0);
+function splitStream(stream, symbol, callback, end) {
+	let currentChunk = new Buffer(0);
 
 	stream.on("data", function (chunk) {
-		const result = splitBuffers(symbol, buf, chunk);
-		buf = result.pop();
-
-		result.forEach(callback);
+		const chunks = splitBuffer(Buffer.concat([currentChunk, chunk]), symbol);
+		currentChunk = chunks.pop();
+		chunks.forEach(callback);
 	});
 
 	stream.on("end", function () {
-		splitBuffers(symbol, buf).forEach(callback);
+		splitBuffer(currentChunk, symbol).forEach(callback);
+		if (end) end();
 	});
 }
 
@@ -255,7 +215,10 @@ Object.defineProperty(Object.prototype, "map", {
 module.exports = {
 	iterateFiles,
 	validateSchema,
-	logError
+	logError,
+
+	splitBuffer,
+	splitStream
 };
 
 Object.assign(module.exports, loggers);

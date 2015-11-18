@@ -1,16 +1,17 @@
 #!/bin/sh
 
-PIDFILE=".devserver.pid"
-LAUNCHCMD="node --harmony server/server.js"
+pidfile=".devserver.pid"
+script=$(readlink -f $0)
+launchdm="node --harmony $(dirname $script)/server/server.js"
 
 start_server() {
-	$LAUNCHCMD &
-	echo $! > $PIDFILE
+	$launchdm &
+	echo $! > $pidfile
 }
 
 restart_server() {
-	kill $(< $PIDFILE)
+	kill $(< $pidfile)
 	start_server
 }
 
-[[ -e $PIDFILE ]] && restart_server || start_server
+[[ -e $pidfile ]] && restart_server || start_server

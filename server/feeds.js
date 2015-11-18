@@ -74,9 +74,6 @@ const parseFeed = function* (contents) {
 	return {title, names};
 }.async;
 
-const feedsTable = new db.Table("feeds", "id", ["uri", "title"]);
-const feedContentsTable = new db.Table("feed_contents", null, ["feed", "release"]);
-
 /**
  * Connect a release to a feed.
  * @param {Number} feed    Feed ID
@@ -84,8 +81,8 @@ const feedContentsTable = new db.Table("feed_contents", null, ["feed", "release"
  * @returns {Promise<Number>} Number of newly connected releases
  */
 const attachRelease = function* (feed, release) {
-	const rows = yield feedContentsTable.upsert({feed, release});
-	return rows.length;
+	const row = yield db.insertUnique("feed_contents", {feed, release}, null, true);
+	return row ? 1 : 0;
 }.async;
 
 /**
@@ -94,28 +91,27 @@ const attachRelease = function* (feed, release) {
  * @return {Promise}
  */
 const processFeed = function* (feed) {
-	util.inform("feed: " + feed.data.id, "Processing '" + feed.data.uri + "'");
+	util.inform("feed: " + feed.id, "Processing '" + feed.uri + "'");
 
-	const result = yield parseFeed(yield http.download(feed.data.uri));
+	const result = yield parseFeed(yield http.download(feed.uri));
 
 	if (result.title)
-		yield feed.update({title: result.title});
+		yield db.updateExactly("feeds", {title: result.title}, {id: feed.id});
 
 	let insertedReleases = 0;
 	yield* result.names.map(function* (name) {
 		const rel = yield releases.insert(name);
-		const num = yield attachRelease(feed.data.id, rel.data.id);
-		insertedReleases += num;
+		insertedReleases += yield attachRelease(feed.id, rel.id);
 	}.async);
 
-	util.inform("feed: " + feed.data.id, "Found " + insertedReleases + " new releases");
+	util.inform("feed: " + feed.id, "Found " + insertedReleases + " new releases");
 }.async;
 
 /**
  * Scan all feeds and collect the contained release names.
  */
 const scan = function* () {
-	const rows = yield feedsTable.load();
+	const rows = yield db.findAll("feeds");
 	yield* rows.map(processFeed);
 }.async;
 
@@ -143,8 +139,8 @@ const add = function* (uri) {
 		throw new Error("Invalid URI");
 
 	// Check if the feed already exists
-	let feed = (yield feedsTable.find({uri})).pop();
-	if (feed) return {id: feed.data.id};
+	let feed = (yield db.findExactly("feeds", {uri})).pop();
+	if (feed) return {id: feed.id};
 
 	// Download feeds up to 10M
 	const contents = yield http.download(uri, 10485760);
@@ -158,18 +154,17 @@ const add = function* (uri) {
 	}
 
 	// Insert the new release
-	feed = yield feedsTable.insert(result.title ? {uri, title: result.title} : {uri});
+	feed = yield db.insert("feeds", result.title ? {uri, title: result.title} : {uri});
 
 	let insertedReleases = 0;
 	yield* result.names.map(function* (name) {
 		const rel = yield releases.insert(name);
-		const num = yield attachRelease(feed.data.id, rel.data.id);
-		insertedReleases += num;
+		insertedReleases += yield attachRelease(feed.id, rel.id);
 	}.async);
 
-	util.inform("feed: " + feed.data.id, "Found " + insertedReleases + " new releases");
+	util.inform("feed: " + feed.id, "Found " + insertedReleases + " new releases");
 
-	return {id: feed.data.id};
+	return {id: feed.id};
 }.async;
 
 module.exports = {

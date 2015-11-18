@@ -16,19 +16,13 @@ function normalize(name) {
 	return segments.join(" ").replace(/([^a-zA-Z0-9])/g, " ").replace(/\s\s+/g, " ").trim().toLowerCase();
 }
 
-const table = new db.Table("releases", "id", ["name"]);
-
 /**
  * Insert a new release.
  * @param {String} name Normalized release name
  */
 const insert = function* (name) {
-	const rows = yield table.upsert({name});
-
-	if (rows.length > 0)
-		return rows.pop();
-	else
-		return (yield table.find({name})).pop();
+	const row = yield db.insertUnique("releases", {name}, null, true);
+	return row || (yield db.findExactly("releases", {name})).pop();
 }.async;
 
 module.exports = {

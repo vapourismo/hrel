@@ -10,8 +10,6 @@ const http     = require("./http");
 const util     = require("./utilities");
 const releases = require("./releases");
 
-const table = new db.Table("dumps", "id", ["uri", "type"]);
-
 /**
  * Insert torrent and match it with a release.
  */
@@ -89,8 +87,8 @@ const processDump = function* (dump) {
  * @returns {Promise}
  */
 const scan = function* () {
-	const rows = yield table.load();
-	yield* rows.map(row => processDump(row.data));
+	const rows = yield db.findAll("dumps");
+	yield* rows.map(processDump);
 }.async;
 
 module.exports = {

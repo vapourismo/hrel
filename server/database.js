@@ -40,211 +40,158 @@ function sanitizeName(name) {
 }
 
 /**
- * Database row
+ * Insert into a table.
+ * @param {String}  table Table name
+ * @param {Object}  data  Column data
+ * @param {Boolean} ret   Return inserted rows (Default: `false`)
+ * @returns {Promise<Object>} Inserted row (as seen from the database)
  */
-class Row {
-	/**
-	 * @constructor
-	 * @param {Table}  table Containing table
-	 * @param {Object} data  Row data
-	 */
-	constructor(table, data) {
-		this.table = table;
-		this.data = data;
-	}
+const insert = function* (table, data, ret) {
+	const columns = Object.keys(data);
+	const values = columns.map(k => data[k]);
+	const placeholders = columns.map((_, i) => `$${i + 1}`);
 
-	// Documentation placeholders
+	const returningClause = ret ? "RETURNING *" : "";
 
-	/**
-	 * Update the data connected to this row.
-	 * @returns {Promise}
-	 * @param {Object} data Incremental row data
-	 */
-	update(data) {}
-
-	/**
-	 * Delete this row from the table.
-	 * @returns {Promise}
-	 */
-	delete() {}
-}
-
-Row.prototype.update = function* (data) {
-	const key = this.data[this.table.key];
-
-	if (key === undefined)
-		throw new Error("Cannot update rows without a primary key");
-
-	const values = [];
-	const params = [key];
-
-	this.table.columns.forEach(column => {
-		if (!(column in data))
-			return;
-
-		params.push(data[column]);
-		values.push(sanitizeName(column) + " = $" + params.length);
-	});
-
-	const results = yield query(
-		"UPDATE " + sanitizeName(this.table.name) + " SET " + values.join(", ") + " WHERE " + sanitizeName(this.table.key) + " = $1 RETURNING *",
-		params
+	const result = yield query(
+		`INSERT INTO ${sanitizeName(table)} (${columns.map(sanitizeName).join(", ")})
+		 VALUES (${placeholders.join(", ")}) ${returningClause}`,
+		values
 	);
 
-	Object.assign(this.data, results.rows.pop());
-}.async;
-
-Row.prototype.delete = function* () {
-	const key = this.data[this.table.key];
-
-	if (key === undefined)
-		throw new Error("Cannot delete rows without a primary key");
-
-	const results = yield query(
-		"DELETE FROM " + sanitizeName(this.table.name) + " WHERE " + sanitizeName(this.table.key) + " = $1 RETURNING *",
-		[key]
-	);
-
-	results.rows.forEach(row => {
-		if (row[this.table.key] == key)
-			delete this.data[this.table.key];
-	});
+	if (ret) return result.rows.pop();
 }.async;
 
 /**
- * Database table
+ * Insert if unique constraints are not violated.
+ * @param {String}               table        Table name
+ * @param {Object}               data         Column data
+ * @param {Array<Array<String>>} uniqueGroups Unique groups (Disjunctive form)
+ * @param {Boolean}              ret          Return inserted rows (Default: `false`)
+ * @returns {Promise<Object>} Inserted row (as seen from the database)
  */
-class Table {
-	/**
-	 * @constructor
-	 * @param {String}        name    Table name
-	 * @param {String}        key     Primary key name
-	 * @param {Array<String>} columns Column names
-	 */
-	constructor(name, key, columns) {
-		this.name = name;
-		this.key = key;
-		this.columns = columns;
-	}
+const insertUnique = function* (table, data, uniqueGroups, ret) {
+	const columns = Object.keys(data), values = [];
+	uniqueGroups = uniqueGroups || [columns];
 
-	// Documentation placeholders
-
-	/**
-	 * Load the entire data set.
-	 * @returns {Promise<Array<Row>>} Array of all rows
-	 */
-	load() {}
-
-	/**
-	 * Insert a new row with the given data.
-	 * @param {Object} data Row data
-	 * @returns {Promise<Row>} Newly inserted row
-	 */
-	insert(data) {}
-
-	/**
-	 * Insert a new row unless not UNIQUE confilcts exist.
-	 * @param {Object} data Row data
-	 * @param {Array<Array>} uniqueCols Groups of unique (or uniquely connected) columns
-	 */
-	upsert(data, uniqueCols) {}
-
-	/**
-	 * Find a row with the given criteria.
-	 * @param {Object} criteria Search criteria
-	 * @returns {Promise<Array<Row>>} Found rows
-	 */
-	find(criteria) {}
-}
-
-Table.prototype.load = function* () {
-	const results = yield query("SELECT * FROM " + sanitizeName(this.name));
-	return results.rows.map(row => new Row(this, row));
-}.async;
-
-Table.prototype.insert = function* (data) {
-	const columns = [];
-	const values = [];
-	const params = [];
-
-	this.columns.forEach(function (column) {
-		if (!(column in data))
-			return;
-
-		columns.push(sanitizeName(column));
-		params.push(data[column]);
-		values.push("$" + params.length);
+	const placeholders = columns.map(key => {
+		values.push(data[key]);
+		return `$${values.length}`;
 	});
 
-	const results = yield query(
-		"INSERT INTO " + sanitizeName(this.name) + " (" + columns.join(", ") + ") VALUES (" + values.join(", ") + ") RETURNING *",
-		params
+	const uniqueConds = uniqueGroups.map(
+		group => group.map(key => {
+			values.push(data[key]);
+			return `${sanitizeName(key)} = $${values.length}`;
+		}).join(" AND ")
 	);
 
-	return new Row(this, results.rows.pop());
-}.async;
-
-Table.prototype.find = function* (criteria) {
-	const clauses = [];
-	const params = [];
-
-	this.columns.forEach(function (column) {
-		if (!(column in criteria))
-			return;
-
-		params.push(criteria[column]);
-		clauses.push(sanitizeName(column) + " = $" + params.length);
-	});
+	const returningClause = ret ? "RETURNING *" : "";
 
 	const result = yield query(
-		"SELECT * FROM " + sanitizeName(this.name) + " WHERE " + clauses.join(", "),
-		params
+		`INSERT INTO ${sanitizeName(table)} (${columns.map(sanitizeName).join(", ")})
+		 SELECT ${placeholders.join(", ")} WHERE NOT EXISTS (
+		 	SELECT * FROM ${sanitizeName(table)}
+			WHERE ${uniqueConds.join(" OR ") || "0"}
+		 ) ${returningClause}`,
+		values
 	);
 
-	return result.rows.map(row => new Row(this, row));
+	if (ret) return result.rows.pop();
 }.async;
 
-Table.prototype.upsert = function* (data, uniqueCols) {
-	uniqueCols = uniqueCols || [Object.keys(data)];
+/**
+ * Find all rows in a table.
+ * @param {String} table Table name
+ * @returns {Promise<Array<Object>>} Table rows
+ */
+const findAll = function* (table) {
+	const result = yield query(`SELECT * FROM ${sanitizeName(table)}`);
+	return result.rows;
+}.async;
 
-	const columns = [];
-	const values = [];
-	const params = [];
-
-	this.columns.forEach(function (column) {
-		if (!(column in data))
-			return;
-
-		columns.push(sanitizeName(column));
-		params.push(data[column]);
-		values.push("$" + params.length);
-	});
-
-	const upsertCond = [];
-
-	uniqueCols.forEach(function (uniqueColGroup) {
-		const groupCond = [];
-
-		uniqueColGroup.forEach(function (uniqueCol) {
-			if (!(uniqueCol in data))
-				return;
-
-			params.push(data[uniqueCol]);
-			groupCond.push(sanitizeName(uniqueCol) + " = $" + params.length);
-		});
-
-		if (groupCond.length > 0)
-			upsertCond.push(groupCond.join(" AND "));
-	});
+/**
+ * Find rows that match exactly.
+ * @param {String} table    Table name
+ * @param {Object} criteria Filter criteria
+ * @returns {Promise<Array<Object>>} Matched rows
+ */
+const findExactly = function* (table, criteria) {
+	const columns = Object.keys(criteria);
+	const values = columns.map(k => criteria[k]);
+	const whereClause = columns.map((k, i) => `${sanitizeName(k)} = $${i + 1}`).join(" AND ");
 
 	const result = yield query(
-		"INSERT INTO " + sanitizeName(this.name) + " (" + columns.join(", ") + ") SELECT " + values.join(", ") + " WHERE NOT EXISTS (SELECT * FROM " + sanitizeName(this.name) + " WHERE " + upsertCond.join(" OR ") + ") RETURNING *",
-		params
+		`SELECT * FROM ${sanitizeName(table)} WHERE ${whereClause || "1"}`,
+		values
 	);
 
-	return result.rows.map(row => new Row(this, row));
+	return result.rows;
+}.async;
+
+/**
+ * Update matching rows.
+ * @param {String}  table    Table name
+ * @param {Object}  data     Updated data
+ * @param {Object}  criteria Update criteria
+ * @param {Boolean} ret      Return updated rows (Default: `false`)
+ * @returns {Promise}
+ */
+const updateExactly = function* (table, data, criteria, ret) {
+	const values = [];
+
+	const setClauses = Object.keys(data).map(key => {
+		values.push(data[key]);
+		return `${sanitizeName(key)} = $${values.length}`;
+	});
+
+	if (setClauses.length < 1)
+		return;
+
+	const whereClauses = Object.keys(criteria).map(key => {
+		values.push(criteria[key]);
+		return `${sanitizeName(key)} = $${values.length}`;
+	});
+
+	const returningClause = ret ? "RETURNING *" : "";
+
+	const result = yield query(
+		`UPDATE ${sanitizeName(table)} SET ${setClauses.join(", ")}
+		 WHERE ${whereClauses.join(" AND ") || "1"} ${returningClause}`,
+		values
+	);
+
+	if (ret) return result.rows;
+}.async;
+
+/**
+ * Delete matching rows.
+ * @param {String}  table    Table name
+ * @param {Object}  criteria Delete criteria
+ * @param {Boolean} ret      Return deleted rows (Default: `false`)
+ * @returns {Promise}
+ */
+const deleteExactly = function* (table, criteria, ret) {
+	const columns = Object.keys(criteria);
+	const values = columns.map(k => criteria[k]);
+	const whereClause = columns.map((k, i) => `${sanitizeName(k)} = $${i + 1}`).join(" AND ");
+	const returningClause = ret ? "RETURNING *" : "";
+
+	const result = yield query(
+		`DELETE FROM ${sanitizeName(table)} WHERE ${whereClause || "1"} ${returningClause}`,
+		values
+	);
+
+	if (ret) return result.rows;
 }.async;
 
 module.exports = {
-	Row, Table, query, end
+	query,
+	end,
+	insert,
+	insertUnique,
+	findAll,
+	findExactly,
+	updateExactly,
+	deleteExactly
 };

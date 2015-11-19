@@ -24,6 +24,12 @@ function iterateFiles(base, callback) {
 	});
 }
 
+/**
+ * Split a buffer at a given symbol (byte value).
+ * @param {Buffer} buffer Input buffer
+ * @param {Number} symbol Byte value to split at
+ * @returns {Array<Buffer>} Slices of the original buffer
+ */
 function splitBuffer(buffer, symbol) {
 	const length = buffer.length;
 	const chunks = [];
@@ -42,6 +48,13 @@ function splitBuffer(buffer, symbol) {
 	return chunks;
 }
 
+/**
+ * Read data from a stream and split at a given symbol.
+ * @param {Readable} stream   Input stream
+ * @param {Number}   symbol   Byte value to split at
+ * @param {Function} callback Invoked for each segment
+ * @param {Function} end      Callend for the 'end' event
+ */
 function splitStream(stream, symbol, callback, end) {
 	let currentChunk = new Buffer(0);
 

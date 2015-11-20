@@ -4,7 +4,7 @@
 
 const url      = require("url");
 const zlib     = require("zlib");
-const Lazy     = require("lazy");
+const stream   = require("stream");
 const db       = require("./database");
 const http     = require("./http");
 const util     = require("./utilities");
@@ -19,6 +19,34 @@ const insertTorrent = function (title, uri, size) {
 		[title, uri, size, releases.normalize(title)]
 	);
 };
+
+class KickAssLineProcessor extends stream.Writable {
+	constructor() {
+		super();
+	}
+
+	_write(line, _, done) {
+		const segments = util.splitBuffer(line, 124);
+
+		// Ignore invalid lines
+		if (segments.length < 12)
+			return done();
+
+		insertTorrent(
+			segments[1].toString("utf8"),                 // Title
+			segments[4].toString("utf8"),                 // URI
+			Number.parseInt(segments[5].toString("utf8")) // Size
+		).then(
+			function () {
+				done();
+			},
+			function (error) {
+				util.logError(error);
+				done(error);
+			}
+		);
+	}
+}
 
 /**
  * Process a KickAss dump.
@@ -35,35 +63,14 @@ const processKickAssDump = function* (dump) {
 	};
 
 	const stream = yield http.stream(req);
-	const proc = new Lazy(stream.pipe(zlib.createGunzip()));
+	const proc =
+		stream.pipe(zlib.createGunzip())
+		      .pipe(new util.Splitter(10))
+		      .pipe(new KickAssLineProcessor());
 
 	yield new Promise(function (accept, reject) {
-		proc.lines.map(function* (line) {
-			const segments = util.splitBuffer(line, 124);
-
-			// Ignore invalid lines
-			if (segments.length < 12)
-				return 0;
-
-			const result = yield insertTorrent(
-				segments[1].toString("utf8"),                 // Title
-				segments[4].toString("utf8"),                 // URI
-				Number.parseInt(segments[5].toString("utf8")) // Size
-			);
-
-			return result.rows.length;
-		}.async).join(function* (ps) {
-			try {
-				let insertedTorrents = 0;
-				for (let i = 0; i < ps.length; i++)
-					insertedTorrents += yield ps[i];
-
-				accept();
-				util.inform("dump: " + dump.id, "Found " + insertedTorrents + " new torrents");
-			} catch (error) {
-				reject(error);
-			}
-		}.async);
+		proc.on("finish", accept);
+		proc.on("error", reject);
 	});
 }.async;
 
@@ -94,5 +101,5 @@ const scan = function* () {
 }.async;
 
 module.exports = {
-	scan
+	scan, insertTorrent
 };

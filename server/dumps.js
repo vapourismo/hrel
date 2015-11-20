@@ -21,27 +21,6 @@ const insertTorrent = function (title, uri, size) {
 };
 
 /**
- * Parse a line from a KickAss dump.
- * @param {Buffer} line Input line
- * @return {Promise<Number>} Number of inserted torrents
- */
-const processKickAssDumpLine = function* (line) {
-	const segments = util.splitBuffer(line, 124);
-
-	// Ignore invalid lines
-	if (segments.length < 12)
-		return 0;
-
-	const result = yield insertTorrent(
-		segments[1].toString("utf8"),                 // Title
-		segments[4].toString("utf8"),                 // URI
-		Number.parseInt(segments[5].toString("utf8")) // Size
-	);
-
-	return result.rows.length;
-}.async;
-
-/**
  * Process a KickAss dump.
  * @param {Object} dump Row data
  * @returns {Promise}
@@ -59,7 +38,21 @@ const processKickAssDump = function* (dump) {
 	const proc = new Lazy(stream.pipe(zlib.createGunzip()));
 
 	yield new Promise(function (accept, reject) {
-		proc.lines.map(processKickAssDumpLine).join(function* (ps) {
+		proc.lines.map(function* (line) {
+			const segments = util.splitBuffer(line, 124);
+
+			// Ignore invalid lines
+			if (segments.length < 12)
+				return 0;
+
+			const result = yield insertTorrent(
+				segments[1].toString("utf8"),                 // Title
+				segments[4].toString("utf8"),                 // URI
+				Number.parseInt(segments[5].toString("utf8")) // Size
+			);
+
+			return result.rows.length;
+		}.async).join(function* (ps) {
 			try {
 				let insertedTorrents = 0;
 				for (let i = 0; i < ps.length; i++)

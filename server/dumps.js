@@ -4,7 +4,7 @@
 
 const url      = require("url");
 const zlib     = require("zlib");
-const Lazy     = require("lazy");
+const stream   = require("stream");
 const db       = require("./database");
 const http     = require("./http");
 const util     = require("./utilities");
@@ -19,6 +19,40 @@ const insertTorrent = function (title, uri, size) {
 		[title, uri, size, releases.normalize(title)]
 	);
 };
+
+class KickAssLineProcessor extends stream.Writable {
+	constructor() {
+		super();
+
+		this.stash = [];
+	}
+
+	_write(line, _, done) {
+		const segments = util.splitBuffer(line, 124);
+
+		// Ignore invalid lines
+		if (segments.length < 12)
+			return done();
+
+		const promise = insertTorrent(
+			segments[1].toString("utf8"),                 // Title
+			segments[4].toString("utf8"),                 // URI
+			Number.parseInt(segments[5].toString("utf8")) // Size
+		);
+
+		this.stash.push(promise);
+
+		if (this.stash.length >= 10000)
+			this.processStash().then(done, done);
+		else
+			done();
+	}
+}
+
+KickAssLineProcessor.prototype.processStash = function* (accept, reject) {
+	yield* this.stash;
+	this.stash = [];
+}.async;
 
 /**
  * Process a KickAss dump.
@@ -35,36 +69,17 @@ const processKickAssDump = function* (dump) {
 	};
 
 	const stream = yield http.stream(req);
-	const proc = new Lazy(stream.pipe(zlib.createGunzip()));
+	const proc =
+		stream.pipe(zlib.createGunzip())
+		      .pipe(new util.Splitter(10))
+		      .pipe(new KickAssLineProcessor());
 
 	yield new Promise(function (accept, reject) {
-		proc.lines.map(function* (line) {
-			const segments = util.splitBuffer(line, 124);
-
-			// Ignore invalid lines
-			if (segments.length < 12)
-				return 0;
-
-			const result = yield insertTorrent(
-				segments[1].toString("utf8"),                 // Title
-				segments[4].toString("utf8"),                 // URI
-				Number.parseInt(segments[5].toString("utf8")) // Size
-			);
-
-			return result.rows.length;
-		}.async).join(function* (ps) {
-			try {
-				let insertedTorrents = 0;
-				for (let i = 0; i < ps.length; i++)
-					insertedTorrents += yield ps[i];
-
-				accept();
-				util.inform("dump: " + dump.id, "Found " + insertedTorrents + " new torrents");
-			} catch (error) {
-				reject(error);
-			}
-		}.async);
+		proc.on("finish", () => proc.processStash().then(accept, reject));
+		proc.on("error", reject);
 	});
+
+	util.debug("dump: " + dump.id, "Done processing");
 }.async;
 
 /**
@@ -94,5 +109,5 @@ const scan = function* () {
 }.async;
 
 module.exports = {
-	scan
+	scan, insertTorrent
 };

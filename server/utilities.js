@@ -2,6 +2,7 @@
 
 "use strict";
 
+const stream = require("stream");
 const fs     = require("fs");
 const path   = require("path");
 const config = require("./config");
@@ -49,25 +50,28 @@ function splitBuffer(buffer, symbol) {
 }
 
 /**
- * Read data from a stream and split at a given symbol.
- * @param {Readable} stream   Input stream
- * @param {Number}   symbol   Byte value to split at
- * @param {Function} callback Invoked for each segment
- * @param {Function} end      Callend for the 'end' event
+ * Split streamed data
  */
-function splitStream(stream, symbol, callback, end) {
-	let currentChunk = new Buffer(0);
+class Splitter extends stream.Transform {
+	constructor(symbol) {
+		super();
 
-	stream.on("data", function (chunk) {
-		const chunks = splitBuffer(Buffer.concat([currentChunk, chunk]), symbol);
-		currentChunk = chunks.pop();
-		chunks.forEach(callback);
-	});
+		this.latest = new Buffer(0);
+		this.symbol = symbol;
+	}
 
-	stream.on("end", function () {
-		splitBuffer(currentChunk, symbol).forEach(callback);
-		if (end) end();
-	});
+	_transform(chunk, _, done) {
+		const segments = splitBuffer(Buffer.concat([this.latest, chunk]), this.symbol);
+		this.latest = segments.pop();
+
+		segments.forEach(c => this.push(c));
+		done();
+	}
+
+	_flush(done) {
+		splitBuffer(this.latest, this.symbol).forEach(c => this.push(c));
+		done();
+	}
 }
 
 /**
@@ -231,7 +235,7 @@ module.exports = {
 	logError,
 
 	splitBuffer,
-	splitStream
+	Splitter
 };
 
 Object.assign(module.exports, loggers);

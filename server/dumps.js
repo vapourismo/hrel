@@ -23,8 +23,7 @@ const insertTorrent = function (title, uri, size) {
 class KickAssLineProcessor extends stream.Writable {
 	constructor() {
 		super();
-
-		this.stash = [];
+		this.processed = 0;
 	}
 
 	_write(line, _, done) {
@@ -34,25 +33,19 @@ class KickAssLineProcessor extends stream.Writable {
 		if (segments.length < 12)
 			return done();
 
-		const promise = insertTorrent(
-			segments[1].toString("utf8"),                 // Title
-			segments[4].toString("utf8"),                 // URI
-			Number.parseInt(segments[5].toString("utf8")) // Size
+		insertTorrent(
+			segments[1].toString("utf8"),
+			segments[4].toString("utf8"),
+			Number.parseInt(segments[5].toString("utf8"))
+		).then(
+			result => {
+				this.processed += result.rows.length;
+				done();
+			},
+			done
 		);
-
-		this.stash.push(promise);
-
-		if (this.stash.length >= 10000)
-			this.processStash().then(done, done);
-		else
-			done();
 	}
 }
-
-KickAssLineProcessor.prototype.processStash = function* (accept, reject) {
-	yield* this.stash;
-	this.stash = [];
-}.async;
 
 /**
  * Process a KickAss dump.
@@ -75,11 +68,11 @@ const processKickAssDump = function* (dump) {
 		      .pipe(new KickAssLineProcessor());
 
 	yield new Promise(function (accept, reject) {
-		proc.on("finish", () => proc.processStash().then(accept, reject));
+		proc.on("finish", accept);
 		proc.on("error", reject);
 	});
 
-	util.debug("dump: " + dump.id, "Done processing");
+	util.inform("dump: " + dump.id, "Added", proc.processed, "new torrents");
 }.async;
 
 /**

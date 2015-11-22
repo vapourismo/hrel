@@ -125,6 +125,10 @@ body {
 		&.link, &.add {
 			cursor: pointer;
 		}
+
+		&.size {
+			text-align: center;
+		}
 	}
 }
 

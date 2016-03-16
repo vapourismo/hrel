@@ -1,4 +1,4 @@
-/* Copyright (C) 2015, Ole Krüger <ole@vprsm.de> */
+/* Copyright (C) 2015-2016, Ole Krüger <ole@vprsm.de> */
 
 const page       = require("page");
 const React      = require("react");

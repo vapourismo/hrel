@@ -20,6 +20,9 @@ function download(options, maxContentLength) {
 
 	return new Promise(function (accept, reject) {
 		const req = schema.request(options, function (res) {
+			if (res.statusCode != 200)
+				return reject(new Error("Invalid response status code (" + res.statusMessage + ")"));
+
 			let received = 0;
 			const chunks = [];
 

@@ -112,7 +112,13 @@ const processFeed = function* (feed) {
  */
 const scan = function* () {
 	const rows = yield db.findAll("feeds");
-	yield* rows.map(processFeed);
+	yield* rows.map(function* (feed) {
+		try {
+			yield processFeed(feed);
+		} catch (error) {
+			util.error("feed: " + feed.id, "Failed to process");
+		}
+	}.async);
 }.async;
 
 /**

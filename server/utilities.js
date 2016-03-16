@@ -166,7 +166,7 @@ function serve(iter, step, accept, reject, logged) {
 		step.value.then(
 			function (value) {
 				try {
-					serve(iter, iter.next(value), accept, reject);
+					serve(iter, iter.next(value), accept, reject, logged);
 				} catch (error) {
 					reject(error);
 				}
@@ -178,7 +178,7 @@ function serve(iter, step, accept, reject, logged) {
 						logError(error);
 					}
 
-					serve(iter, iter.throw(error), accept, reject);
+					serve(iter, iter.throw(error), accept, reject, logged);
 				} catch (error) {
 					reject(error);
 				}

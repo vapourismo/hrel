@@ -159,7 +159,7 @@ function logError(error) {
 
 const GeneratorProto = (function* () {}).__proto__;
 
-function serve(iter, step, accept, reject) {
+function serve(iter, step, accept, reject, logged) {
 	if (step.done) {
 		accept(step.value);
 	} else {
@@ -173,7 +173,11 @@ function serve(iter, step, accept, reject) {
 			},
 			function (error) {
 				try {
-					logError(error);
+					if (logged.indexOf(error) < 0) {
+						logged.push(error);
+						logError(error);
+					}
+
 					serve(iter, iter.throw(error), accept, reject);
 				} catch (error) {
 					reject(error);
@@ -191,7 +195,7 @@ Object.defineProperty(GeneratorProto, "async", {
 		return function (...args) {
 			return new Promise((accept, reject) => {
 				const iter = generator.call(this, ...args);
-				serve(iter, iter.next(), accept, reject);
+				serve(iter, iter.next(), accept, reject, []);
 			});
 		};
 	},

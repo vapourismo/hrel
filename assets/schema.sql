@@ -2,12 +2,16 @@
 -- PostgreSQL database dump
 --
 
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
+SET row_security = off;
 
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
@@ -30,7 +34,7 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
--- Name: dumps; Type: TABLE; Schema: public; Owner: hrel; Tablespace: 
+-- Name: dumps; Type: TABLE; Schema: public; Owner: hrel
 --
 
 CREATE TABLE dumps (
@@ -64,7 +68,7 @@ ALTER SEQUENCE dumps_id_seq OWNED BY dumps.id;
 
 
 --
--- Name: feed_contents; Type: TABLE; Schema: public; Owner: hrel; Tablespace: 
+-- Name: feed_contents; Type: TABLE; Schema: public; Owner: hrel
 --
 
 CREATE TABLE feed_contents (
@@ -76,7 +80,7 @@ CREATE TABLE feed_contents (
 ALTER TABLE feed_contents OWNER TO hrel;
 
 --
--- Name: feeds; Type: TABLE; Schema: public; Owner: hrel; Tablespace: 
+-- Name: feeds; Type: TABLE; Schema: public; Owner: hrel
 --
 
 CREATE TABLE feeds (
@@ -110,7 +114,7 @@ ALTER SEQUENCE feeds_id_seq OWNED BY feeds.id;
 
 
 --
--- Name: releases; Type: TABLE; Schema: public; Owner: hrel; Tablespace: 
+-- Name: releases; Type: TABLE; Schema: public; Owner: hrel
 --
 
 CREATE TABLE releases (
@@ -143,7 +147,7 @@ ALTER SEQUENCE releases_id_seq OWNED BY releases.id;
 
 
 --
--- Name: torrents; Type: TABLE; Schema: public; Owner: hrel; Tablespace: 
+-- Name: torrents; Type: TABLE; Schema: public; Owner: hrel
 --
 
 CREATE TABLE torrents (
@@ -208,7 +212,7 @@ ALTER TABLE ONLY torrents ALTER COLUMN id SET DEFAULT nextval('torrents_id_seq':
 
 
 --
--- Name: dumps_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel; Tablespace: 
+-- Name: dumps_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel
 --
 
 ALTER TABLE ONLY dumps
@@ -216,7 +220,7 @@ ALTER TABLE ONLY dumps
 
 
 --
--- Name: dumps_uri_key; Type: CONSTRAINT; Schema: public; Owner: hrel; Tablespace: 
+-- Name: dumps_uri_key; Type: CONSTRAINT; Schema: public; Owner: hrel
 --
 
 ALTER TABLE ONLY dumps
@@ -224,7 +228,7 @@ ALTER TABLE ONLY dumps
 
 
 --
--- Name: feed_contents_feed_release_key; Type: CONSTRAINT; Schema: public; Owner: hrel; Tablespace: 
+-- Name: feed_contents_feed_release_key; Type: CONSTRAINT; Schema: public; Owner: hrel
 --
 
 ALTER TABLE ONLY feed_contents
@@ -232,7 +236,7 @@ ALTER TABLE ONLY feed_contents
 
 
 --
--- Name: feeds_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel; Tablespace: 
+-- Name: feeds_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel
 --
 
 ALTER TABLE ONLY feeds
@@ -240,7 +244,7 @@ ALTER TABLE ONLY feeds
 
 
 --
--- Name: feeds_uri_key; Type: CONSTRAINT; Schema: public; Owner: hrel; Tablespace: 
+-- Name: feeds_uri_key; Type: CONSTRAINT; Schema: public; Owner: hrel
 --
 
 ALTER TABLE ONLY feeds
@@ -248,7 +252,7 @@ ALTER TABLE ONLY feeds
 
 
 --
--- Name: releases_name_key; Type: CONSTRAINT; Schema: public; Owner: hrel; Tablespace: 
+-- Name: releases_name_key; Type: CONSTRAINT; Schema: public; Owner: hrel
 --
 
 ALTER TABLE ONLY releases
@@ -256,7 +260,7 @@ ALTER TABLE ONLY releases
 
 
 --
--- Name: releases_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel; Tablespace: 
+-- Name: releases_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel
 --
 
 ALTER TABLE ONLY releases
@@ -264,7 +268,7 @@ ALTER TABLE ONLY releases
 
 
 --
--- Name: torrents_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel; Tablespace: 
+-- Name: torrents_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel
 --
 
 ALTER TABLE ONLY torrents
@@ -272,7 +276,7 @@ ALTER TABLE ONLY torrents
 
 
 --
--- Name: torrents_uri_key; Type: CONSTRAINT; Schema: public; Owner: hrel; Tablespace: 
+-- Name: torrents_uri_key; Type: CONSTRAINT; Schema: public; Owner: hrel
 --
 
 ALTER TABLE ONLY torrents

@@ -160,7 +160,7 @@ const add = function* (uri) {
 	}
 
 	// Insert the new release
-	feed = yield db.insert("feeds", result.title ? {uri, title: result.title} : {uri});
+	feed = yield db.insert("feeds", result.title ? {uri, title: result.title} : {uri}, true);
 
 	let insertedReleases = 0;
 	yield* result.names.map(function* (name) {

@@ -1,8 +1,8 @@
 # Node Dependencies
 node_modules/
 
-# Development Server
-.devserver.pid
-
-# Webpack Output
+# Client-side stuff
 client/static/index.js
+client/static/index.css
+client/static/index.css.map
+.sass-cache

@@ -6,9 +6,6 @@ const ReactDOM = require("react-dom");
 const Index    = require("./components/index.jsx");
 const Feed     = require("./components/feed.jsx");
 
-// Styles
-require("./index.scss");
-
 // Navigation
 function render(element) {
 	ReactDOM.render(element, document.getElementById("canvas"));

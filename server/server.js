@@ -2,18 +2,19 @@
 
 "use strict";
 
-const Express    = require("express");
-const process    = require("process");
+const http       = require("http");
+const express    = require("express");
 const bodyParser = require("body-parser");
+const config     = require("./config");
 const util       = require("./utilities");
 const feeds      = require("./feeds");
 const dumps      = require("./dumps");
 
-var server = Express();
+var app = express();
 
-server.use(bodyParser.json());
+app.use(bodyParser.json());
 
-server.get(/^\/feeds\/(\d+)$/, function (req, res) {
+app.get(/^\/feeds\/(\d+)$/, function (req, res) {
 	feeds.one(Number.parseInt(req.params[0])).then(
 		result => {
 			res.json(result);
@@ -25,7 +26,7 @@ server.get(/^\/feeds\/(\d+)$/, function (req, res) {
 	);
 });
 
-server.get("/feeds", function (req, res) {
+app.get("/feeds", function (req, res) {
 	feeds.all().then(
 		result => {
 			res.json(result);
@@ -37,7 +38,7 @@ server.get("/feeds", function (req, res) {
 	);
 });
 
-server.post("/feeds", function (req, res) {
+app.post("/feeds", function (req, res) {
 	if (!(req.body instanceof Object) || !req.body.uri)
 		return res.status(400).json({error: "Invalid request body"});
 
@@ -51,4 +52,20 @@ server.post("/feeds", function (req, res) {
 	);
 });
 
-server.listen(3102, "127.0.0.1");
+const server = http.createServer(app);
+
+server.on("error", function (error) {
+	switch (error.code) {
+		case "EADDRINUSE":
+			server.close();
+			util.warn("server", "Address currently in use, retrying in 1s");
+			setTimeout(() => server.listen(config.server), 1000);
+			break;
+
+		default:
+			util.logError(error);
+			break;
+	}
+});
+
+server.listen(config.server);

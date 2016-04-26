@@ -8,6 +8,11 @@ const defaultConfig = {
 		user: "hrel",
 		database: "hrel"
 	},
+	server: {
+		host: "127.0.0.1",
+		port: 3102,
+		exclusive: false
+	},
 	colorLogging: true,
 	usePGNative: true
 };

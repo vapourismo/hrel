@@ -119,7 +119,8 @@ ALTER SEQUENCE feeds_id_seq OWNED BY feeds.id;
 
 CREATE TABLE releases (
     id integer NOT NULL,
-    name character varying(255) NOT NULL
+    name character varying(255) NOT NULL,
+    type character varying(31) DEFAULT 'unknown'::character varying
 );
 
 

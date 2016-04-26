@@ -2,7 +2,7 @@
 
 pidfile=".devserver.pid"
 script=$(readlink -f $0)
-launchdm="node --harmony $(dirname $script)/server/server.js"
+launchdm="./bin/web"
 
 start_server() {
 	$launchdm &

@@ -122,33 +122,15 @@ const download = function* (options, maxContentLength) {
 	});
 }.async;
 
-function stream(options) {
-	if (!(options instanceof Object))
-		options = url.parse(options);
+const stream = function* (options) {
+	const res = yield request(options);
 
-	let schema = options.protocol == "https:" ? https : http;
-
-	return new Promise(function (accept, reject) {
-		const req = schema.request(options, function (res) {
-			switch (res.headers["content-encoding"]) {
-				case "gzip":
-					accept(res.pipe(zlib.createGunzip()));
-					break;
-
-				case "deflate":
-					accept(res.pipe(zlib.createInflate()));
-					break;
-
-				default:
-					accept(res);
-					break;
-			}
-		});
-
-		req.on("error", reject);
-		req.end();
-	});
-}
+	switch (res.headers["content-encoding"]) {
+		case "gzip":    return res.pipe(zlib.createGunzip());
+		case "deflate": return res.pipe(zlib.createInflate());
+		default:        return res;
+	}
+}.async;
 
 module.exports = {
 	download,

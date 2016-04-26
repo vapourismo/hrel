@@ -1,4 +1,8 @@
 #!/bin/sh
 
-echo "DROP DATABASE hrel; CREATE DATABASE hrel;" | psql postgres hrel
-psql hrel hrel < $(dirname $0)/schema.sql
+(
+	echo "DELETE FROM torrents;"
+	echo "DELETE FROM feed_contents;"
+	echo "DELETE FROM releases;"
+	echo "DELETE FROM feeds;"
+) | psql hrel hrel

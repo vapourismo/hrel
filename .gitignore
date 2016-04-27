@@ -6,3 +6,6 @@ client/static/index.js
 client/static/index.css
 client/static/index.css.map
 .sass-cache
+
+# Ignore local configuration files
+server/config.js

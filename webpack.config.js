@@ -1,7 +1,7 @@
 module.exports = {
-	entry: "./source/index.jsx",
+	entry: "./client/source/index.jsx",
 	output: {
-		filename: "./static/index.js"
+		filename: "./client/static/index.js"
 	},
 	module: {
 		loaders: [

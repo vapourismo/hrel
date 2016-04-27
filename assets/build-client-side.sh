@@ -1,7 +1,5 @@
 #!/bin/sh
 
-asset_dir=$(dirname $0)
-cd "$asset_dir/../client"
-
-webpack
-sass source/index.scss:static/index.css
+# Generate client-side files
+webpack -p
+node-sass client/source/index.scss client/static/index.css

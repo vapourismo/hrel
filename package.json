@@ -8,10 +8,6 @@
     "type": "git",
     "url": "https://github.com/vapourismo/hrel"
   },
-  "bin": {
-    "hrel-scan": "./bin/scan",
-    "hrel-web": "./bin/web"
-  },
   "scripts": {
     "build-client": "node --harmony assets/build-client.js",
     "reset-database": "node --harmony assets/reset-database.js",

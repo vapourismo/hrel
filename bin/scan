@@ -1,7 +1,0 @@
-#!/bin/sh
-
-node="/usr/bin/env node --harmony"
-script=$(readlink -f "$0")
-scanner=$(dirname "$script")/../server/scanner.js
-
-$node $scanner

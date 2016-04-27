@@ -1,11 +1,11 @@
 [Unit]
-Description=HRel Feed Scanner
+Description=HRel Web Server
 Requires=postgresql.service
 After=postgresql.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/hrel-web
+ExecStart=/usr/bin/node --harmony /var/hrel/server/server.js
 WorkingDirectory=/var/hrel
 User=hrel
 Group=hrel

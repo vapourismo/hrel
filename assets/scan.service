@@ -5,7 +5,8 @@ After=postgresql.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/hrel-scan
+ExecStart=/usr/bin/node --harmony /var/hrel/server/scanner.js
+WorkingDirectory=/var/hrel
 User=hrel
 Group=hrel
 

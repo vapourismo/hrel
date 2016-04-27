@@ -10,7 +10,7 @@ const serverModule = path.join(path.dirname(module.filename), "..", "server", "s
 
 function forkServerModule() {
 	util.inform("dev-server", "Spawning server module");
-	return child.fork(serverModule);
+	return child.fork(serverModule, [], {execArgv: ["--harmony"]});
 }
 
 let serverInstance = forkServerModule();

@@ -13,9 +13,9 @@
     "hrel-web": "./bin/web"
   },
   "scripts": {
-    "build-client": "node assets/build-client.js",
-    "reset-database": "node assets/reset-database.js",
-    "dev-server": "node assets/dev-server.js"
+    "build-client": "node --harmony assets/build-client.js",
+    "reset-database": "node --harmony assets/reset-database.js",
+    "dev-server": "node --harmony assets/dev-server.js"
   },
   "dependencies": {
     "babel-core": "^6.7.7",
@@ -37,6 +37,6 @@
     "xml2js": "^0.4.16"
   },
   "engines": {
-    "node": "^6.0.0"
+    "node": ">= 5.0.0"
   }
 }

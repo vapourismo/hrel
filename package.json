@@ -14,6 +14,7 @@
   },
   "scripts": {
     "build-client": "node assets/build-client.js",
+    "reset-database": "node assets/reset-database.js",
     "dev-server": "node assets/dev-server.js"
   },
   "dependencies": {

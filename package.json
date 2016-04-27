@@ -13,7 +13,8 @@
     "hrel-web": "./bin/web"
   },
   "scripts": {
-    "build": "./assets/build-client-side.sh"
+    "build": "./assets/build-client-side.sh",
+    "dev-server": "node assets/development-server.js"
   },
   "dependencies": {
     "babel-core": "^6.7.7",

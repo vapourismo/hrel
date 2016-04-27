@@ -53,6 +53,17 @@ body {
 	}
 }
 
+/* No-Script */
+#canvas noscript {
+	padding: 15px;
+	text-align: center;
+	color: #afafaf;
+	display: flex;
+	align-content: center;
+	align-items: center;
+	justify-content: center;
+}
+
 /* Index */
 .index {
 	display: flex;

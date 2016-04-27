@@ -8,6 +8,7 @@ const stream   = require("stream");
 const db       = require("./database");
 const http     = require("./http");
 const util     = require("./utilities");
+const config   = require("./config");
 const releases = require("./releases");
 
 /**
@@ -52,10 +53,10 @@ class KickAssLineProcessor extends stream.Writable {
  * @param {Object} dump Row data
  * @returns {Promise}
  */
-const processKickAssDump = function* (dump) {
-	util.inform("dump: " + dump.id, "Processing '" + dump.uri + "'");
+const processKickAssDump = function* (uri) {
+	util.inform("dump: kat", "Processing '" + uri + "'");
 
-	const req = url.parse(dump.uri);
+	const req = url.parse(uri);
 
 	req.headers = {
 		"Accept": "application/x-gzip"
@@ -72,24 +73,7 @@ const processKickAssDump = function* (dump) {
 		proc.on("error", reject);
 	});
 
-	util.inform("dump: " + dump.id, "Added", proc.processed, "new torrents");
-}.async;
-
-/**
- * Process a dump.
- * @param {Object} dump Row data
- * @returns {Promise}
- */
-const processDump = function* (dump) {
-	switch (dump.type) {
-		case "kat":
-			yield processKickAssDump(dump);
-			break;
-
-		default:
-			util.error("dump: " + dump.id, "Unknown type '" + dump.type + "'");
-			break;
-	}
+	util.inform("dump: kat", "Added", proc.processed, "new torrents");
 }.async;
 
 /**
@@ -97,8 +81,7 @@ const processDump = function* (dump) {
  * @returns {Promise}
  */
 const scan = function* () {
-	const rows = yield db.findAll("dumps");
-	yield* rows.map(processDump);
+	yield* config.dumps.kat.map(processKickAssDump);
 }.async;
 
 module.exports = {

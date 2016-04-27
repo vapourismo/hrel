@@ -34,40 +34,6 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
--- Name: dumps; Type: TABLE; Schema: public; Owner: hrel
---
-
-CREATE TABLE dumps (
-    id integer NOT NULL,
-    uri character varying(255) NOT NULL,
-    type character varying(255) NOT NULL
-);
-
-
-ALTER TABLE dumps OWNER TO hrel;
-
---
--- Name: dumps_id_seq; Type: SEQUENCE; Schema: public; Owner: hrel
---
-
-CREATE SEQUENCE dumps_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE dumps_id_seq OWNER TO hrel;
-
---
--- Name: dumps_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: hrel
---
-
-ALTER SEQUENCE dumps_id_seq OWNED BY dumps.id;
-
-
---
 -- Name: feed_contents; Type: TABLE; Schema: public; Owner: hrel
 --
 
@@ -188,13 +154,6 @@ ALTER SEQUENCE torrents_id_seq OWNED BY torrents.id;
 -- Name: id; Type: DEFAULT; Schema: public; Owner: hrel
 --
 
-ALTER TABLE ONLY dumps ALTER COLUMN id SET DEFAULT nextval('dumps_id_seq'::regclass);
-
-
---
--- Name: id; Type: DEFAULT; Schema: public; Owner: hrel
---
-
 ALTER TABLE ONLY feeds ALTER COLUMN id SET DEFAULT nextval('feeds_id_seq'::regclass);
 
 
@@ -210,22 +169,6 @@ ALTER TABLE ONLY releases ALTER COLUMN id SET DEFAULT nextval('releases_id_seq':
 --
 
 ALTER TABLE ONLY torrents ALTER COLUMN id SET DEFAULT nextval('torrents_id_seq'::regclass);
-
-
---
--- Name: dumps_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel
---
-
-ALTER TABLE ONLY dumps
-    ADD CONSTRAINT dumps_pkey PRIMARY KEY (id);
-
-
---
--- Name: dumps_uri_key; Type: CONSTRAINT; Schema: public; Owner: hrel
---
-
-ALTER TABLE ONLY dumps
-    ADD CONSTRAINT dumps_uri_key UNIQUE (uri);
 
 
 --

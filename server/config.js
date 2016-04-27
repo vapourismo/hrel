@@ -19,5 +19,11 @@ module.exports = {
 	colorLogging: true,
 
 	// Use 'pg-native' instead of the 'pg' package
-	usePGNative: true
+	usePGNative: true,
+
+	// Torrent dumps
+	dumps: {
+		// KickassTorrents
+		kat: []
+	}
 };

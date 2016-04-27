@@ -13,7 +13,7 @@
     "hrel-web": "./bin/web"
   },
   "scripts": {
-    "build": "./assets/build-client-side.sh",
+    "build-client": "node assets/build-client.js",
     "dev-server": "node assets/development-server.js"
   },
   "dependencies": {

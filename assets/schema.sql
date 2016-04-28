@@ -29,6 +29,19 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 SET search_path = public, pg_catalog;
 
+--
+-- Name: count_feed_torrents(integer); Type: FUNCTION; Schema: public; Owner: hrel
+--
+
+CREATE FUNCTION count_feed_torrents(id integer) RETURNS bigint
+    LANGUAGE sql
+    AS $_$
+SELECT COUNT(t.id) FROM feed_contents fc, torrents t WHERE fc.feed = $1 AND fc.release = t.release
+$_$;
+
+
+ALTER FUNCTION public.count_feed_torrents(id integer) OWNER TO hrel;
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;

@@ -89,7 +89,7 @@ const Feed = React.createClass({
 			<a className="row" href={"/feeds/" + this.props.data.id}>
 				<div className="cell title">{this.props.data.title}</div>
 				<div className="cell uri">{this.props.data.uri}</div>
-				<div className="cell count">{this.props.data.count}</div>
+				<div className="cell count">{this.props.data.ntorrents} torrents</div>
 			</a>
 		);
 	}

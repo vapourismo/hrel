@@ -125,11 +125,11 @@ const scan = function* () {
  * Retrieve all feeds.
  */
 const all = function* () {
-	const result = yield db.query("SELECT f.id, f.uri, f.title, (SELECT COUNT(t.id) FROM feed_contents fc, torrents t WHERE fc.feed = f.id AND fc.release = t.release) AS count FROM feeds f ORDER BY f.title ASC");
+	const result = yield db.query("SELECT f.id, f.uri, f.title, count_feed_torrents(f.id) AS ntorrents FROM feeds f ORDER BY f.title ASC");
 	return result.rows;
 }.async;
 
-/**
+/**count
  * Retrieve information for a feed.
  */
 const one = function* (fid) {

@@ -47,6 +47,7 @@ app.post("/feeds", function (req, res) {
 			res.json(result);
 		},
 		error => {
+			util.logError(error);
 			res.status(400).json({error: error.message});
 		}
 	);

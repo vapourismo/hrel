@@ -125,7 +125,7 @@ const scan = function* () {
  * Retrieve all feeds.
  */
 const all = function* () {
-	const result = yield db.query("SELECT f.id, f.uri, f.title, count_feed_torrents(f.id) AS ntorrents FROM feeds f ORDER BY f.title ASC");
+	const result = yield db.query("SELECT f.id, f.uri, f.title, count_feed_torrents(f.id) AS ntorrents, count_feed_releases(f.id) as nreleases FROM feeds f ORDER BY f.title ASC");
 	return result.rows;
 }.async;
 

@@ -90,6 +90,7 @@ const Feed = React.createClass({
 				<div className="cell title">{this.props.data.title}</div>
 				<div className="cell uri">{this.props.data.uri}</div>
 				<div className="cell count">{this.props.data.ntorrents} torrents</div>
+				<div className="cell count">{this.props.data.nreleases} releases</div>
 			</a>
 		);
 	}

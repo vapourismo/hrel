@@ -21,6 +21,63 @@ const insertTorrent = function (title, uri, size) {
 	);
 };
 
+const MovieBlogFeedSchema = {
+	rss: {
+		channel: [{
+			item: [{
+				title: ["string"]
+			}]
+		}]
+	}
+};
+
+const hrefPattern = /<a\s+target="\w+"\s+href="([^"]+)"\s*>([^<]+)<\/a>/;
+
+/**
+ *
+ */
+const processMovieBlogFeed = function* (uri) {
+	util.inform("dump: movieblog", "Processing '" + uri + "'");
+
+	const object = yield util.parseXML(yield http.download(uri));
+
+	if (util.validateSchema(MovieBlogFeedSchema, object)) {
+		let containersAdded = 0;
+		yield* object.rss.channel.map(function* (channel) {
+			yield* channel.item.map(function* (item) {
+				const name = item.title.join("");
+
+				// Find links in content
+				const links = [];
+				let contents = item["content:encoded"].join("");
+				let match;
+
+				while (match = hrefPattern.exec(contents)) {
+					contents = contents.substring(match.index + match[0].length);
+
+					let uri = match[1];
+					let hoster = match[2].replace(/&#\d+;/g, "").trim();
+
+					const opts = url.parse(uri);
+
+					if (!opts || (opts.protocol != "https:" && opts.protocol != "http:"))
+						continue;
+
+					if (config.dumps.movieblog.allowedHosts.indexOf(opts.host) < 0)
+						continue;
+
+					yield insertTorrent(name + " (" + hoster + ")", uri, 0);
+					containersAdded++;
+				}
+			}.async);
+		}.async);
+
+		util.inform("dump: movieblog", "Added", containersAdded, "new containers");
+	} else {
+		throw new Error("Unrecognized feed schema");
+	}
+}.async;
+
 class KickAssLineProcessor extends stream.Writable {
 	constructor() {
 		super();
@@ -82,6 +139,7 @@ const processKickAssDump = function* (uri) {
  */
 const scan = function* () {
 	yield* config.dumps.kat.map(processKickAssDump);
+	yield processMovieBlogFeed(config.dumps.movieblog.uri);
 }.async;
 
 module.exports = {

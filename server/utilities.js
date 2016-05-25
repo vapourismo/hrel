@@ -2,6 +2,7 @@
 
 "use strict";
 
+const xml2js = require("xml2js");
 const stream = require("stream");
 const fs     = require("fs");
 const path   = require("path");
@@ -72,6 +73,20 @@ class Splitter extends stream.Transform {
 		splitBuffer(this.latest, this.symbol).forEach(c => this.push(c));
 		done();
 	}
+}
+
+/**
+ * Summon Satan,
+ * @param {Buffer} xml XML data
+ * @returns {Promise<Object>}
+ */
+function parseXML(xml) {
+	return new Promise(function (accept, reject) {
+		xml2js.parseString(xml, function (err, result) {
+			if (err) reject(err);
+			else     accept(result);
+		});
+	});
 }
 
 /**
@@ -235,6 +250,7 @@ Object.defineProperty(Object.prototype, "map", {
 
 module.exports = {
 	iterateFiles,
+	parseXML,
 	validateSchema,
 	logError,
 

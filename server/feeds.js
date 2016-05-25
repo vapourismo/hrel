@@ -2,26 +2,11 @@
 
 "use strict";
 
-const xml2js   = require("xml2js");
 const validURL = require("valid-url");
 const db       = require("./database");
 const http     = require("./http");
 const util     = require("./utilities");
 const releases = require("./releases");
-
-/**
- * Summon Satan,
- * @param {Buffer} xml XML data
- * @returns {Promise<Object>}
- */
-function parseXML(xml) {
-	return new Promise(function (accept, reject) {
-		xml2js.parseString(xml, function (err, result) {
-			if (err) reject(err);
-			else     accept(result);
-		});
-	});
-}
 
 const AtomSchema = {
 	feed: {
@@ -49,7 +34,7 @@ const RSSSchema = {
  * @returns {Promise<Array<String>>} List of release names
  */
 const parseFeed = function* (contents) {
-	const object = yield parseXML(contents);
+	const object = yield util.parseXML(contents);
 
 	let title = null, names = [];
 

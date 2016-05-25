@@ -66,8 +66,8 @@ const processMovieBlogFeed = function* (uri) {
 					if (config.dumps.movieblog.allowedHosts.indexOf(opts.host) < 0)
 						continue;
 
-					yield insertTorrent(name + " (" + hoster + ")", uri, 0);
-					containersAdded++;
+					let insertResult = yield insertTorrent(name + " (" + hoster + ")", uri, 0);
+					containersAdded += insertResult.rows.length;
 				}
 			}.async);
 		}.async);

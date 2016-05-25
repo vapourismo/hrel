@@ -23,7 +23,21 @@ module.exports = {
 
 	// Torrent dumps
 	dumps: {
-		// KickassTorrents
-		kat: []
+		// kat.cr
+		kat: [
+		],
+
+		// movie-blog.org
+		movieblog: {
+			uri: "http://www.movie-blog.org/feed/",
+			allowedHosts: [
+				"ul.to",
+				"www.ul.to",
+				"filecrypt.cc",
+				"www.filecrypt.cc",
+				"relink.us",
+				"www.relink.us"
+			]
+		}
 	}
 };

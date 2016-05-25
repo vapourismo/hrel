@@ -30,6 +30,19 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 SET search_path = public, pg_catalog;
 
 --
+-- Name: count_feed_links(integer); Type: FUNCTION; Schema: public; Owner: hrel
+--
+
+CREATE FUNCTION count_feed_links(id integer) RETURNS bigint
+    LANGUAGE sql
+    AS $_$
+SELECT COUNT(l.id) FROM feed_contents fc, links l WHERE fc.feed = $1 AND fc.release = l.release
+$_$;
+
+
+ALTER FUNCTION public.count_feed_links(id integer) OWNER TO hrel;
+
+--
 -- Name: count_feed_releases(integer); Type: FUNCTION; Schema: public; Owner: hrel
 --
 
@@ -41,19 +54,6 @@ $_$;
 
 
 ALTER FUNCTION public.count_feed_releases(id integer) OWNER TO hrel;
-
---
--- Name: count_feed_torrents(integer); Type: FUNCTION; Schema: public; Owner: hrel
---
-
-CREATE FUNCTION count_feed_torrents(id integer) RETURNS bigint
-    LANGUAGE sql
-    AS $_$
-SELECT COUNT(t.id) FROM feed_contents fc, torrents t WHERE fc.feed = $1 AND fc.release = t.release
-$_$;
-
-
-ALTER FUNCTION public.count_feed_torrents(id integer) OWNER TO hrel;
 
 SET default_tablespace = '';
 
@@ -106,6 +106,42 @@ ALTER SEQUENCE feeds_id_seq OWNED BY feeds.id;
 
 
 --
+-- Name: links; Type: TABLE; Schema: public; Owner: hrel
+--
+
+CREATE TABLE links (
+    id integer NOT NULL,
+    title character varying(255) NOT NULL,
+    uri character varying(255) NOT NULL,
+    release integer NOT NULL,
+    inserted timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE links OWNER TO hrel;
+
+--
+-- Name: links_id_seq; Type: SEQUENCE; Schema: public; Owner: hrel
+--
+
+CREATE SEQUENCE links_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE links_id_seq OWNER TO hrel;
+
+--
+-- Name: links_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: hrel
+--
+
+ALTER SEQUENCE links_id_seq OWNED BY links.id;
+
+
+--
 -- Name: releases; Type: TABLE; Schema: public; Owner: hrel
 --
 
@@ -140,43 +176,6 @@ ALTER SEQUENCE releases_id_seq OWNED BY releases.id;
 
 
 --
--- Name: torrents; Type: TABLE; Schema: public; Owner: hrel
---
-
-CREATE TABLE torrents (
-    id integer NOT NULL,
-    title character varying(255) NOT NULL,
-    uri character varying(255) NOT NULL,
-    release integer NOT NULL,
-    size bigint NOT NULL,
-    inserted timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
-ALTER TABLE torrents OWNER TO hrel;
-
---
--- Name: torrents_id_seq; Type: SEQUENCE; Schema: public; Owner: hrel
---
-
-CREATE SEQUENCE torrents_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE torrents_id_seq OWNER TO hrel;
-
---
--- Name: torrents_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: hrel
---
-
-ALTER SEQUENCE torrents_id_seq OWNED BY torrents.id;
-
-
---
 -- Name: id; Type: DEFAULT; Schema: public; Owner: hrel
 --
 
@@ -187,14 +186,14 @@ ALTER TABLE ONLY feeds ALTER COLUMN id SET DEFAULT nextval('feeds_id_seq'::regcl
 -- Name: id; Type: DEFAULT; Schema: public; Owner: hrel
 --
 
-ALTER TABLE ONLY releases ALTER COLUMN id SET DEFAULT nextval('releases_id_seq'::regclass);
+ALTER TABLE ONLY links ALTER COLUMN id SET DEFAULT nextval('links_id_seq'::regclass);
 
 
 --
 -- Name: id; Type: DEFAULT; Schema: public; Owner: hrel
 --
 
-ALTER TABLE ONLY torrents ALTER COLUMN id SET DEFAULT nextval('torrents_id_seq'::regclass);
+ALTER TABLE ONLY releases ALTER COLUMN id SET DEFAULT nextval('releases_id_seq'::regclass);
 
 
 --
@@ -222,6 +221,22 @@ ALTER TABLE ONLY feeds
 
 
 --
+-- Name: links_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel
+--
+
+ALTER TABLE ONLY links
+    ADD CONSTRAINT links_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: links_uri_key; Type: CONSTRAINT; Schema: public; Owner: hrel
+--
+
+ALTER TABLE ONLY links
+    ADD CONSTRAINT links_uri_key UNIQUE (uri);
+
+
+--
 -- Name: releases_name_key; Type: CONSTRAINT; Schema: public; Owner: hrel
 --
 
@@ -235,22 +250,6 @@ ALTER TABLE ONLY releases
 
 ALTER TABLE ONLY releases
     ADD CONSTRAINT releases_pkey PRIMARY KEY (id);
-
-
---
--- Name: torrents_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel
---
-
-ALTER TABLE ONLY torrents
-    ADD CONSTRAINT torrents_pkey PRIMARY KEY (id);
-
-
---
--- Name: torrents_uri_key; Type: CONSTRAINT; Schema: public; Owner: hrel
---
-
-ALTER TABLE ONLY torrents
-    ADD CONSTRAINT torrents_uri_key UNIQUE (uri);
 
 
 --
@@ -270,11 +269,11 @@ ALTER TABLE ONLY feed_contents
 
 
 --
--- Name: torrents_release_fkey; Type: FK CONSTRAINT; Schema: public; Owner: hrel
+-- Name: links_release_fkey; Type: FK CONSTRAINT; Schema: public; Owner: hrel
 --
 
-ALTER TABLE ONLY torrents
-    ADD CONSTRAINT torrents_release_fkey FOREIGN KEY (release) REFERENCES releases(id);
+ALTER TABLE ONLY links
+    ADD CONSTRAINT links_release_fkey FOREIGN KEY (release) REFERENCES releases(id);
 
 
 --

@@ -4,7 +4,7 @@ const db   = require("../server/database");
 const util = require("../server/utilities");
 
 const run = function* () {
-	yield db.query("DELETE FROM torrents");
+	yield db.query("DELETE FROM links");
 	yield db.query("DELETE FROM feed_contents");
 	yield db.query("DELETE FROM releases");
 	yield db.query("DELETE FROM feeds");

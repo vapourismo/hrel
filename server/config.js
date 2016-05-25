@@ -22,14 +22,14 @@ module.exports = {
 	usePGNative: true,
 
 	// Torrent dumps
-	dumps: {
+	sources: {
 		// kat.cr
 		kat: [
 		],
 
 		// movie-blog.org
 		movieblog: {
-			uri: "http://www.movie-blog.org/feed/",
+			url: "http://www.movie-blog.org/feed/",
 			allowedHosts: [
 				"ul.to",
 				"www.ul.to",

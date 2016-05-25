@@ -2,14 +2,33 @@
 
 "use strict";
 
-const db    = require("./database");
-const util  = require("./utilities");
-const feeds = require("./feeds");
-const dumps = require("./dumps");
+const db        = require("./database");
+const util      = require("./utilities");
+const feeds     = require("./feeds");
+const kat       = require("./sources/kat");
+const movieblog = require("./sources/movieblog");
 
 const scan = function* () {
-	yield feeds.scan();
-	yield dumps.scan();
+	try {
+		yield feeds.scan();
+	} catch (error) {
+		util.error("scanner", "Error during feed process");
+		util.logError(error);
+	}
+
+	try {
+		yield kat.scan();
+	} catch (error) {
+		util.error("scanner", "Error during 'kat' process");
+		util.logError(error);
+	}
+
+	try {
+		yield movieblog.scan();
+	} catch (error) {
+		util.error("scanner", "Error during 'movieblog' process");
+		util.logError(error);
+	}
 
 	db.end();
 }.async;

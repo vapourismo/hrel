@@ -110,7 +110,7 @@ const scan = function* () {
  * Retrieve all feeds.
  */
 const all = function* () {
-	const result = yield db.query("SELECT f.id, f.uri, f.title, count_feed_torrents(f.id) AS nlinks, count_feed_releases(f.id) as nreleases FROM feeds f ORDER BY f.title ASC");
+	const result = yield db.query("SELECT f.id, f.uri, f.title, count_feed_links(f.id) AS nlinks, count_feed_releases(f.id) as nreleases FROM feeds f ORDER BY f.title ASC");
 	return result.rows;
 }.async;
 
@@ -118,8 +118,8 @@ const all = function* () {
  * Retrieve information for a feed.
  */
 const one = function* (fid) {
-	const result = yield db.query("SELECT t.id, t.title, t.uri, t.size, t.inserted FROM feed_contents fc, releases r, torrents t WHERE fc.feed = $1 AND fc.release = r.id AND r.id = t.release ORDER BY t.inserted DESC LIMIT 100", [fid]);
-	return {releases: result.rows};
+	const result = yield db.query("SELECT l.id, l.title, l.uri, l.inserted FROM feed_contents fc, releases r, links l WHERE fc.feed = $1 AND fc.release = r.id AND r.id = l.release ORDER BY l.inserted DESC LIMIT 100", [fid]);
+	return result.rows;
 }.async;
 
 /**

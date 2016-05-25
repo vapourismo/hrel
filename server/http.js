@@ -55,7 +55,8 @@ function processResponse(response, accept, reject, redirects) {
 			break;
 
 		default:
-			reject(new Error("Invalid response status code (" + response.statusMessage + ")"));
+			reject(new Error("Invalid response status code (" + response.statusCode +
+			                 " " + response.statusMessage + ")"));
 			break;
 	}
 }

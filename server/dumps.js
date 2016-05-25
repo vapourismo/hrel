@@ -134,7 +134,7 @@ const processKickAssDump = function* (uri) {
 }.async;
 
 /**
- * Scan all dumps and collect the contained torrents.
+ * Scan all dumps and collect the contained links.
  * @returns {Promise}
  */
 const scan = function* () {

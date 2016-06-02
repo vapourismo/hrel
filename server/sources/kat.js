@@ -31,7 +31,8 @@ class KickAssLineProcessor extends stream.Writable {
 		links.insert(
 			title,
 			uri,
-			releases.normalize(title)
+			releases.normalize(title),
+			"kat.cr"
 		).then(
 			insertedRows => {
 				this.processed += insertedRows;

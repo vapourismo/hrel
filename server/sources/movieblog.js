@@ -70,9 +70,10 @@ const scan = function* () {
 						return;
 
 					const i = yield links.insert(
-						title + " (" + hoster + ")",
+						title,
 						url,
-						releases.normalize(title)
+						releases.normalize(title),
+						"movie-blog.org / " + hoster
 					);
 
 					insertedLinks += i;

@@ -114,7 +114,8 @@ CREATE TABLE links (
     title character varying(255) NOT NULL,
     uri character varying(255) NOT NULL,
     release integer NOT NULL,
-    inserted timestamp with time zone DEFAULT now() NOT NULL
+    inserted timestamp with time zone DEFAULT now() NOT NULL,
+    source character varying(255) NOT NULL
 );
 
 

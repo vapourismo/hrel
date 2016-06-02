@@ -20,6 +20,7 @@ const Release = React.createClass({
 		return (
 			<div className="row">
 				<div className="cell title">{this.props.data.title}</div>
+				<div className="cell source">{this.props.data.source}</div>
 				<div className="cell inserted">{inserted}</div>
 				<a className="cell link" href={this.props.data.uri}>link</a>
 				<a className="cell add" target="blank" href={"https://www.premiumize.me/downloader?magnet=" + this.props.data.uri}>add</a>

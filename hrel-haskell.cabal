@@ -18,6 +18,6 @@ library
 executable hrel-haskell-exe
   ghc-options:         -Wall -fprof-auto -fno-warn-tabs
   default-language:    Haskell2010
-  build-depends:       base, hrel-haskell, bytestring, http-client, http-client-tls
+  build-depends:       base, hrel-haskell, bytestring, http-client, http-client-tls, transformers
   hs-source-dirs:      src
   main-is:             Main.hs

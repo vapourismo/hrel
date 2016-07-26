@@ -1,7 +1,8 @@
 module HRel.Markup (
 	Node (..),
 	Attribute,
-	parseMarkup
+	parseMarkup,
+	parseMarkup_
 ) where
 
 import Data.List
@@ -89,3 +90,11 @@ transformContent (ContentText t) = Text t
 parseMarkup :: (StringLike a) => a -> [Node a]
 parseMarkup source =
 	map transformTNode (traverseTags (parseTags source) [])
+
+-- | Parse a give markup input that contains only a single root 'Node'.
+parseMarkup_ :: (StringLike a) => a -> Maybe (Node a)
+parseMarkup_ source =
+	case parseMarkup source of
+		[]  -> Nothing
+		[x] -> Just x
+		xs  -> Just (Element empty [] xs)

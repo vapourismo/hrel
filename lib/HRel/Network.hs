@@ -1,5 +1,6 @@
 module HRel.Network (
-	download
+	download,
+	download_
 ) where
 
 import           Control.Monad
@@ -75,4 +76,10 @@ request url fun = do
 download :: H.Manager -> String -> IO (Maybe B.ByteString)
 download mgr url =
 	runDownloader mgr $ request url $ \ res ->
+		lift (consumeBody (H.responseBody res))
+
+-- | A version of 'download' which does not strip 'MaybeT'.
+download_ :: H.Manager -> String -> MaybeT IO B.ByteString
+download_ mgr url =
+	flip runReaderT mgr $ request url $ \ res ->
 		lift (consumeBody (H.responseBody res))

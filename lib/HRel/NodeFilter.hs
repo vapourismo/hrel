@@ -1,6 +1,7 @@
 module HRel.NodeFilter (
 	NodeFilterT,
 	runNodeFilterT,
+	runNodeFilterT_,
 	forNodes,
 	forNode,
 	forElements,
@@ -28,8 +29,12 @@ import HRel.Markup
 type NodeFilterT t m = ReaderT (Node t) (MaybeT m)
 
 -- | Execute the node filter on a given 'Node'.
-runNodeFilterT :: NodeFilterT t m a -> Node t -> m (Maybe a)
-runNodeFilterT f n = runMaybeT (runReaderT f n)
+runNodeFilterT :: Node t -> NodeFilterT t m a -> m (Maybe a)
+runNodeFilterT n f = runMaybeT (runReaderT f n)
+
+-- | A version 'runNodeFilterT' which does not strip 'MaybeT'
+runNodeFilterT_ :: Node t -> NodeFilterT t m a -> MaybeT m a
+runNodeFilterT_ n f = runReaderT f n
 
 collectSuccesful :: (Monad m) => [MaybeT m a] -> MaybeT m [a]
 collectSuccesful nfs =

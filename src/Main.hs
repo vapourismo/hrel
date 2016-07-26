@@ -1,17 +1,21 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
+
+import Network.HTTP.Client
+import Network.HTTP.Client.TLS
 
 import HRel.Markup
 import HRel.NodeFilter
-
-test :: (Monad m) => NodeFilterT String m (String, [String])
-test =
-	"feed" $/
-		(,) <$> ("title" $/ text)
-		    <*> ("entry" $// "title" $/ text)
+import HRel.Feeds
+import HRel.Network
 
 main :: IO ()
 main = do
-	input <- readFile "test.xml"
-	let [node] = parseMarkup input
-	r <- runNodeFilterT test node
-	print r
+	mgr <- newManager tlsManagerSettings
+
+	Just cnt <- download mgr "http://www.movie-blog.org/feed/"
+	let [node] = parseMarkup cnt
+
+	res <- runNodeFilterT node feedNodeFilter
+	print res

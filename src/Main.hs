@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadStrings #-}
-
 module Main where
 
 import HRel.Markup
@@ -8,8 +6,8 @@ import HRel.NodeFilter
 test :: (Monad m) => NodeFilterT String m (String, [String])
 test =
 	"feed" $/
-		(,,) <$> ("title" $/ text)
-		     <*> ("entry" $// "title" $/ text)
+		(,) <$> ("title" $/ text)
+		    <*> ("entry" $// "title" $/ text)
 
 main :: IO ()
 main = do

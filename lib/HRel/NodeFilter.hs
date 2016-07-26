@@ -1,4 +1,19 @@
-module HRel.NodeFilter where
+module HRel.NodeFilter (
+	NodeFilterT,
+	runNodeFilterT,
+	forNodes,
+	forNode,
+	forElements,
+	forElement,
+	forTags,
+	forTag,
+	forTexts,
+	attributes,
+	attribute,
+	text,
+	($/),
+	($//)
+) where
 
 import Control.Applicative
 import Control.Monad.Reader

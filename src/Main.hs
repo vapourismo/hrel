@@ -1,6 +1,8 @@
 module Main where
 
-import HRel.Models
+import HRel.Markup
 
 main :: IO ()
-main = pure ()
+main = do
+	input <- readFile "test.xml"
+	print (parseMarkup input)

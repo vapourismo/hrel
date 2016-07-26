@@ -1,5 +1,6 @@
 module HRel.Markup (
 	Node (..),
+	Attribute,
 	parseMarkup
 ) where
 

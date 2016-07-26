@@ -100,3 +100,15 @@ attribute name = do
 -- | Extract the text from the current 'Node'.
 text :: (Monad m, Monoid t) => NodeFilterT t m t
 text = textContent <|> mconcat <$> forNodes (const True) text
+
+infixr 0 $/
+
+-- | Alias for 'forTag'.
+($/) :: (Monad m, Eq t) => t -> NodeFilterT t m a -> NodeFilterT t m a
+($/) = forTag
+
+infixr 0 $//
+
+-- | Alis for 'forTags'.
+($//) :: (Monad m, Eq t) => t -> NodeFilterT t m a -> NodeFilterT t m [a]
+($//) = forTags

@@ -5,15 +5,15 @@ module HRel.Sources (
 ) where
 
 import           HRel.NodeFilter
+import           HRel.Models
 
 import qualified Data.ByteString    as B
 import qualified Data.Text          as T
 import qualified Data.Text.Encoding as T
 
 -- | Pirate Bay RSS source.
-pirateBaySource :: (Monad m) => NodeFilterT B.ByteString m [(T.Text, B.ByteString)]
+pirateBaySource :: (Monad m) => NodeFilterT B.ByteString m [Torrent]
 pirateBaySource =
 	forRelativeTag "rss" $ "channel" $/ "item" $// do
-		title <- "title" $/ text
-		uri <- "torrent" $/ "magnetURI" $/ text
-		pure (T.strip (T.decodeUtf8 title), uri)
+		Torrent <$> ("title" $/ T.strip . T.decodeUtf8 <$> text)
+		        <*> ("torrent" $/ "magnetURI" $/ T.strip . T.decodeUtf8 <$> text)

@@ -1,7 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module HRel.Models (
-	Release (..)
+	Release (..),
+	Torrent (..)
 ) where
 
 import qualified Data.Text as T
@@ -12,3 +13,10 @@ data Release = Release {
 } deriving (Show, Eq, Ord)
 
 mkTable ''Release [Unique ['releaseName]]
+
+data Torrent = Torrent {
+	torrentTitle :: T.Text,
+	torrentURI   :: T.Text
+} deriving (Show, Eq, Ord)
+
+mkTable ''Torrent [Unique ['torrentTitle, 'torrentURI]]

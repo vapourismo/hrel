@@ -23,3 +23,11 @@ executable hrel-haskell-exe
                        mtl, pg-store, postgresql-libpq
   hs-source-dirs:      src
   main-is:             Main.hs
+
+executable hrel-haskell-scan-sources
+  ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -threaded -with-rtsopts -N
+  default-language:    Haskell2010
+  build-depends:       base, hrel-haskell, bytestring, http-client, http-client-tls, transformers,
+                       mtl, pg-store, postgresql-libpq
+  hs-source-dirs:      src
+  main-is:             ScanSources.hs

@@ -1,19 +1,39 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HRel.Sources (
-	pirateBaySource
+	pirateBaySource,
+
+	TorrentSource (..),
+	processTorrentSource
 ) where
 
 import           HRel.NodeFilter
 import           HRel.Models
+import           HRel.Network
 
 import qualified Data.ByteString    as B
 import qualified Data.Text          as T
 import qualified Data.Text.Encoding as T
 
+import           Network.HTTP.Client
+
 -- | Pirate Bay RSS source.
 pirateBaySource :: (Monad m) => NodeFilterT B.ByteString m [Torrent]
 pirateBaySource =
-	forRelativeTag "rss" $ "channel" $/ "item" $// do
-		Torrent <$> ("title" $/ T.strip . T.decodeUtf8 <$> text)
-		        <*> ("torrent" $/ "magnetURI" $/ T.strip . T.decodeUtf8 <$> text)
+	forRelativeTag "rss" $ "channel" $/ "item" $//
+		buildTorrent <$> ("title" $/ text)
+		             <*> ("torrent" $/ "magnetURI" $/ text)
+	where
+		buildTorrent title uri =
+			Torrent (T.strip (T.decodeUtf8 title)) (T.strip (T.decodeUtf8 uri))
+
+-- |
+data TorrentSource
+	= PirateBay String
+	deriving (Show, Eq, Ord)
+
+-- |
+processTorrentSource :: Manager -> TorrentSource -> IO (Maybe [Torrent])
+processTorrentSource mgr src =
+	case src of
+		PirateBay url -> downloadMarkup mgr url pirateBaySource

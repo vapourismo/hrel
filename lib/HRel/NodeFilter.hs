@@ -8,6 +8,7 @@ module HRel.NodeFilter (
 	forElement,
 	forTags,
 	forTag,
+	forRelativeTag,
 	forTexts,
 	attributes,
 	attribute,
@@ -96,6 +97,32 @@ forTag :: (Monad m, Eq t) => t -> NodeFilterT t m a -> NodeFilterT t m a
 forTag tag =
 	forElement (\ name _ _ -> tag == name)
 
+-- |
+deepFind :: (Node t -> Bool) -> [Node t] -> Maybe (Node t)
+deepFind cond nodes =
+	case find cond nodes of
+		Nothing -> deepFind cond nested
+		x -> x
+	where
+		nested =
+			concat $ flip map nodes $ \ node ->
+				case node of
+					Element _ _ contents -> contents
+					_ -> []
+
+
+-- | Do something for a relative tag (need not be in the current node).
+forRelativeTag :: (Monad m, Eq t) => t -> NodeFilterT t m a -> NodeFilterT t m a
+forRelativeTag name (ReaderT fun) =
+	ReaderT $ \ node ->
+		case node of
+			Element _ _ contents -> MaybeT (pure (deepFind cond contents)) >>= fun
+			_                    -> mzero
+	where
+		cond (Element tag _ _ ) = tag == name
+		cond _                  = False
+
+-- |
 textContent :: (Monad m) => NodeFilterT t m t
 textContent =
 	ReaderT $ \ node ->

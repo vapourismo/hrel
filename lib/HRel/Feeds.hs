@@ -29,7 +29,7 @@ data FeedContents = FeedContents T.Text [T.Text]
 -- | Atom feeds
 atomNodeFilter :: (Monad m) => NodeFilterT B.ByteString m FeedContents
 atomNodeFilter =
-	"feed" $/ do
+	forRelativeTag "feed" $ do
 		title <- "title" $/ text
 		items <- "entry" $// "title" $/ text
 
@@ -38,7 +38,7 @@ atomNodeFilter =
 -- | RSS feeds
 rssNodeFilter :: (Monad m) => NodeFilterT B.ByteString m FeedContents
 rssNodeFilter =
-	"rss" $/ "channel" $/ do
+	forRelativeTag "rss" $ "channel" $/ do
 		title <- "title" $/ text
 		items <- "item" $// "title" $/ text
 

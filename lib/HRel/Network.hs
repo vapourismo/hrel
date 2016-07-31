@@ -1,6 +1,7 @@
 module HRel.Network (
 	download,
-	download_
+	download_,
+	downloadMarkup
 ) where
 
 import           Control.Monad
@@ -14,6 +15,9 @@ import qualified Data.ByteString.Char8 as C8
 import qualified Network.HTTP.Types.Status as H
 import qualified Network.HTTP.Types.Header as H
 import qualified Network.HTTP.Client       as H
+
+import           HRel.Markup
+import           HRel.NodeFilter
 
 -- | Consume the body of a 'Response'. Rejects files that are bigger than 10MiB.
 consumeBody :: H.BodyReader -> MaybeT IO B.ByteString
@@ -83,3 +87,12 @@ download_ :: H.Manager -> String -> MaybeT IO B.ByteString
 download_ mgr url =
 	flip runReaderT mgr $ request url $ \ res ->
 		lift (consumeBody (H.responseBody res))
+
+-- | Download something and parse its markup using a given 'NodeFilter'.
+downloadMarkup :: H.Manager -> String -> NodeFilterT B.ByteString IO a -> IO (Maybe a)
+downloadMarkup mgr url nf =
+	runMaybeT $ do
+		cnt <- download_ mgr url
+		case parseMarkup_ cnt of
+			Just node -> runNodeFilterT_ node nf
+			Nothing   -> mzero

@@ -10,6 +10,7 @@ module HRel.Sources (
 import           HRel.NodeFilter
 import           HRel.Models
 import           HRel.Network
+import           HRel.Markup
 
 import qualified Data.ByteString    as B
 import qualified Data.Text          as T
@@ -18,7 +19,7 @@ import qualified Data.Text.Encoding as T
 import           Network.HTTP.Client
 
 -- | Pirate Bay RSS source.
-pirateBaySource :: (Monad m) => NodeFilterT B.ByteString m [Torrent]
+pirateBaySource :: NodeFilter B.ByteString [Torrent]
 pirateBaySource =
 	forRelativeTag "rss" $ "channel" $/ "item" $//
 		buildTorrent <$> ("title" $/ text)
@@ -34,6 +35,8 @@ data TorrentSource
 
 -- |
 processTorrentSource :: Manager -> TorrentSource -> IO (Maybe [Torrent])
-processTorrentSource mgr src =
+processTorrentSource mgr src = do
 	case src of
-		PirateBay url -> downloadMarkup mgr url pirateBaySource
+		PirateBay url -> do
+			mbContents <- download mgr url
+			pure (mbContents >>= parseMarkup_ >>= flip runNodeFilter pirateBaySource)

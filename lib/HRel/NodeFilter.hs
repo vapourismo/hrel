@@ -2,6 +2,8 @@ module HRel.NodeFilter (
 	NodeFilterT,
 	runNodeFilterT,
 	runNodeFilterT_,
+	NodeFilter,
+	runNodeFilter,
 	forNodes,
 	forNode,
 	forElements,
@@ -21,6 +23,7 @@ import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.Trans.Maybe
 
+import Data.Functor.Identity
 import Data.List
 import Data.Maybe
 
@@ -29,13 +32,23 @@ import HRel.Markup
 -- | Node filter
 type NodeFilterT t m = ReaderT (Node t) (MaybeT m)
 
+-- | Node filter which works inside the 'Identity' monad.
+type NodeFilter t = NodeFilterT t Identity
+
 -- | Execute the node filter on a given 'Node'.
 runNodeFilterT :: Node t -> NodeFilterT t m a -> m (Maybe a)
-runNodeFilterT n f = runMaybeT (runReaderT f n)
+runNodeFilterT n f =
+	runMaybeT (runReaderT f n)
 
 -- | A version 'runNodeFilterT' which does not strip 'MaybeT'
 runNodeFilterT_ :: Node t -> NodeFilterT t m a -> MaybeT m a
-runNodeFilterT_ n f = runReaderT f n
+runNodeFilterT_ n f =
+	runReaderT f n
+
+-- | Execute the node filter on a given 'Node'.
+runNodeFilter :: Node t -> NodeFilter t a -> Maybe a
+runNodeFilter n f =
+	runIdentity (runNodeFilterT n f)
 
 collectSuccesful :: (Monad m) => [MaybeT m a] -> MaybeT m [a]
 collectSuccesful nfs =

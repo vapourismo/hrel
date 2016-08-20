@@ -118,7 +118,7 @@ const all = function* () {
  * Retrieve information for a feed.
  */
 const one = function* (fid) {
-	const result = yield db.query("SELECT l.id, l.title, l.uri, l.inserted, l.source FROM feed_contents fc, releases r, links l WHERE fc.feed = $1 AND fc.release = r.id AND r.id = l.release ORDER BY l.inserted DESC LIMIT 100", [fid]);
+	const result = yield db.query("SELECT l.id, l.title, l.uri, l.inserted, l.source FROM feed_contents fc, releases r, links l WHERE fc.feed = $1 AND fc.release = r.id AND r.id = l.release ORDER BY l.inserted DESC LIMIT 500", [fid]);
 	return result.rows;
 }.async;
 

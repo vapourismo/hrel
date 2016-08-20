@@ -162,5 +162,6 @@ module.exports = {
 	scan,
 	all,
 	one,
-	add
+	add,
+	parseFeed
 };

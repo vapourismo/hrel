@@ -38,6 +38,14 @@ module.exports = {
 				"relink.us",
 				"www.relink.us"
 			]
-		}
+		},
+
+		// thepiratebay.org
+		thepiratebay: [
+			"https://thepiratebay.org/rss/top100/201",
+			"https://thepiratebay.org/rss/top100/205",
+			"https://thepiratebay.org/rss/top100/207",
+			"https://thepiratebay.org/rss/top100/208"
+		]
 	}
 };

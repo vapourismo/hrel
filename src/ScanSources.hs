@@ -18,27 +18,12 @@ import           Database.PostgreSQL.Store
 
 -- |
 torrentSources :: [TorrentSource]
-torrentSources = [PirateBay "https://thepiratebay.org/rss/top100/0"]
-
--- |
-insertTorrents :: P.Connection -> [Torrent] -> IO ()
-insertTorrents db torrents = do
-	res <- runErrand db (mapM insertTorrent torrents)
-	case res of
-		Left err ->
-			putStrLn ("Error during Errand: " ++ show err)
-
-		Right refs ->
-			putStrLn ("Inserted " ++ show (length (catMaybes refs)) ++ " torrents")
-
-	where
-		insertTorrent tor =
-			catchError (Just <$> insert tor) $ \ err ->
-				case err of
-					ExecError _ UniqueViolation _ _ _ ->
-						pure Nothing
-
-					_ -> throwError err
+torrentSources =
+	[PirateBay "https://thepiratebay.org/rss/top100/0",
+	 PirateBay "https://thepiratebay.org/rss/top100/201",
+	 PirateBay "https://thepiratebay.org/rss/top100/205",
+	 PirateBay "https://thepiratebay.org/rss/top100/207",
+	 PirateBay "https://thepiratebay.org/rss/top100/208"]
 
 -- |
 torrentSourceWorker :: P.Connection -> Manager -> TorrentSource -> IO ()
@@ -46,7 +31,7 @@ torrentSourceWorker db mgr src = do
 	mbTorrents <- processTorrentSource mgr src
 	case mbTorrents of
 		Just torrents ->
-			insertTorrents db torrents
+			mapM_ print torrents
 
 		Nothing ->
 			putStrLn ("Source " ++ show src ++ " errored")

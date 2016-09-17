@@ -4,7 +4,7 @@ build-type:          Simple
 cabal-version:       >= 1.10
 
 library
-  ghc-options:         -Wall -fno-warn-tabs
+  ghc-options:         -Wall -fno-warn-tabs -fno-warn-name-shadowing
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5, pg-store, bytestring, text, tagsoup, mtl, transformers,
                        http-client, http-client-tls, http-types, attoparsec
@@ -15,6 +15,7 @@ library
                        HRel.Network
                        HRel.Feeds
                        HRel.Sources
+                       HRel.Names
 
 executable hrel-haskell-exe
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind
@@ -28,6 +29,6 @@ executable hrel-haskell-scan-sources
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -threaded -with-rtsopts -N
   default-language:    Haskell2010
   build-depends:       base, hrel-haskell, bytestring, http-client, http-client-tls, transformers,
-                       mtl, pg-store, postgresql-libpq
+                       mtl, pg-store, postgresql-libpq, text
   hs-source-dirs:      src
   main-is:             ScanSources.hs

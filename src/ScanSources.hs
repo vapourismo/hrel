@@ -1,15 +1,13 @@
 {-# LANGUAGE OverloadedStrings, TemplateHaskell	, QuasiQuotes #-}
 
 import           Control.Monad
-import           Control.Exception
-import           Control.Concurrent
 
 import           HRel.Sources
+import           HRel.Models
+import           HRel.Names
 
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
-
-import qualified Database.PostgreSQL.LibPQ as P
 
 -- |
 torrentSources :: [TorrentSource]
@@ -21,38 +19,27 @@ torrentSources =
 	 PirateBay "https://thepiratebay.org/rss/top100/208"]
 
 -- |
-torrentSourceWorker :: P.Connection -> Manager -> TorrentSource -> IO ()
-torrentSourceWorker db mgr src = do
+torrentSourceWorker :: Manager -> TorrentSource -> IO ()
+torrentSourceWorker mgr src = do
 	mbTorrents <- processTorrentSource mgr src
 	case mbTorrents of
 		Just torrents ->
-			mapM_ print torrents
+			forM_ torrents $ \ (Torrent title _) -> do
+				print title
+
+				let (nameTags, qualifiers) = parseNameTags title
+
+				putStr "\t"
+				print nameTags
+
+				putStr "\t"
+				print qualifiers
 
 		Nothing ->
 			putStrLn ("Source " ++ show src ++ " errored")
 
 -- |
-forkWorker :: IO () -> IO (MVar ())
-forkWorker action = do
-	mvar <- newEmptyMVar
-	forkFinally action $ \ result -> do
-		case result of
-			Left (SomeException e) ->
-				putStrLn ("Exception in worker: " ++ show e)
-
-			Right _ -> pure ()
-
-		putMVar mvar ()
-
-	pure mvar
-
--- |
 main :: IO ()
 main = do
-	db <- P.connectdb "postgres://hrel@localhost/hrel"
 	mgr <- newManager tlsManagerSettings
-
-	mvars <- forM torrentSources $ \ src ->
-		forkWorker (torrentSourceWorker db mgr src)
-
-	mapM_ takeMVar mvars
+	forM_ torrentSources (torrentSourceWorker mgr)

@@ -1,20 +1,15 @@
 {-# LANGUAGE OverloadedStrings, TemplateHaskell	, QuasiQuotes #-}
 
 import           Control.Monad
-import           Control.Monad.Except
 import           Control.Exception
 import           Control.Concurrent
 
-import           HRel.Models
 import           HRel.Sources
-
-import           Data.Maybe
 
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 
 import qualified Database.PostgreSQL.LibPQ as P
-import           Database.PostgreSQL.Store
 
 -- |
 torrentSources :: [TorrentSource]

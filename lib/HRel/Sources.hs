@@ -28,12 +28,12 @@ pirateBaySource =
 		buildTorrent title uri =
 			Torrent (T.strip (T.decodeUtf8 title)) (T.strip (T.decodeUtf8 uri))
 
--- |
+-- | A source which aggregates torrents
 data TorrentSource
 	= PirateBay String
 	deriving (Show, Eq, Ord)
 
--- |
+-- | Process the torrent source in order to retrieve the torrents.
 processTorrentSource :: Manager -> TorrentSource -> IO (Maybe [Torrent])
 processTorrentSource mgr src = do
 	case src of

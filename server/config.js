@@ -42,6 +42,7 @@ module.exports = {
 
 		// thepiratebay.org
 		thepiratebay: [
+			"https://thepiratebay.org/rss/top100/0",
 			"https://thepiratebay.org/rss/top100/201",
 			"https://thepiratebay.org/rss/top100/205",
 			"https://thepiratebay.org/rss/top100/207",

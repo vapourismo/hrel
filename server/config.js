@@ -25,6 +25,9 @@ module.exports = {
 	sources: {
 		// kat.cr
 		kat: [
+			"http://kickasstorrents.to/highres-movies/?rss=1",
+			"http://kickasstorrents.to/movies/?rss=1",
+			"http://kickasstorrents.to/tv/?rss=1"
 		],
 
 		// movie-blog.org

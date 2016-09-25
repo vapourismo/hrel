@@ -1,68 +1,51 @@
-/* Copyright (C) 2016, Ole Krüger <ole@vprsm.de> */
+/* Copyright (C) 2015-2016, Ole Krüger <ole@vprsm.de> */
 
 "use strict";
 
-const url      = require("url");
-const zlib     = require("zlib");
-const stream   = require("stream");
-// const db       = require("../database");
 const http     = require("../http");
 const util     = require("../utilities");
-const config   = require("../config");
 const links    = require("../links");
 const releases = require("../releases");
+const config   = require("../config");
 
-class KickAssLineProcessor extends stream.Writable {
-	constructor() {
-		super();
-		this.processed = 0;
+const FeedSchema = {
+	rss: {
+		channel: [{
+			item: [{
+				title: ["string"],
+				"torrent:magnetURI": ["string"]
+			}]
+		}]
 	}
+};
 
-	_write(line, _, done) {
-		const segments = util.splitBuffer(line, 124);
+const process = function* (url) {
+	util.inform("source: kat", "Processing '" + url + "'");
 
-		// Ignore invalid lines
-		if (segments.length < 12)
-			return done();
+	const object = yield util.parseXML(yield http.download(url));
 
-		const title = segments[1].toString("utf8");
-		const uri = segments[4].toString("utf8");
+	if (!util.validateSchema(FeedSchema, object))
+		throw new Error("Unrecognized feed schema");
 
-		links.insert(
-			title,
-			uri,
-			releases.normalize(title),
-			"kat.cr"
-		).then(
-			insertedRows => {
-				this.processed += insertedRows;
-				done();
-			},
-			done
-		);
-	}
-}
+	let insertedLinks = 0;
 
-const process = function* (uri) {
-	util.inform("source: kat", "Processing '" + uri + "'");
+	yield* object.rss.channel.map(function* (channel) {
+		yield* channel.item.map(function* (item) {
+			const title = item.title.join();
+			const link = item["torrent:magnetURI"].join();
 
-	const req = url.parse(uri);
-	req.headers = {
-		"Accept": "application/x-gzip"
-	};
+			const i = yield links.insert(
+				title,
+				link,
+				releases.normalize(title),
+				"kickasstorrents.to"
+			);
 
-	const stream = yield http.stream(req);
-	const proc =
-		stream.pipe(zlib.createGunzip())
-		      .pipe(new util.Splitter(10))
-		      .pipe(new KickAssLineProcessor());
+			insertedLinks += i;
+		}.async);
+	}.async);
 
-	yield new Promise(function (accept, reject) {
-		proc.on("finish", accept);
-		proc.on("error", reject);
-	});
-
-	util.inform("source: kat", "Inserted", proc.processed, "links");
+	util.inform("source: kat", "Inserted", insertedLinks, "links");
 }.async;
 
 const scan = function* () {

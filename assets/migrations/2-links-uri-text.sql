@@ -1,0 +1,1 @@
+ALTER TABLE links ALTER COLUMN uri TYPE varchar;

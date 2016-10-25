@@ -50,6 +50,11 @@ module.exports = {
 			"https://thepiratebay.org/rss/top100/205",
 			"https://thepiratebay.org/rss/top100/207",
 			"https://thepiratebay.org/rss/top100/208"
+		],
+
+		// rarbg.to
+		rarbg: [
+			"https://rarbg.to/rssdd.php?category="
 		]
 	}
 };

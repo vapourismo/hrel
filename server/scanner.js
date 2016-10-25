@@ -8,6 +8,7 @@ const feeds        = require("./feeds");
 const kat          = require("./sources/kat");
 const movieblog    = require("./sources/movieblog");
 const thepiratebay = require("./sources/thepiratebay");
+const rarbg        = require("./sources/rarbg");
 
 const scan = function* () {
 	try {
@@ -35,6 +36,13 @@ const scan = function* () {
 		yield thepiratebay.scan();
 	} catch (error) {
 		util.error("scanner", "Error during 'thepiratebay' process");
+		util.logError(error);
+	}
+
+	try {
+		yield rarbg.scan();
+	} catch (error) {
+		util.error("scanner", "Error during 'rarbg' process");
 		util.logError(error);
 	}
 

@@ -20,6 +20,8 @@ function makeRequest(options, accept, reject, redirects) {
 	if (!(options instanceof Object))
 		options = url.parse(options);
 
+	options.headers = {"User-Agent": "hrel/0.0.0"};
+
 	let schema = options.protocol == "https:" ? https : http;
 
 	const req = schema.request(options, function (response) {

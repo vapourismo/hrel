@@ -114,7 +114,7 @@ forTag tag =
 deepFind :: (Node t -> Bool) -> [Node t] -> Maybe (Node t)
 deepFind cond nodes =
 	case find cond nodes of
-		Nothing -> deepFind cond nested
+		Nothing | length nested > 0 -> deepFind cond nested
 		x -> x
 	where
 		nested =

@@ -28,7 +28,7 @@ releaseQualifiers :: [T.Text]
 releaseQualifiers =
 	["1080p", "6ch", "720p", "aac", "aac2", "ac3", "bdrip", "bluray", "brrip", "cam", "dl", "dts",
 	 "dvdrip", "dvdscr", "extended", "fansub", "h264", "hc", "hd", "hdcam", "hdrip", "hdtc", "hdts",
-	 "hdtv", "henry", "hevc", "hq", "internal", "ppv", "repack", "rip", "tc", "telesync", "ts", "web",
+	 "hdtv", "hevc", "hq", "internal", "ppv", "repack", "rip", "tc", "telesync", "ts", "web",
 	 "webrip", "x264", "x265", "xv", "xvid"]
 
 -- | Retrieve the tags within the name.

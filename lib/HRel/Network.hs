@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module HRel.Network (
 	download,
 	download_,
@@ -50,7 +52,9 @@ withResponse req fun =
 -- | Parse the URL into 'Request'.
 makeRequest :: String -> Downloader H.Request
 makeRequest url =
-	lift (MaybeT (pure (H.parseRequest url)))
+	lift $ MaybeT $ pure $ do
+		req <- H.parseRequest url
+		pure (req {H.requestHeaders = [(H.hUserAgent, "hrel-haskell/0.0.0")]})
 
 -- | Get a specific header value from the 'Response'.
 getHeader :: H.Response a -> H.HeaderName -> Downloader B.ByteString
@@ -60,7 +64,7 @@ getHeader res name =
 -- |
 request :: String -> (H.Response H.BodyReader -> Downloader a) -> Downloader a
 request url fun = do
-	req <- lift (MaybeT (pure (H.parseRequest url)))
+	req <- makeRequest url
 	withResponse req (process (5 :: Int))
 	where
 		process redirectsLeft res =

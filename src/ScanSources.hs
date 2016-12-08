@@ -16,7 +16,8 @@ torrentSources =
 	 PirateBay "https://thepiratebay.org/rss/top100/201",
 	 PirateBay "https://thepiratebay.org/rss/top100/205",
 	 PirateBay "https://thepiratebay.org/rss/top100/207",
-	 PirateBay "https://thepiratebay.org/rss/top100/208"]
+	 PirateBay "https://thepiratebay.org/rss/top100/208",
+	 RARBG "https://rarbg.to/rssdd.php"]
 
 -- |
 torrentSourceWorker :: Manager -> TorrentSource -> IO ()

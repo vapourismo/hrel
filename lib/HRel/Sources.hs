@@ -18,7 +18,7 @@ import qualified Data.Text.Encoding as T
 
 import           Network.HTTP.Client
 
--- | Pirate Bay RSS source.
+-- | Pirate Bay source
 pirateBaySource :: NodeFilter B.ByteString [Torrent]
 pirateBaySource =
 	forRelativeTag "rss" $ "channel" $/ "item" $//
@@ -28,10 +28,10 @@ pirateBaySource =
 		buildTorrent title uri =
 			Torrent (T.strip (T.decodeUtf8 title)) (T.strip (T.decodeUtf8 uri))
 
--- |
+-- | RARBG source
 rarbgSource :: NodeFilter B.ByteString [Torrent]
 rarbgSource =
-	forRelativeTag "rss" $ "channel" $/ "item" $//
+	"channel" $/ "item" $//
 		buildTorrent <$> ("title" $/ text)
 		             <*> ("link" $/ text)
 	where
@@ -44,7 +44,7 @@ data TorrentSource
 	| RARBG String
 	deriving (Show, Eq, Ord)
 
--- |
+-- | Download a feed at a given URL in order to filter its results.
 downloadAndFilter :: Manager -> String -> NodeFilter B.ByteString a -> IO (Maybe a)
 downloadAndFilter mgr url flt = do
 	mbContents <- download mgr url

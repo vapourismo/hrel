@@ -24,14 +24,17 @@ torrentSourceWorker db mgr src = do
 	case mbTorrents of
 		Just torrents ->
 			forM_ torrents $ \ torrent@(Torrent title _) -> do
-				upsertionResult <- runErrand db (query (qInsertTorrent torrent))
+				let (nameTags, qualifiers) = parseNameTags title
+
+				upsertionResult <- runErrand db $ do
+					tid <- insertTorrent torrent
+					associateTags tid (nameTags ++ qualifiers)
+
 				case upsertionResult of
 					Left err -> print err
 					_        -> pure ()
 
 				print title
-
-				let (nameTags, qualifiers) = parseNameTags title
 
 				putStr "\t"
 				print nameTags

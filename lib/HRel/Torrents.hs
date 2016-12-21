@@ -1,8 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric, QuasiQuotes #-}
 
-module HRel.Models (
-	Release (..),
-
+module HRel.Torrents (
 	Torrent (..),
 	insertTorrent,
 	searchForTorrents,
@@ -24,11 +22,6 @@ import           Database.PostgreSQL.Store.Query
 anyColumnType :: ColumnType
 anyColumnType =
 	ColumnType "blob" True Nothing
-
--- |
-data Release = Release {
-	releaseName :: T.Text
-} deriving (Show, Eq, Ord, Generic)
 
 -- |
 data Torrent = Torrent {

@@ -2,7 +2,7 @@
 
 module Main where
 
-import           HRel.Models
+import           HRel.Torrents
 
 import qualified Database.PostgreSQL.LibPQ as P
 import           Database.PostgreSQL.Store

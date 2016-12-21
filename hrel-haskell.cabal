@@ -9,7 +9,7 @@ library
   build-depends:       base >= 4.7 && < 5, pg-store, bytestring, text, tagsoup, mtl, transformers,
                        http-client, http-client-tls, http-types, attoparsec
   hs-source-dirs:      lib
-  exposed-modules:     HRel.Models
+  exposed-modules:     HRel.Torrents
                        HRel.Markup
                        HRel.NodeFilter
                        HRel.Network

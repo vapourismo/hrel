@@ -3,7 +3,7 @@
 import           Control.Monad
 
 import           HRel.Sources
-import           HRel.Models
+import           HRel.Torrents
 import           HRel.Names
 
 import           Network.HTTP.Client

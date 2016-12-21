@@ -8,7 +8,7 @@ module HRel.Sources (
 ) where
 
 import           HRel.NodeFilter
-import           HRel.Models
+import           HRel.Torrents
 import           HRel.Network
 import           HRel.Markup
 

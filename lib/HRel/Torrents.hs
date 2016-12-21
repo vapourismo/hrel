@@ -53,6 +53,7 @@ insertTorrent torrent = do
 
 -- |
 searchForTorrents :: [T.Text] -> Errand [(Torrent, Word)]
+searchForTorrents [] = pure []
 searchForTorrents tags =
 	query [pgsq| SELECT #Torrent, COUNT(tags) AS score
 	             FROM @Torrent, tags

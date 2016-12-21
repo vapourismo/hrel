@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell	, QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell, QuasiQuotes #-}
 
 import           Control.Monad
 
@@ -25,23 +25,15 @@ torrentSourceWorker db mgr src = do
 	case mbTorrents of
 		Just torrents ->
 			forM_ torrents $ \ torrent@(Torrent title _) -> do
-				let (nameTags, qualifiers) = parseNameTags title
-
 				upsertionResult <- runErrand db $ do
 					tid <- insertTorrent torrent
-					associateTags tid (nameTags ++ qualifiers)
+					associateTags tid (parseTags title)
 
 				case upsertionResult of
 					Left err -> print err
 					_        -> pure ()
 
 				print title
-
-				putStr "\t"
-				print nameTags
-
-				putStr "\t"
-				print qualifiers
 
 		Nothing ->
 			putStrLn ("Source " ++ show src ++ " errored")

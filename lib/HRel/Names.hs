@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HRel.Names (
+	parseTags,
 	parseNameTags
 ) where
 
@@ -30,6 +31,11 @@ releaseQualifiers =
 	 "dvdrip", "dvdscr", "extended", "fansub", "h264", "hc", "hd", "hdcam", "hdrip", "hdtc", "hdts",
 	 "hdtv", "hevc", "hq", "internal", "ppv", "repack", "rip", "tc", "telesync", "ts", "web",
 	 "webrip", "x264", "x265", "xv", "xvid"]
+
+-- | Retrieve tags within the name without sorting out the qualifiers.
+parseTags :: T.Text -> [T.Text]
+parseTags =
+	splitSegments . fst . stripGroup
 
 -- | Retrieve the tags within the name.
 parseNameTags :: T.Text -> ([T.Text], [T.Text])

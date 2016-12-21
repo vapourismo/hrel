@@ -15,8 +15,8 @@ import           Database.PostgreSQL.Store
 -- |
 torrentSources :: [TorrentSource]
 torrentSources =
-	[RARBG "https://rarbg.to/rssdd.php?category=43",         -- TV
-	 RARBG "https://rarbg.to/rssdd.php?category=48;44;45;42"]  -- Movies
+	[RARBG "https://rarbg.to/rssdd_magnet.php?category=41",           -- TV
+	 RARBG "https://rarbg.to/rssdd_magnet.php?category=48;44;45;42"]  -- Movies
 
 -- |
 torrentSourceWorker :: P.Connection -> Manager -> TorrentSource -> IO ()

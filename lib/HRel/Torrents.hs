@@ -33,7 +33,7 @@ instance Entity Torrent
 
 instance TableEntity Torrent where
 	describeTableType _ =
-		Table "Torrents"
+		Table "torrents"
 		      [Column "title" anyColumnType,
 		       Column "uri"   anyColumnType]
 

@@ -54,7 +54,8 @@ module.exports = {
 
 		// rarbg.to
 		rarbg: [
-			"https://rarbg.to/rssdd.php?category="
+			"https://rarbg.to/rssdd_magnet.php?category=48;44;45;42",
+			"https://rarbg.to/rssdd_magnet.php?category=43"
 		]
 	}
 };

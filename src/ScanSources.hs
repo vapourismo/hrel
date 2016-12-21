@@ -9,23 +9,26 @@ import           HRel.Names
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 
+import qualified Database.PostgreSQL.LibPQ as P
+import           Database.PostgreSQL.Store
+
 -- |
 torrentSources :: [TorrentSource]
 torrentSources =
-	[PirateBay "https://thepiratebay.org/rss/top100/0",
-	 PirateBay "https://thepiratebay.org/rss/top100/201",
-	 PirateBay "https://thepiratebay.org/rss/top100/205",
-	 PirateBay "https://thepiratebay.org/rss/top100/207",
-	 PirateBay "https://thepiratebay.org/rss/top100/208",
-	 RARBG "https://rarbg.to/rssdd.php"]
+	[RARBG "https://rarbg.to/rssdd.php"]
 
 -- |
-torrentSourceWorker :: Manager -> TorrentSource -> IO ()
-torrentSourceWorker mgr src = do
+torrentSourceWorker :: P.Connection -> Manager -> TorrentSource -> IO ()
+torrentSourceWorker db mgr src = do
 	mbTorrents <- processTorrentSource mgr src
 	case mbTorrents of
 		Just torrents ->
-			forM_ torrents $ \ (Torrent title _) -> do
+			forM_ torrents $ \ torrent@(Torrent title _) -> do
+				upsertionResult <- runErrand db (query (qInsertTorrent torrent))
+				case upsertionResult of
+					Left err -> print err
+					_        -> pure ()
+
 				print title
 
 				let (nameTags, qualifiers) = parseNameTags title
@@ -42,5 +45,6 @@ torrentSourceWorker mgr src = do
 -- |
 main :: IO ()
 main = do
+	db <- P.connectdb "postgres://hrel@localhost/hrelhaskell"
 	mgr <- newManager tlsManagerSettings
-	forM_ torrentSources (torrentSourceWorker mgr)
+	forM_ torrentSources (torrentSourceWorker db mgr)

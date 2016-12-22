@@ -1,4 +1,4 @@
-name:                hrel-haskell
+name:                hrel-server
 version:             0.0.0
 build-type:          Simple
 cabal-version:       >= 1.10
@@ -17,18 +17,18 @@ library
                        HRel.Sources
                        HRel.Names
 
-executable hrel-haskell-server
+executable hrel-webserver
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -Wno-name-shadowing
   default-language:    Haskell2010
-  build-depends:       base, hrel-haskell, happstack-server, pg-store, postgresql-libpq, aeson, mtl,
+  build-depends:       base, hrel-server, happstack-server, pg-store, postgresql-libpq, aeson, mtl,
                        text, bytestring
   hs-source-dirs:      src
-  main-is:             Server.hs
+  main-is:             WebServer.hs
 
-executable hrel-haskell-scan-sources
+executable hrel-scanner
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -threaded -with-rtsopts -N
   default-language:    Haskell2010
-  build-depends:       base, hrel-haskell, bytestring, http-client, http-client-tls, transformers,
+  build-depends:       base, hrel-server, bytestring, http-client, http-client-tls, transformers,
                        mtl, pg-store, postgresql-libpq, text
   hs-source-dirs:      src
-  main-is:             ScanSources.hs
+  main-is:             Scanner.hs

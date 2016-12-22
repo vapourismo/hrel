@@ -41,6 +41,6 @@ torrentSourceWorker db mgr src = do
 -- |
 main :: IO ()
 main = do
-	db <- P.connectdb "postgres://hrel@localhost/hrel"
+	db <- P.connectdb "user=hrel dbname=hrel"
 	mgr <- newManager tlsManagerSettings
 	forM_ torrentSources (torrentSourceWorker db mgr)

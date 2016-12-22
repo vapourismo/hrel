@@ -64,7 +64,7 @@ searchRoute db =
 
 main :: IO ()
 main = do
-	db <- P.connectdb "postgres://hrel@localhost/hrelhaskell"
+	db <- P.connectdb "postgres://hrel@localhost/hrel"
 
 	simpleHTTP httpConf (msum [searchRoute db,
 	                           defaultRoute])

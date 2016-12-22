@@ -25,6 +25,8 @@ torrentSourceWorker db mgr src = do
 	case mbTorrents of
 		Just torrents ->
 			forM_ torrents $ \ torrent@(Torrent title _) -> do
+				print title
+
 				upsertionResult <- runErrand db $ do
 					tid <- insertTorrent torrent
 					associateTags tid (parseTags title)
@@ -33,14 +35,12 @@ torrentSourceWorker db mgr src = do
 					Left err -> print err
 					_        -> pure ()
 
-				print title
-
 		Nothing ->
 			putStrLn ("Source " ++ show src ++ " errored")
 
 -- |
 main :: IO ()
 main = do
-	db <- P.connectdb "postgres://hrel@localhost/hrelhaskell"
+	db <- P.connectdb "postgres://hrel@localhost/hrel"
 	mgr <- newManager tlsManagerSettings
 	forM_ torrentSources (torrentSourceWorker db mgr)

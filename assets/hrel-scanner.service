@@ -5,7 +5,7 @@ After=postgresql.service
 
 [Service]
 Type=oneshot
-ExecStart=/user/bin/stack exec hrel-scanner
+ExecStart=/usr/bin/stack exec hrel-scanner
 WorkingDirectory=/var/hrel/hrel-server
 User=hrel
 Group=hrel

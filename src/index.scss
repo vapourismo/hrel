@@ -138,6 +138,10 @@ html, body {
 				text-decoration: none;
 			}
 
+			.link, .add {
+				text-align: center;
+			}
+
 			&:hover .cell, &:active .cell, &:focus .cell {
 				background-color: #96373c;
 			}

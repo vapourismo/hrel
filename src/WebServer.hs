@@ -38,7 +38,7 @@ decodeQueryString :: BL.ByteString -> T.Text
 decodeQueryString body =
 	either (const T.empty) id (T.decodeUtf8' (BL.toStrict body))
 
-search :: T.Text -> Errand [(Torrent, Word)]
+search :: T.Text -> Errand [Torrent]
 search =
 	searchForTorrents . parseTags
 
@@ -59,10 +59,9 @@ searchRoute db = do
 				ok (toResponse (encode (map transformResult torrents)))
 
 	where
-		transformResult (Torrent title uri, score) =
+		transformResult (Torrent title uri) =
 			object ["title" .= title,
-			        "uri"   .= uri,
-			        "score" .= score]
+			        "uri"   .= uri]
 
 main :: IO ()
 main = do

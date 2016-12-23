@@ -52,7 +52,7 @@ insertTorrent torrent = do
 			       RETURNING id |]
 
 -- |
-searchForTorrents :: [T.Text] -> Errand [(Torrent, Word)]
+searchForTorrents :: [T.Text] -> Errand [Torrent]
 searchForTorrents [] = pure []
 searchForTorrents tags =
 	query [pgsq| WITH allResults AS (
@@ -63,7 +63,7 @@ searchForTorrents tags =
 	                 GROUP BY id
 	                 ORDER BY score DESC
 	             )
-	             SELECT * FROM allResults WHERE score = $(length tags) |]
+	             SELECT #Torrent(r) FROM allResults r WHERE r.score = $(length tags) |]
 	where
 		insertTag =
 			insertEntity . T.toLower

@@ -55,12 +55,15 @@ insertTorrent torrent = do
 searchForTorrents :: [T.Text] -> Errand [(Torrent, Word)]
 searchForTorrents [] = pure []
 searchForTorrents tags =
-	query [pgsq| SELECT #Torrent, COUNT(tags) AS score
-	             FROM @Torrent, tags
-	             WHERE id = torrent
-	                   AND tag IN ($(insertCommaSeperated (map insertTag tags)))
-	             GROUP BY id
-	             ORDER BY score DESC |]
+	query [pgsq| WITH allResults AS (
+	                 SELECT #Torrent, COUNT(tags) AS score
+	                 FROM @Torrent, tags
+	                 WHERE id = torrent
+	                       AND tag IN ($(insertCommaSeperated (map insertTag tags)))
+	                 GROUP BY id
+	                 ORDER BY score DESC
+	             )
+	             SELECT * FROM allResults WHERE score = $(length tags) |]
 	where
 		insertTag =
 			insertEntity . T.toLower

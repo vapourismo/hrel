@@ -54,7 +54,8 @@ searchRoute db = do
 				liftIO (print err)
 				internalServerError (toResponse ("Search failed" :: String))
 
-			Right torrents ->
+			Right torrents -> do
+				setHeaderM "Content-Type" "application/json"
 				ok (toResponse (encode (map transformResult torrents)))
 
 	where

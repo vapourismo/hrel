@@ -43,7 +43,8 @@ search =
 	searchForTorrents . parseTags
 
 searchRoute :: P.Connection -> ServerPartT IO Response
-searchRoute db =
+searchRoute db = do
+	method POST
 	dir "search" $ do
 		body <- requestBody
 		result <- liftIO (runErrand db (search (decodeQueryString body)))

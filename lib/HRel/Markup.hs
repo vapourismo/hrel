@@ -55,27 +55,27 @@ traverseTags (tag : restTags) stack =
 data Node a
 	= Element a [Attribute a] [Node a]
 	| Text a
-	deriving (Eq, Ord)
+	deriving (Show, Eq, Ord)
 
-instance (StringLike a) => Show (Node a) where
-	show = showNode 0
+-- instance (StringLike a) => Show (Node a) where
+-- 	show = showNode 0
 
-indentation :: Int -> String
-indentation i =
-	replicate i '\t'
+-- indentation :: Int -> String
+-- indentation i =
+-- 	replicate i '\t'
 
-showNode :: (StringLike a) => Int -> Node a -> String
-showNode i (Element n a c) =
-	indentation i ++ "<" ++ toString n ++ toAttrString a ++ ">\n"
-	++ intercalate "\n" (map (showNode (i + 1)) c)
-	++ "\n" ++ indentation i ++ "</" ++ toString n ++ ">"
-	where
-		toAttrString [] = ""
-		toAttrString xs =
-			" " ++ intercalate " " (map (\ (k, v) -> toString k ++ "=" ++ show (toString v)) xs)
+-- showNode :: (StringLike a) => Int -> Node a -> String
+-- showNode i (Element n a c) =
+-- 	indentation i ++ "<" ++ toString n ++ toAttrString a ++ ">\n"
+-- 	++ intercalate "\n" (map (showNode (i + 1)) c)
+-- 	++ "\n" ++ indentation i ++ "</" ++ toString n ++ ">"
+-- 	where
+-- 		toAttrString [] = ""
+-- 		toAttrString xs =
+-- 			" " ++ intercalate " " (map (\ (k, v) -> toString k ++ "=" ++ show (toString v)) xs)
 
-showNode i (Text a) =
-	indentation i ++ toString a
+-- showNode i (Text a) =
+-- 	indentation i ++ toString a
 
 -- | Transform 'TNode' to 'Node'.
 transformTNode :: TNode a -> Node a

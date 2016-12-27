@@ -11,10 +11,14 @@ module HRel.Parser (
 	mustFail,
 	validate,
 	excludeFrom,
+	sepBy,
 
 	Source (..),
+	satisfy,
 	single,
 	exact,
+	oneOf,
+	notOneOf,
 	range
 ) where
 
@@ -24,9 +28,7 @@ import           Control.Applicative
 import           Data.Bifunctor
 import           Data.Semigroup
 
-import           Data.Char
 import           Data.Word
-import           Data.List (isPrefixOf)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
@@ -114,10 +116,12 @@ excludeFrom a b = do
 	mustFail a
 	b
 
+sepBy :: Parser s a -> Parser s b -> Parser s [a]
+sepBy elem sep =
+	((:) <$> elem <*> many (sep >> elem)) <|> pure []
+
 class Source s a | s -> a where
 	uncons :: s -> Maybe (a, s)
-
-	split :: Int -> s -> Maybe (s, s)
 
 instance Source B.ByteString Word8 where
 	uncons = B.uncons
@@ -139,18 +143,24 @@ single :: (Source s a) => Parser s a
 single =
 	Parser (maybe (Left SourceDrained) Right . uncons)
 
-exact :: (Source s a, Eq a) => a -> Parser s a
-exact x =
-	validate single $ \ y ->
-		if y == x then
+satisfy :: (Source s a) => (a -> Bool) -> Parser s a
+satisfy f =
+	validate single $ \ x ->
+		if f x then
 			Just x
 		else
 			Nothing
 
+exact :: (Source s a, Eq a) => a -> Parser s a
+exact x = satisfy (== x)
+
+oneOf :: (Source s a, Eq a) => [a] -> Parser s a
+oneOf xs = satisfy (`elem` xs)
+
+notOneOf :: (Source s a, Eq a) => [a] -> Parser s a
+notOneOf xs =
+	satisfy (not . (`elem` xs))
+
 range :: (Source s a, Ord a) => a -> a -> Parser s a
 range lower upper =
-	validate single $ \ y ->
-		if lower <= y && y <= upper then
-			Just y
-		else
-			Nothing
+	satisfy (\ y -> lower <= y && y <= upper)

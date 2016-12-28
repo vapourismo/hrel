@@ -14,6 +14,8 @@ import           Control.Monad.Reader
 import qualified Data.ByteString       as B
 import qualified Data.ByteString.Char8 as C8
 
+import qualified Data.Text as T
+
 import qualified Network.HTTP.Types.Status as H
 import qualified Network.HTTP.Types.Header as H
 import qualified Network.HTTP.Client       as H
@@ -93,7 +95,7 @@ download_ mgr url =
 		lift (consumeBody (H.responseBody res))
 
 -- | Download something and parse its markup using a given 'NodeFilter'.
-downloadMarkup :: H.Manager -> String -> NodeFilterT B.ByteString IO a -> IO (Maybe a)
+downloadMarkup :: H.Manager -> String -> NodeFilterT T.Text IO a -> IO (Maybe a)
 downloadMarkup mgr url nf =
 	runMaybeT $ do
 		cnt <- download_ mgr url

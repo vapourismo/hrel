@@ -12,9 +12,7 @@ module HRel.Feeds (
 import           Control.Applicative
 import           Control.Monad.Trans.Maybe
 
-import qualified Data.ByteString    as B
 import qualified Data.Text          as T
-import qualified Data.Text.Encoding as T
 
 import           Network.HTTP.Client
 
@@ -27,25 +25,21 @@ data FeedContents = FeedContents T.Text [T.Text]
 	deriving (Show, Eq, Ord)
 
 -- | Atom feeds
-atomNodeFilter :: (Monad m) => NodeFilterT B.ByteString m FeedContents
+atomNodeFilter :: (Monad m) => NodeFilterT T.Text m FeedContents
 atomNodeFilter =
 	forRelativeTag "feed" $ do
-		title <- "title" $/ text
-		items <- "entry" $// "title" $/ text
-
-		pure (FeedContents (T.decodeUtf8 title) (map T.decodeUtf8 items))
+		FeedContents <$> ("title" $/ T.strip <$> text)
+		             <*> ("entry" $// "title" $/ T.strip <$> text)
 
 -- | RSS feeds
-rssNodeFilter :: (Monad m) => NodeFilterT B.ByteString m FeedContents
+rssNodeFilter :: (Monad m) => NodeFilterT T.Text m FeedContents
 rssNodeFilter =
-	forRelativeTag "rss" $ "channel" $/ do
-		title <- "title" $/ text
-		items <- "item" $// "title" $/ text
-
-		pure (FeedContents (T.decodeUtf8 title) (map T.decodeUtf8 items))
+	forRelativeTag "rss" $ "channel" $/
+		FeedContents <$> ("title" $/ T.strip <$> text)
+		             <*> ("item" $// "title" $/ T.strip <$> text)
 
 -- | Atom or RSS feeds
-feedNodeFilter :: (Monad m) => NodeFilterT B.ByteString m FeedContents
+feedNodeFilter :: (Monad m) => NodeFilterT T.Text m FeedContents
 feedNodeFilter = atomNodeFilter <|> rssNodeFilter
 
 -- | Download a parse a feed.

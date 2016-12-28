@@ -12,31 +12,29 @@ import           HRel.Torrents
 import           HRel.Network
 import           HRel.Markup
 
-import qualified Data.ByteString    as B
 import qualified Data.Text          as T
-import qualified Data.Text.Encoding as T
 
 import           Network.HTTP.Client
 
 -- | Pirate Bay source
-pirateBaySource :: NodeFilter B.ByteString [Torrent]
+pirateBaySource :: NodeFilter T.Text [Torrent]
 pirateBaySource =
 	forRelativeTag "rss" $ "channel" $/ "item" $//
 		buildTorrent <$> ("title" $/ text)
 		             <*> ("torrent" $/ "magnetURI" $/ text)
 	where
 		buildTorrent title uri =
-			Torrent (T.strip (T.decodeUtf8 title)) (T.strip (T.decodeUtf8 uri))
+			Torrent (T.strip title) (T.strip uri)
 
 -- | RARBG source
-rarbgSource :: NodeFilter B.ByteString [Torrent]
+rarbgSource :: NodeFilter T.Text [Torrent]
 rarbgSource =
 	"channel" $/ "item" $//
 		buildTorrent <$> ("title" $/ text)
 		             <*> ("link" $/ text)
 	where
 		buildTorrent title uri =
-			Torrent (T.strip (T.decodeUtf8 title)) (T.strip (T.decodeUtf8 uri))
+			Torrent (T.strip title) (T.strip uri)
 
 -- | A source which aggregates torrents
 data TorrentSource
@@ -45,7 +43,7 @@ data TorrentSource
 	deriving (Show, Eq, Ord)
 
 -- | Download a feed at a given URL in order to filter its results.
-downloadAndFilter :: Manager -> String -> NodeFilter B.ByteString a -> IO (Maybe a)
+downloadAndFilter :: Manager -> String -> NodeFilter T.Text a -> IO (Maybe a)
 downloadAndFilter mgr url flt = do
 	mbContents <- download mgr url
 	pure (mbContents >>= parseMarkup_ >>= flip runNodeFilter flt)

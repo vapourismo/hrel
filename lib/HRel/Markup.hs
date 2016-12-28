@@ -1,14 +1,16 @@
 module HRel.Markup (
 	Node (..),
 	Attribute,
-	parseMarkup,
+
 	parseMarkup_
 ) where
 
-import Data.List
+import qualified Data.ByteString as B
 
-import Text.HTML.TagSoup
-import Text.StringLike
+import qualified Data.Text          as T
+import qualified Data.Text.Encoding as T
+
+import           Text.HTML.TagSoup
 
 -- | Temporary instantiation of a 'Node' inside a markup source
 data TNode a = TNode a [Attribute a] [Content a]
@@ -57,26 +59,6 @@ data Node a
 	| Text a
 	deriving (Show, Eq, Ord)
 
--- instance (StringLike a) => Show (Node a) where
--- 	show = showNode 0
-
--- indentation :: Int -> String
--- indentation i =
--- 	replicate i '\t'
-
--- showNode :: (StringLike a) => Int -> Node a -> String
--- showNode i (Element n a c) =
--- 	indentation i ++ "<" ++ toString n ++ toAttrString a ++ ">\n"
--- 	++ intercalate "\n" (map (showNode (i + 1)) c)
--- 	++ "\n" ++ indentation i ++ "</" ++ toString n ++ ">"
--- 	where
--- 		toAttrString [] = ""
--- 		toAttrString xs =
--- 			" " ++ intercalate " " (map (\ (k, v) -> toString k ++ "=" ++ show (toString v)) xs)
-
--- showNode i (Text a) =
--- 	indentation i ++ toString a
-
 -- | Transform 'TNode' to 'Node'.
 transformTNode :: TNode a -> Node a
 transformTNode (TNode n a c) = Element n a (map transformContent c)
@@ -87,14 +69,15 @@ transformContent (ContentNode n) = transformTNode n
 transformContent (ContentText t) = Text t
 
 -- | Parse a given markup input and transform it into a list of 'Node's.
-parseMarkup :: (StringLike a) => a -> [Node a]
-parseMarkup source =
+collectNodes :: T.Text -> [Node T.Text]
+collectNodes source =
 	map transformTNode (traverseTags (parseTags source) [])
 
 -- | Parse a give markup input that contains only a single root 'Node'.
-parseMarkup_ :: (StringLike a) => a -> Maybe (Node a)
-parseMarkup_ source =
-	case parseMarkup source of
+parseMarkup_ :: B.ByteString -> Maybe (Node T.Text)
+parseMarkup_ input = do
+	source <- either (const Nothing) Just (T.decodeUtf8' input)
+	case collectNodes source of
 		[]  -> Nothing
 		[x] -> Just x
-		xs  -> Just (Element empty [] xs)
+		xs  -> Just (Element T.empty [] xs)

@@ -13,17 +13,17 @@ import qualified Data.Text.Encoding as T
 import           Text.HTML.TagSoup
 
 -- | Temporary instantiation of a 'Node' inside a markup source
-data TNode a = TNode a [Attribute a] [Content a]
+data TNode = TNode T.Text [Attribute T.Text] [Content]
 	deriving (Show, Eq, Ord)
 
 -- | Content of a 'TNode'
-data Content a
-	= ContentNode (TNode a)
-	| ContentText a
+data Content
+	= ContentNode TNode
+	| ContentText T.Text
 	deriving (Show, Eq, Ord)
 
 -- | Traverse the 'Tag's in order to produce a 'TNode' tree.
-traverseTags :: [Tag a] -> [TNode a] -> [TNode a]
+traverseTags :: [Tag T.Text] -> [TNode] -> [TNode]
 traverseTags [] stack =
 	case stack of
 		[] -> []
@@ -54,27 +54,27 @@ traverseTags (tag : restTags) stack =
 		_ -> traverseTags restTags stack
 
 -- | Node inside the markup
-data Node a
-	= Element a [Attribute a] [Node a]
-	| Text a
+data Node
+	= Element T.Text [Attribute T.Text] [Node]
+	| Text T.Text
 	deriving (Show, Eq, Ord)
 
 -- | Transform 'TNode' to 'Node'.
-transformTNode :: TNode a -> Node a
+transformTNode :: TNode -> Node
 transformTNode (TNode n a c) = Element n a (map transformContent c)
 
 -- | Transform 'Content' to 'Node'.
-transformContent :: Content a -> Node a
+transformContent :: Content -> Node
 transformContent (ContentNode n) = transformTNode n
 transformContent (ContentText t) = Text t
 
 -- | Parse a given markup input and transform it into a list of 'Node's.
-collectNodes :: T.Text -> [Node T.Text]
+collectNodes :: T.Text -> [Node]
 collectNodes source =
 	map transformTNode (traverseTags (parseTags source) [])
 
 -- | Parse a give markup input that contains only a single root 'Node'.
-parseMarkup_ :: B.ByteString -> Maybe (Node T.Text)
+parseMarkup_ :: B.ByteString -> Maybe Node
 parseMarkup_ input = do
 	source <- either (const Nothing) Just (T.decodeUtf8' input)
 	case collectNodes source of

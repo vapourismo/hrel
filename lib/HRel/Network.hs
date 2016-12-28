@@ -3,7 +3,8 @@
 module HRel.Network (
 	download,
 	download_,
-	downloadMarkup
+	downloadMarkup,
+	downloadMarkup_
 ) where
 
 import           Control.Monad
@@ -13,8 +14,6 @@ import           Control.Monad.Reader
 
 import qualified Data.ByteString       as B
 import qualified Data.ByteString.Char8 as C8
-
-import qualified Data.Text as T
 
 import qualified Network.HTTP.Types.Status as H
 import qualified Network.HTTP.Types.Header as H
@@ -95,10 +94,15 @@ download_ mgr url =
 		lift (consumeBody (H.responseBody res))
 
 -- | Download something and parse its markup using a given 'NodeFilter'.
-downloadMarkup :: H.Manager -> String -> NodeFilterT T.Text IO a -> IO (Maybe a)
+downloadMarkup :: H.Manager -> String -> NodeFilter a -> IO (Maybe a)
 downloadMarkup mgr url nf =
-	runMaybeT $ do
+	runMaybeT (downloadMarkup_ mgr url nf)
+
+-- |
+downloadMarkup_ :: H.Manager -> String -> NodeFilter a -> MaybeT IO a
+downloadMarkup_ mgr url nf =
+	do
 		cnt <- download_ mgr url
-		case parseMarkup_ cnt of
-			Just node -> runNodeFilterT_ node nf
-			Nothing   -> mzero
+		MaybeT $ pure $ do
+			node <- parseMarkup_ cnt
+			runNodeFilter node nf

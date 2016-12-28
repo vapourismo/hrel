@@ -1,9 +1,7 @@
 module HRel.NodeFilter (
-	NodeFilterT,
-	runNodeFilterT,
-	runNodeFilterT_,
 	NodeFilter,
 	runNodeFilter,
+	runNodeFilter_,
 	forNodes,
 	forNode,
 	forElements,
@@ -19,62 +17,49 @@ module HRel.NodeFilter (
 	($//)
 ) where
 
-import Control.Applicative
-import Control.Monad.Reader
-import Control.Monad.Trans.Maybe
+import           Control.Applicative
+import           Control.Monad.Reader
+import           Control.Monad.Trans.Maybe
 
-import Data.Functor.Identity
-import Data.List
-import Data.Maybe
+import           Data.List
+import           Data.Maybe
+import qualified Data.Text as T
 
-import HRel.Markup
-
--- | Node filter
-type NodeFilterT t m = ReaderT (Node t) (MaybeT m)
+import           HRel.Markup
 
 -- | Node filter which works inside the 'Identity' monad.
-type NodeFilter t = NodeFilterT t Identity
+type NodeFilter = ReaderT Node Maybe
 
 -- | Execute the node filter on a given 'Node'.
-runNodeFilterT :: Node t -> NodeFilterT t m a -> m (Maybe a)
-runNodeFilterT n f =
-	runMaybeT (runReaderT f n)
-
--- | A version 'runNodeFilterT' which does not strip 'MaybeT'
-runNodeFilterT_ :: Node t -> NodeFilterT t m a -> MaybeT m a
-runNodeFilterT_ n f =
+runNodeFilter :: Node -> NodeFilter a -> Maybe a
+runNodeFilter n f =
 	runReaderT f n
 
 -- | Execute the node filter on a given 'Node'.
-runNodeFilter :: Node t -> NodeFilter t a -> Maybe a
-runNodeFilter n f =
-	runIdentity (runNodeFilterT n f)
-
-collectSuccesful :: (Monad m) => [MaybeT m a] -> MaybeT m [a]
-collectSuccesful nfs =
-	lift (catMaybes <$> sequence (map runMaybeT nfs))
+runNodeFilter_ :: (Applicative m) => Node -> NodeFilter a -> MaybeT m a
+runNodeFilter_ n f =
+	MaybeT (pure (runNodeFilter n f))
 
 -- | Do something for 'Node's which match the criteria.
-forNodes :: (Monad m) => (Node t -> Bool) -> NodeFilterT t m a -> NodeFilterT t m [a]
+forNodes :: (Node -> Bool) -> NodeFilter a -> NodeFilter [a]
 forNodes cond (ReaderT fun) = do
 	ReaderT $ \ node ->
 		case node of
-			Element _ _ contents -> collectSuccesful (map fun (filter cond contents))
+			Element _ _ contents -> pure (catMaybes (map fun (filter cond contents)))
 			_                    -> mzero
 
 -- | Do something for a first 'Node' that matches the criteria.
-forNode :: (Monad m) => (Node t -> Bool) -> NodeFilterT t m a -> NodeFilterT t m a
+forNode :: (Node -> Bool) -> NodeFilter a -> NodeFilter a
 forNode cond (ReaderT fun) = do
 	ReaderT $ \ node ->
 		case node of
-			Element _ _ contents -> MaybeT (pure (find cond contents)) >>= fun
+			Element _ _ contents -> find cond contents >>= fun
 			_                    -> mzero
 
 -- | Do something for all 'Node's which are elements and match the criteria.
-forElements :: (Monad m)
-            => (t -> [Attribute t] -> [Node t] -> Bool)
-            -> NodeFilterT t m a
-            -> NodeFilterT t m [a]
+forElements :: (T.Text -> [Attribute T.Text] -> [Node] -> Bool)
+            -> NodeFilter a
+            -> NodeFilter [a]
 forElements cond =
 	forNodes $ \ node ->
 		case node of
@@ -82,10 +67,9 @@ forElements cond =
 			_             -> False
 
 -- | Do something for the first 'Node' which is an element and matches the criteria.
-forElement :: (Monad m)
-           => (t -> [Attribute t] -> [Node t] -> Bool)
-           -> NodeFilterT t m a
-           -> NodeFilterT t m a
+forElement :: (T.Text -> [Attribute T.Text] -> [Node] -> Bool)
+           -> NodeFilter a
+           -> NodeFilter a
 forElement cond =
 	forNode $ \ node ->
 		case node of
@@ -93,7 +77,7 @@ forElement cond =
 			_             -> False
 
 -- | Do something for each text node.
-forTexts :: (Monad m) => NodeFilterT t m a -> NodeFilterT t m [a]
+forTexts :: NodeFilter a -> NodeFilter [a]
 forTexts =
 	forNodes $ \ node ->
 		case node of
@@ -101,17 +85,17 @@ forTexts =
 			_      -> False
 
 -- | Do something for each 'Node' which is an element and matches the given tag name.
-forTags :: (Monad m, Eq t) => t -> NodeFilterT t m a -> NodeFilterT t m [a]
+forTags :: T.Text -> NodeFilter a -> NodeFilter [a]
 forTags tag =
 	forElements (\ name _ _ -> tag == name)
 
 -- | Do something for the first 'Node' which is an element and matches the given tag name.
-forTag :: (Monad m, Eq t) => t -> NodeFilterT t m a -> NodeFilterT t m a
+forTag :: T.Text -> NodeFilter a -> NodeFilter a
 forTag tag =
 	forElement (\ name _ _ -> tag == name)
 
 -- |
-deepFind :: (Node t -> Bool) -> [Node t] -> Maybe (Node t)
+deepFind :: (Node -> Bool) -> [Node] -> Maybe (Node)
 deepFind cond nodes =
 	case find cond nodes of
 		Nothing | length nested > 0 -> deepFind cond nested
@@ -125,18 +109,18 @@ deepFind cond nodes =
 
 
 -- | Do something for a relative tag (need not be in the current node).
-forRelativeTag :: (Monad m, Eq t) => t -> NodeFilterT t m a -> NodeFilterT t m a
+forRelativeTag :: T.Text -> NodeFilter a -> NodeFilter a
 forRelativeTag name (ReaderT fun) =
 	ReaderT $ \ node ->
 		case node of
-			Element _ _ contents -> MaybeT (pure (deepFind cond contents)) >>= fun
+			Element _ _ contents -> deepFind cond contents >>= fun
 			_                    -> mzero
 	where
 		cond (Element tag _ _ ) = tag == name
 		cond _                  = False
 
 -- |
-textContent :: (Monad m) => NodeFilterT t m t
+textContent :: NodeFilter T.Text
 textContent =
 	ReaderT $ \ node ->
 		case node of
@@ -144,7 +128,7 @@ textContent =
 			_            -> mzero
 
 -- | Extract the attributes from the current 'Node'.
-attributes :: (Monad m) => NodeFilterT t m [Attribute t]
+attributes :: NodeFilter [Attribute T.Text]
 attributes =
 	ReaderT $ \ node ->
 		case node of
@@ -152,23 +136,23 @@ attributes =
 			_                 -> mzero
 
 -- | Extract the value of a specific attribute from the current 'Node'.
-attribute :: (Monad m, Eq t) => t -> NodeFilterT t m t
+attribute :: T.Text -> NodeFilter T.Text
 attribute name = do
 	attrs <- attributes
-	lift (MaybeT (pure (lookup name attrs)))
+	lift (lookup name attrs)
 
 -- | Extract the text from the current 'Node'.
-text :: (Monad m, Monoid t) => NodeFilterT t m t
+text :: NodeFilter T.Text
 text = textContent <|> mconcat <$> forNodes (const True) text
 
 infixr 0 $/
 
 -- | Alias for 'forTag'.
-($/) :: (Monad m, Eq t) => t -> NodeFilterT t m a -> NodeFilterT t m a
+($/) :: T.Text -> NodeFilter a -> NodeFilter a
 ($/) = forTag
 
 infixr 0 $//
 
 -- | Alis for 'forTags'.
-($//) :: (Monad m, Eq t) => t -> NodeFilterT t m a -> NodeFilterT t m [a]
+($//) :: T.Text -> NodeFilter a -> NodeFilter [a]
 ($//) = forTags

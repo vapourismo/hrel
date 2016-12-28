@@ -6,7 +6,7 @@ cabal-version:       >= 1.10
 library
   ghc-options:         -Wall -fno-warn-tabs -fno-warn-name-shadowing -Wno-unused-do-bind
   default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5, pg-store, bytestring, text, tagsoup, mtl, transformers,
+  build-depends:       base >= 4.7 && < 5, pg-store, bytestring, text, mtl, transformers,
                        http-client, http-client-tls, http-types, attoparsec
   hs-source-dirs:      lib
   exposed-modules:     HRel.Torrents

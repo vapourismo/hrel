@@ -1,8 +1,3 @@
-{-# LANGUAGE OverloadedStrings,
-             MultiParamTypeClasses,
-             FlexibleInstances,
-             FunctionalDependencies #-}
-
 module HRel.Parser (
 	Parser (..),
 	inspect,

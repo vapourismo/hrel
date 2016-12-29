@@ -39,8 +39,8 @@ satisfySome :: (Char -> Bool) -> P T.Text
 satisfySome cond =
 	inspect $ \ src ->
 		case T.span cond src of
-			("", _) -> Nothing
-			x       -> Just x
+			(x, _) | T.null x -> Nothing
+			x                 -> Just x
 
 satisfyMany :: (Char -> Bool) -> P T.Text
 satisfyMany cond =
@@ -58,8 +58,10 @@ stringUntil term cond =
 			case T.break breaker input of
 				(body, rest) | T.isPrefixOf (T.take 1 term) rest && not (T.isPrefixOf term rest) ->
 					case action (T.tail rest) of
-						Just (body', rest') -> Just (T.concat [body, T.take 1 term, body'], rest')
-						Nothing             -> Just (T.snoc body (T.head term), T.tail rest)
+						Just (body', rest') ->
+							Just (T.concat [body, T.take 1 term, body'], rest')
+						Nothing ->
+							Just (T.snoc body (T.head term), T.tail rest)
 
 				("", _) -> Nothing
 

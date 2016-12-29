@@ -57,7 +57,7 @@ forNode cond (ReaderT fun) = do
 			_                    -> mzero
 
 -- | Do something for all 'Node's which are elements and match the criteria.
-forElements :: (T.Text -> [Attribute T.Text] -> [Node] -> Bool)
+forElements :: (T.Text -> [(T.Text, T.Text)] -> [Node] -> Bool)
             -> NodeFilter a
             -> NodeFilter [a]
 forElements cond =
@@ -67,7 +67,7 @@ forElements cond =
 			_             -> False
 
 -- | Do something for the first 'Node' which is an element and matches the criteria.
-forElement :: (T.Text -> [Attribute T.Text] -> [Node] -> Bool)
+forElement :: (T.Text -> [(T.Text, T.Text)] -> [Node] -> Bool)
            -> NodeFilter a
            -> NodeFilter a
 forElement cond =
@@ -128,7 +128,7 @@ textContent =
 			_            -> mzero
 
 -- | Extract the attributes from the current 'Node'.
-attributes :: NodeFilter [Attribute T.Text]
+attributes :: NodeFilter [(T.Text, T.Text)]
 attributes =
 	ReaderT $ \ node ->
 		case node of

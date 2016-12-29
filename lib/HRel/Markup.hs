@@ -1,6 +1,5 @@
 module HRel.Markup (
 	Node (..),
-	Attribute,
 
 	parseMarkup_
 ) where
@@ -13,10 +12,8 @@ import qualified Data.Text.Encoding as T
 import           HRel.Parser
 import qualified HRel.Parser.XML as X
 
-type Attribute x = X.Attribute
-
 -- | Temporary instantiation of a 'Node' inside a markup source
-data TNode = TNode T.Text [Attribute T.Text] [Content]
+data TNode = TNode T.Text [X.Attribute] [Content]
 	deriving (Show, Eq, Ord)
 
 -- | Content of a 'TNode'
@@ -61,7 +58,7 @@ traverseTags (tag : restTags) stack =
 
 -- | Node inside the markup
 data Node
-	= Element T.Text [Attribute T.Text] [Node]
+	= Element T.Text [X.Attribute] [Node]
 	| Text T.Text
 	deriving (Show, Eq, Ord)
 

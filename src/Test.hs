@@ -1,10 +1,17 @@
--- {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, QuasiQuotes, DeriveGeneric #-}
 
--- import qualified Data.Text as T
--- import qualified Data.Text.IO as T
+import           GHC.Generics
 
--- import           HRel.Parser
--- import           HRel.Parser.XML
+import           Control.Monad
+
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+import qualified Database.PostgreSQL.LibPQ as P
+import           Database.PostgreSQL.Store
+
+import           HRel.Markup
+import           HRel.NodeFilter
 
 -- leftOverToError :: T.Text -> T.Text -> (Int, T.Text)
 -- leftOverToError input leftOver =
@@ -26,33 +33,48 @@
 -- 	T.putStr (T.replicate cur " ")
 -- 	T.putStrLn "^"
 
--- main :: IO ()
--- main = do
--- 	input <- T.readFile "/data/downloads/tpb.xml"
--- 	case runParser xml input of
--- 		(Nothing, rest) -> do
--- 			putStrLn "Failed"
--- 			displayErrorLine input rest
+dumpFilter :: NodeFilter [(T.Text, T.Text)]
+dumpFilter =
+	"torrent" $//
+		(,) <$> ("title" $/ text)
+		    <*> ("magnet" $/ text)
 
--- 		(Just x, "") ->
--- 			print x
+-- showNode :: Int -> Node -> String
+-- showNode n (Element name _ contents) =
+-- 	replicate n '\t'
+-- 	++ T.unpack name
+-- 	++ "\n" ++ intercalate "\n" (map (showNode (n + 1)) contents)
+-- showNode n (Text _) = replicate n '\t' ++ "#"
 
--- 		(_, rest) -> do
--- 			putStrLn "Incomplete"
--- 			displayErrorLine input rest
+newtype Torrent = Torrent (T.Text, T.Text)
+	deriving (Generic)
 
-{-# LANGUAGE OverloadedStrings #-}
+instance Entity Torrent
 
-import           Control.Monad.Reader
+anyColumnType :: ColumnType
+anyColumnType =
+	ColumnType "blob" True Nothing
 
-import           HRel.Sources
-import           HRel.Network
+instance TableEntity Torrent where
+	describeTableType _ =
+		Table "tpb_dump"
+		      [Column "title" anyColumnType,
+		       Column "magnet" anyColumnType]
 
-import           Network.HTTP.Client
-import           Network.HTTP.Client.TLS
--- |
+chunkify :: Int -> [a] -> [[a]]
+chunkify _ [] = []
+chunkify n xs = take n xs : chunkify n (drop n xs)
+
 main :: IO ()
 main = do
-	mgr <- newManager tlsManagerSettings
-	res <- downloadMarkup mgr "https://thepiratebay.org/rss/top100/200" pirateBaySource
-	print res
+	db <- P.connectdb "user=hrel dbname=hrel"
+	input <- T.readFile "/data/downloads/tpb.xml"
+	case (parseTextMarkup input >>= \ node -> runNodeFilter node dumpFilter) of
+		Nothing ->
+			putStrLn "Failed"
+
+		Just torrents ->
+			-- forM_ torrents print
+			forM_ (chunkify 100 torrents) $ \ ts -> do
+				r <- runErrand db (insertMany (map Torrent ts))
+				either print print r

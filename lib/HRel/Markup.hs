@@ -1,8 +1,11 @@
 module HRel.Markup (
 	Node (..),
 
+	parseMarkup,
 	parseMarkup_
 ) where
+
+import           Control.Monad.Trans.Maybe
 
 import qualified Data.ByteString as B
 
@@ -82,11 +85,16 @@ collectNodes source = do
 	(\ contents -> map transformTNode (traverseTags contents [])) <$> parseTags source
 
 -- | Parse a give markup input that contains only a single root 'Node'.
-parseMarkup_ :: B.ByteString -> Maybe Node
-parseMarkup_ input = do
+parseMarkup :: B.ByteString -> Maybe Node
+parseMarkup input = do
 	source <- either (const Nothing) Just (T.decodeUtf8' input)
 	nodes <- collectNodes source
 	case nodes of
 		[]  -> Nothing
 		[x] -> Just x
 		xs  -> Just (Element T.empty [] xs)
+
+-- |
+parseMarkup_ :: (Applicative m) => B.ByteString -> MaybeT m Node
+parseMarkup_ =
+	MaybeT . pure . parseMarkup

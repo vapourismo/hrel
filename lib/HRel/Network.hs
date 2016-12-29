@@ -100,9 +100,7 @@ downloadMarkup mgr url nf =
 
 -- |
 downloadMarkup_ :: H.Manager -> String -> NodeFilter a -> MaybeT IO a
-downloadMarkup_ mgr url nf =
-	do
-		cnt <- download_ mgr url
-		MaybeT $ pure $ do
-			node <- parseMarkup_ cnt
-			runNodeFilter node nf
+downloadMarkup_ mgr url nf = do
+	cnt <- download_ mgr url
+	node <- parseMarkup_ cnt
+	runNodeFilter_ node nf

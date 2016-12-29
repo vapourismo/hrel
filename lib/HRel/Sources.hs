@@ -18,7 +18,7 @@ import           Network.HTTP.Client
 -- | Pirate Bay source
 pirateBaySource :: NodeFilter [Torrent]
 pirateBaySource =
-	forRelativeTag "rss" $ "channel" $/ "item" $//
+	"channel" $/ "item" $//
 		buildTorrent <$> ("title" $/ text)
 		             <*> ("torrent" $/ "magnetURI" $/ text)
 	where

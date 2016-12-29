@@ -5,7 +5,9 @@ module HRel.Parser (
 	mustFail,
 	validate,
 	excludeFrom,
-	sepBy
+	sepBy,
+	sepBy1,
+	sepBy2
 ) where
 
 import           Control.Monad
@@ -98,3 +100,11 @@ excludeFrom a b = do
 sepBy :: Parser s a -> Parser s b -> Parser s [a]
 sepBy elem sep =
 	((:) <$> elem <*> many (sep >> elem)) <|> pure []
+
+sepBy1 :: Parser s a -> Parser s b -> Parser s [a]
+sepBy1 elem sep =
+	(:) <$> elem <*> many (sep >> elem)
+
+sepBy2 :: Parser s a -> Parser s b -> Parser s [a]
+sepBy2 elem sep =
+	(:) <$> elem <*> some (sep >> elem)

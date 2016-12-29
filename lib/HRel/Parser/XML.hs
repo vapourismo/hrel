@@ -46,6 +46,10 @@ satisfyMany :: (Char -> Bool) -> P T.Text
 satisfyMany cond =
 	inspect (Just . T.span cond)
 
+discardMany :: (Char -> Bool) -> P ()
+discardMany cond =
+	inspect (\ src -> Just ((), T.dropWhile cond src))
+
 stringUntil :: T.Text -> (Char -> Bool) -> T.Text -> Maybe (T.Text, T.Text)
 stringUntil term cond =
 	action
@@ -73,12 +77,12 @@ isXMLChar c =
 	|| (0x10000 <= n && n <= 0x10FFFF)
 	where n = ord c
 
-xmlS :: P ()
-xmlS =
-	() <$ satisfyMany (\ c -> c == ' ' || c == '\t' || c == '\n' || c == '\r')
+space :: P ()
+space =
+	discardMany (\ c -> c == ' ' || c == '\t' || c == '\n' || c == '\r')
 
-xmlCharEntity :: P T.Text
-xmlCharEntity = do
+charEntity :: P T.Text
+charEntity = do
 	exact '&'
 	msum [string "#x" >> hexChar, string "#" >> decChar, entName] <* exact ';'
 	where
@@ -106,19 +110,19 @@ xmlCharEntity = do
 				_      -> T.cons '&' (T.snoc n ';')
 
 		entName =
-			fromName <$> xmlName
+			fromName <$> name
 
 clearEntities :: T.Text -> T.Text
 clearEntities input =
 	extractResult (runParser parser input)
 	where
-		parser = many (satisfySome (/= '&') <|> xmlCharEntity <|> (T.singleton <$> exact '&'))
+		parser = many (satisfySome (/= '&') <|> charEntity <|> (T.singleton <$> exact '&'))
 
 		extractResult (Just body, rest) = T.concat (body ++ [rest])
 		extractResult _                 = input
 
-xmlName :: P T.Text
-xmlName =
+name :: P T.Text
+name =
 	T.cons <$> satisfy startChar <*> satisfyMany bodyChar
 	where
 		startChar c = let n = ord c in
@@ -148,63 +152,196 @@ xmlName =
 			|| (0x0300 <= n && n <= 0x036F)
 			|| (0x203F <= n && n <= 0x2040)
 
-xmlCharData :: P T.Text
-xmlCharData =
+charData :: P T.Text
+charData =
 	clearEntities <$> satisfySome (/= '<')
 
-xmlComment :: P T.Text
-xmlComment = do
+comment :: P T.Text
+comment = do
 	string "<!--"
 	inspect (stringUntil "-->" isXMLChar) <* string "-->"
 
-xmlCData :: P T.Text
-xmlCData = do
+cData :: P T.Text
+cData = do
 	string "<![CDATA["
 	inspect (stringUntil "]]>" isXMLChar) <* string "]]>"
 
-xmlOpenTag :: P (T.Text, [Attribute])
-xmlOpenTag = do
+openTag :: P (T.Text, [Attribute])
+openTag = do
 	exact '<'
-	(,) <$> xmlName
-	    <*> many (xmlS >> xmlAttribute)
-	    <*  xmlS
+	(,) <$> name
+	    <*> many (space >> attribute)
+	    <*  space
 	    <*  exact '>'
 
-xmlEmptyTag :: P (T.Text, [Attribute])
-xmlEmptyTag = do
+emptyTag :: P (T.Text, [Attribute])
+emptyTag = do
 	exact '<'
-	(,) <$> xmlName
-	    <*> many (xmlS >> xmlAttribute)
-	    <*  xmlS
+	(,) <$> name
+	    <*> many (space >> attribute)
+	    <*  space
 	    <*  string "/>"
 
-xmlCloseTag :: P T.Text
-xmlCloseTag = do
+closeTag :: P T.Text
+closeTag = do
 	string "</"
-	xmlName <* xmlS <* exact '>'
+	name <* space <* exact '>'
 
-xmlAttValue :: P T.Text
-xmlAttValue = do
+attributeValue :: P T.Text
+attributeValue = do
 	(exact '\'' *> satisfyMany (/= '\'') <* exact '\'')
 	<|> (exact '"' *> satisfyMany (/= '"') <* exact '"')
 
 type Attribute = (T.Text, T.Text)
 
-xmlAttribute :: P Attribute
-xmlAttribute =
-	(,) <$> xmlName
-	    <*  xmlS
+attribute :: P Attribute
+attribute =
+	(,) <$> name
+	    <*  space
 	    <*  exact '='
-	    <*  xmlS
-	    <*> (clearEntities <$> xmlAttValue)
+	    <*  space
+	    <*> (clearEntities <$> attributeValue)
 
-xmlInstruction :: P (T.Text, T.Text)
-xmlInstruction = do
+instruction :: P (T.Text, T.Text)
+instruction = do
 	string "<?"
-	(,) <$> xmlName
-	    <*  xmlS
+	(,) <$> name
+	    <*  space
 	    <*> (T.strip <$> inspect (stringUntil "?>" isXMLChar))
 	    <*  string "?>"
+
+systemLiteral :: P ()
+systemLiteral =
+	(exact '\'' *> discardMany (/= '\'') <* exact '\'')
+	<|> (exact '"' *> discardMany (/= '"') <* exact '"')
+
+publicIDLiteral :: P ()
+publicIDLiteral =
+	(exact '\'' *> discardMany (\ c -> c /= '\'' && isPublicIDChar c) <* exact '\'')
+	<|> (exact '"' *> discardMany (isPublicIDChar) <* exact '"')
+	where
+		isPublicIDChar c =
+			c == ' '
+			|| c == '\r'
+			|| c == '\n'
+			|| ('a' <= c && c <= 'z')
+			|| ('A' <= c && c <= 'Z')
+			|| ('0' <= c && c <= '9')
+			|| elem c ("-'()+,./:=?;!*#@$_%" :: String)
+
+externalID :: P ()
+externalID = do
+	(string "SYSTEM" >> space >> systemLiteral)
+	<|> (string "PUBLIC" >> space >> publicLiteral)
+	where
+		publicLiteral = do
+			publicIDLiteral
+			space
+			systemLiteral
+
+declSep :: P ()
+declSep = space <|> (exact '%' *> void name <* exact ';')
+
+elementDecl :: P ()
+elementDecl = do
+	string "<!ELEMENT"
+	space
+	name
+	contentSpec
+	space
+	() <$ exact '>'
+	where
+		contentSpec =
+			msum [() <$ string "EMPTY",
+			      () <$ string "ANY",
+			      mixedOne <|> mixedTwo,
+			      children]
+
+		mixedOne = do
+			exact '('
+			space
+			string "#PCDATA"
+			many (space >> exact '|' >> space >> name)
+			space
+			() <$ string ")*"
+
+		mixedTwo = do
+			exact '('
+			space
+			string "#PCDATA"
+			space
+			() <$ exact ')'
+
+		children = do
+			choice <|> seq
+			() <$ optional (satisfy (`elem` ("?*+" :: String)))
+
+		choice = do
+			exact '('
+			sepBy2 (space >> cp) (space >> exact '|')
+			space
+			() <$ exact ')'
+
+		seq = do
+			exact '('
+			sepBy1 (space >> cp) (space >> exact ',')
+			space
+			() <$ exact ')'
+
+		cp = do
+			void name <|> choice <|> seq
+			() <$ optional (satisfy (`elem` ("?*+" :: String)))
+
+-- attributeListDecl :: P ()
+-- attributeListDecl = do
+-- 	string "<!ATTLIST"
+-- 	space
+-- 	name
+-- 	many attDef
+-- 	space
+-- 	() <$ exact '>'
+-- 	where
+-- 		attDef = do
+-- 			space
+-- 			name
+-- 			space
+-- 			attType
+-- 			space
+-- 			defaultDecl
+
+-- 		attType = undefined
+
+-- 		defaultDecl = undefined
+
+-- entityDecl :: P ()
+-- entityDecl = undefined
+
+-- notationDecl :: P ()
+-- notationDecl = undefined
+
+markupDecl :: P ()
+markupDecl =
+	msum [elementDecl,
+	      -- attributeListDecl,
+	      -- entityDecl,
+	      -- notationDecl,
+	      void instruction,
+	      void comment]
+
+intSubSet :: P ()
+intSubSet =
+	() <$ many (markupDecl <|> declSep)
+
+docType :: P ()
+docType = do
+	string "<!DOCTYPE"
+	space
+	name
+	optional (space >> externalID)
+	space
+	optional (exact '[' *> intSubSet <* exact ']')
+	space
+	() <$ exact '>'
 
 data Content
 	= Text T.Text
@@ -213,16 +350,18 @@ data Content
 	| Close T.Text
 	| Empty T.Text [Attribute]
 	| Instruction T.Text T.Text
+	| DocType
 	deriving (Show, Eq, Ord)
 
-xmlContent :: P [Content]
-xmlContent =
-	many (msum [Text <$> (xmlCharData <|> xmlCData),
-	            uncurry Open <$> xmlOpenTag,
-	            uncurry Empty <$> xmlEmptyTag,
-	            uncurry Instruction <$> xmlInstruction,
-	            Close <$> xmlCloseTag,
-	            Comment <$> xmlComment])
+contents :: P [Content]
+contents =
+	many (msum [Text <$> (charData <|> cData),
+	            uncurry Open <$> openTag,
+	            uncurry Empty <$> emptyTag,
+	            Close <$> closeTag,
+	            uncurry Instruction <$> instruction,
+	            DocType <$ docType,
+	            Comment <$> comment])
 
 endReached :: P ()
 endReached =
@@ -233,4 +372,4 @@ endReached =
 			Nothing
 
 xml :: P [Content]
-xml = xmlContent <* endReached
+xml = contents <* endReached

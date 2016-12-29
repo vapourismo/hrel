@@ -2,6 +2,7 @@
 
 module HRel.Sources (
 	pirateBaySource,
+	rarbgSource,
 
 	TorrentSource (..),
 	processTorrentSource

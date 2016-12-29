@@ -2,6 +2,7 @@ module HRel.Markup (
 	Node (..),
 
 	parseMarkup,
+	parseTextMarkup,
 	parseMarkup_
 ) where
 
@@ -39,13 +40,8 @@ traverseTags (tag : restTags) stack =
 		X.Open name attrs ->
 			traverseTags restTags (TNode name attrs [] : stack)
 
-		X.Close _ ->
-			case stack of
-				[] -> traverseTags restTags stack
-				[x] -> x : traverseTags restTags []
-				(node : TNode name attrs content : restNodes) ->
-					traverseTags restTags (TNode name attrs (content ++ [ContentNode node])
-					                       : restNodes)
+		X.Close name ->
+			mergeNodes restTags name stack
 
 		X.Text text ->
 			case stack of
@@ -55,9 +51,21 @@ traverseTags (tag : restTags) stack =
 					                       : restNodes)
 
 		X.Empty name attrs ->
-			traverseTags (X.Open name attrs : X.Close name : restTags) stack
+			traverseTags restTags (TNode name attrs [] : stack)
 
 		_ -> traverseTags restTags stack
+
+	where
+		mergeNodes tags _ [] =
+			traverseTags tags []
+		mergeNodes tags name s@[n1@(TNode nameN1 _ _)]
+			| name == nameN1 = n1 : traverseTags tags []
+			| otherwise      = traverseTags tags s
+		mergeNodes tags name (n1@(TNode nameN1 _ _) : TNode nameN2 attrsN2 contentN2 : sx)
+			| name == nameN1 =
+				traverseTags tags (TNode nameN2 attrsN2 (contentN2 ++ [ContentNode n1]) : sx)
+			| otherwise      =
+				mergeNodes tags name (TNode nameN2 attrsN2 (contentN2 ++ [ContentNode n1]) : sx)
 
 -- | Node inside the markup
 data Node
@@ -88,6 +96,15 @@ collectNodes source = do
 parseMarkup :: B.ByteString -> Maybe Node
 parseMarkup input = do
 	source <- either (const Nothing) Just (T.decodeUtf8' input)
+	nodes <- collectNodes source
+	case nodes of
+		[]  -> Nothing
+		[x] -> Just x
+		xs  -> Just (Element T.empty [] xs)
+
+-- |
+parseTextMarkup :: T.Text -> Maybe Node
+parseTextMarkup source = do
 	nodes <- collectNodes source
 	case nodes of
 		[]  -> Nothing

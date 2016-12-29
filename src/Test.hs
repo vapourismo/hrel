@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings, QuasiQuotes, DeriveGeneric #-}
 
-import           GHC.Generics
+-- import           GHC.Generics
 
 import           Control.Monad
 
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
-import qualified Database.PostgreSQL.LibPQ as P
-import           Database.PostgreSQL.Store
+-- import qualified Database.PostgreSQL.LibPQ as P
+-- import           Database.PostgreSQL.Store
 
 import           HRel.Markup
 import           HRel.NodeFilter
@@ -46,20 +46,20 @@ dumpFilter =
 -- 	++ "\n" ++ intercalate "\n" (map (showNode (n + 1)) contents)
 -- showNode n (Text _) = replicate n '\t' ++ "#"
 
-newtype Torrent = Torrent (T.Text, T.Text)
-	deriving (Generic)
+-- newtype Torrent = Torrent (T.Text, T.Text)
+-- 	deriving (Generic)
 
-instance Entity Torrent
+-- instance Entity Torrent
 
-anyColumnType :: ColumnType
-anyColumnType =
-	ColumnType "blob" True Nothing
+-- anyColumnType :: ColumnType
+-- anyColumnType =
+-- 	ColumnType "blob" True Nothing
 
-instance TableEntity Torrent where
-	describeTableType _ =
-		Table "tpb_dump"
-		      [Column "title" anyColumnType,
-		       Column "magnet" anyColumnType]
+-- instance TableEntity Torrent where
+-- 	describeTableType _ =
+-- 		Table "tpb_dump"
+-- 		      [Column "title" anyColumnType,
+-- 		       Column "magnet" anyColumnType]
 
 chunkify :: Int -> [a] -> [[a]]
 chunkify _ [] = []
@@ -67,14 +67,14 @@ chunkify n xs = take n xs : chunkify n (drop n xs)
 
 main :: IO ()
 main = do
-	db <- P.connectdb "user=hrel dbname=hrel"
-	input <- T.readFile "/data/downloads/tpb.xml"
+	-- db <- P.connectdb "user=hrel dbname=hrel"
+	input <- T.readFile "/data/downloads/tpb-head.xml"
 	case (parseTextMarkup input >>= \ node -> runNodeFilter node dumpFilter) of
 		Nothing ->
 			putStrLn "Failed"
 
 		Just torrents ->
-			-- forM_ torrents print
-			forM_ (chunkify 100 torrents) $ \ ts -> do
-				r <- runErrand db (insertMany (map Torrent ts))
-				either print print r
+			forM_ torrents print
+			-- forM_ (chunkify 100 torrents) $ \ ts -> do
+			-- 	r <- runErrand db (insertMany (map Torrent ts))
+			-- 	either print print r

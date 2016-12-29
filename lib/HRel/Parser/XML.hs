@@ -120,8 +120,8 @@ clearEntities input =
 	where
 		parser = many (satisfySome (/= '&') <|> charEntity <|> (T.singleton <$> exact '&'))
 
-		extractResult (Just body, rest) = T.concat (body ++ [rest])
-		extractResult _                 = input
+		extractResult (Right (body, rest)) = T.concat (body ++ [rest])
+		extractResult _                    = input
 
 name :: P T.Text
 name =

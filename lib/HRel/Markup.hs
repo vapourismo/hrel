@@ -85,7 +85,7 @@ transformContent (ContentText t) = Text t
 -- |
 parseTags :: T.Text -> Maybe [X.Content]
 parseTags input =
-	fst (runParser X.xml input)
+	either (const Nothing) (Just . fst) (runParser X.xml input)
 
 -- | Parse a given markup input and transform it into a list of 'Node's.
 collectNodes :: T.Text -> Maybe [Node]

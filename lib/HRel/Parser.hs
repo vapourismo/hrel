@@ -13,18 +13,19 @@ module HRel.Parser (
 import           Control.Monad
 import           Control.Applicative
 import           Data.Semigroup
+import           Data.Bifunctor
 
-newtype Parser s a = Parser { runParser :: s -> (Maybe a, s) }
+newtype Parser s a = Parser { runParser :: s -> Either s (a, s) }
 
 instance Functor (Parser s) where
 	fmap f (Parser producer) =
 		Parser $ \ src ->
-			let (x, src') = producer src in (f <$> x, src')
+			first f <$> producer src
 
 	{-# INLINE fmap #-}
 
 instance Applicative (Parser s) where
-	pure x = Parser (\ src -> (Just x, src))
+	pure x = Parser (\ src -> Right (x, src))
 
 	{-# INLINE pure #-}
 
@@ -34,21 +35,20 @@ instance Applicative (Parser s) where
 
 instance Monad (Parser s) where
 	Parser producer >>= action =
-		Parser $ \ src ->
-			case producer src of
-				(Just x, src') -> runParser (action x) src'
-				(_, src')      -> (Nothing, src')
+		Parser $ \ src -> do
+			(x, src') <- producer src
+			runParser (action x) src'
 
 	{-# INLINE (>>=) #-}
 
 instance Alternative (Parser s) where
-	empty = Parser ((,) Nothing)
+	empty = Parser Left
 
 	Parser lhs <|> Parser rhs =
 		Parser (\ src -> alt (lhs src) (rhs src))
 		where
-			alt lhs@(Just _, _) _ = lhs
-			alt _ rhs             = rhs
+			alt lhs@(Right _) _ = lhs
+			alt _ rhs           = rhs
 
 	{-# INLINE (<|>) #-}
 
@@ -63,16 +63,14 @@ instance Semigroup (Parser s a)
 inspect :: (s -> Maybe (a, s)) -> Parser s a
 inspect f =
 	Parser $ \ src ->
-		case f src of
-			Just (x, src') -> (Just x, src')
-			_              -> (Nothing, src)
+		maybe (Left src) Right (f src)
 
 save :: Parser s (Parser s ())
 save =
-	Parser (\ src -> (Just (restore src), src))
+	Parser (\ src -> Right (restore src, src))
 	where
 		restore src =
-			Parser (const (Just (), src))
+			Parser (const (Right ((), src)))
 
 mustFail :: Parser s a -> Parser s ()
 mustFail parser = do

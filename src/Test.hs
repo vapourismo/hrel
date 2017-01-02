@@ -13,6 +13,9 @@ import qualified Data.Text.IO as T
 import           HRel.Markup
 import           HRel.NodeFilter
 
+import           HRel.Parser
+import           HRel.Parser.XML
+
 -- leftOverToError :: T.Text -> T.Text -> (Int, T.Text)
 -- leftOverToError input leftOver =
 -- 	(T.length lineConsumed, T.append lineConsumed lineLeftOver)
@@ -61,20 +64,21 @@ dumpFilter =
 -- 		      [Column "title" anyColumnType,
 -- 		       Column "magnet" anyColumnType]
 
-chunkify :: Int -> [a] -> [[a]]
-chunkify _ [] = []
-chunkify n xs = take n xs : chunkify n (drop n xs)
+-- chunkify :: Int -> [a] -> [[a]]
+-- chunkify _ [] = []
+-- chunkify n xs = take n xs : chunkify n (drop n xs)
 
 main :: IO ()
 main = do
 	-- db <- P.connectdb "user=hrel dbname=hrel"
 	input <- T.readFile "/data/downloads/tpb-head.xml"
-	case (parseTextMarkup input >>= \ node -> runNodeFilter node dumpFilter) of
-		Nothing ->
-			putStrLn "Failed"
+	print (runParser xml input)
+	-- case (parseTextMarkup input >>= \ node -> runNodeFilter node dumpFilter) of
+	-- 	Nothing ->
+	-- 		putStrLn "Failed"
 
-		Just torrents ->
-			forM_ torrents print
-			-- forM_ (chunkify 100 torrents) $ \ ts -> do
-			-- 	r <- runErrand db (insertMany (map Torrent ts))
-			-- 	either print print r
+	-- 	Just torrents ->
+	-- 		forM_ torrents print
+	-- 		-- forM_ (chunkify 1000 torrents) $ \ ts -> do
+	-- 		-- 	r <- runErrand db (insertMany (map Torrent ts))
+	-- 		-- 	either print print r

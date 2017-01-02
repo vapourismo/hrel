@@ -160,17 +160,16 @@ charData =
 
 comment :: P T.Text
 comment = do
-	string "<!--"
+	string "!--"
 	inspect (stringUntil "-->" isXMLChar) <* string "-->"
 
 cData :: P T.Text
 cData = do
-	string "<![CDATA["
+	string "![CDATA["
 	inspect (stringUntil "]]>" isXMLChar) <* string "]]>"
 
 openTag :: P (T.Text, [Attribute])
 openTag = do
-	exact '<'
 	(,) <$> name
 	    <*> many (space >> attribute)
 	    <*  space
@@ -178,7 +177,6 @@ openTag = do
 
 emptyTag :: P (T.Text, [Attribute])
 emptyTag = do
-	exact '<'
 	(,) <$> name
 	    <*> many (space >> attribute)
 	    <*  space
@@ -186,7 +184,7 @@ emptyTag = do
 
 closeTag :: P T.Text
 closeTag = do
-	string "</"
+	string "/"
 	name <* space <* exact '>'
 
 attributeValue :: P T.Text
@@ -206,7 +204,7 @@ attribute =
 
 instruction :: P (T.Text, T.Text)
 instruction = do
-	string "<?"
+	string "?"
 	(,) <$> name
 	    <*  space
 	    <*> (T.strip <$> inspect (stringUntil "?>" isXMLChar))
@@ -336,7 +334,7 @@ intSubSet =
 
 docType :: P ()
 docType = do
-	string "<!DOCTYPE"
+	string "!DOCTYPE"
 	space
 	name
 	optional (space >> externalID)
@@ -357,13 +355,16 @@ data Content
 
 contents :: P [Content]
 contents =
-	many (msum [Text <$> (charData <|> cData),
-	            uncurry Open <$> openTag,
-	            uncurry Empty <$> emptyTag,
-	            Close <$> closeTag,
-	            uncurry Instruction <$> instruction,
-	            DocType <$ docType,
-	            Comment <$> comment])
+	many ((exact '<' >> angleOpened) <|> (Text <$> charData))
+	where
+		angleOpened =
+			msum [uncurry Open <$> openTag,
+			      Close <$> closeTag,
+			      uncurry Empty <$> emptyTag,
+			      uncurry Instruction <$> instruction,
+			      Text <$> cData,
+			      DocType <$ docType,
+			      Comment <$> comment]
 
 endReached :: P ()
 endReached =

@@ -10,7 +10,8 @@ class Root extends React.Component {
 		super(props);
 
 		this.state = {
-			results: []
+			results: [],
+			searching: false
 		};
 
 		this.submitSeach = this.submitSeach.bind(this);
@@ -29,12 +30,14 @@ class Root extends React.Component {
 		// 		}
 		// 	});
 
+		this.setState({results: [], searching: true});
+
 		SuperAgent.get("/api/search")
 			.query({q: query})
 			.set("Accept", "application/json")
 			.end((err, res) => {
 				if (!err && res.statusCode == 200 && res.body instanceof Array) {
-					this.setState({results: res.body});
+					this.setState({results: res.body, searching: false});
 				} else {
 					console.error(err, res);
 				}
@@ -69,6 +72,18 @@ class Root extends React.Component {
 		);
 	}
 
+	renderResults() {
+		if (!this.state.searching) {
+			return (
+				this.state.results.length > 0
+					? this.state.results.map(this.renderResult)
+					: <div className="empty">Empty result set</div>
+			);
+		} else {
+			return <div className="empty">Searching ...</div>;
+		}
+	}
+
 	render() {
 		return (
 			<div className="content">
@@ -79,8 +94,7 @@ class Root extends React.Component {
 					</div>
 				</form>
 				<div className="results">
-					{this.state.results.length > 0 ? this.state.results.map(this.renderResult)
-						                           : <div className="empty">Empty result set</div>}
+					{this.renderResults()}
 				</div>
 			</div>
 		);

@@ -355,9 +355,10 @@ data Content
 
 contents :: P [Content]
 contents =
-	many ((exact '<' >> angleOpened) <|> (Text <$> charData))
+	many (angleOpened <|> (Text <$> charData))
 	where
-		angleOpened =
+		angleOpened = do
+			exact '<'
 			msum [uncurry Open <$> openTag,
 			      Close <$> closeTag,
 			      uncurry Empty <$> emptyTag,

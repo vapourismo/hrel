@@ -17,10 +17,21 @@ class Root extends React.Component {
 	}
 
 	performSearch(query) {
-		SuperAgent.post("/api/search")
+		// SuperAgent.post("/api/search")
+		// 	.set("Accept", "application/json")
+		// 	.set("Content-Type", "text/plain")
+		// 	.send(query)
+		// 	.end((err, res) => {
+		// 		if (!err && res.statusCode == 200 && res.body instanceof Array) {
+		// 			this.setState({results: res.body});
+		// 		} else {
+		// 			console.error(err, res);
+		// 		}
+		// 	});
+
+		SuperAgent.get("/api/search")
+			.query({q: query})
 			.set("Accept", "application/json")
-			.set("Content-Type", "text/plain")
-			.send(query)
 			.end((err, res) => {
 				if (!err && res.statusCode == 200 && res.body instanceof Array) {
 					this.setState({results: res.body});

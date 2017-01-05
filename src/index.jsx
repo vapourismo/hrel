@@ -2,46 +2,20 @@
 
 import React from "react";
 import ReactDOM from "react-dom";
+import {Router, Route, browserHistory} from "react-router";
 import SuperAgent from "superagent";
 
-// Root
-class Root extends React.Component {
+class JustSearch extends React.Component {
+	static get contextTypes () {
+		return {
+			router: React.PropTypes.object
+		};
+	}
+
 	constructor(props) {
 		super(props);
 
-		this.state = {
-			results: [],
-			searching: false
-		};
-
 		this.submitSeach = this.submitSeach.bind(this);
-	}
-
-	performSearch(query) {
-		// SuperAgent.post("/api/search")
-		// 	.set("Accept", "application/json")
-		// 	.set("Content-Type", "text/plain")
-		// 	.send(query)
-		// 	.end((err, res) => {
-		// 		if (!err && res.statusCode == 200 && res.body instanceof Array) {
-		// 			this.setState({results: res.body});
-		// 		} else {
-		// 			console.error(err, res);
-		// 		}
-		// 	});
-
-		this.setState({results: [], searching: true});
-
-		SuperAgent.get("/api/search")
-			.query({q: query})
-			.set("Accept", "application/json")
-			.end((err, res) => {
-				if (!err && res.statusCode == 200 && res.body instanceof Array) {
-					this.setState({results: res.body, searching: false});
-				} else {
-					console.error(err, res);
-				}
-			});
 	}
 
 	submitSeach(ev) {
@@ -54,10 +28,78 @@ class Root extends React.Component {
 			if (queryString == "")
 				this.inputElem.select();
 			else
-				this.performSearch(queryString);
+				this.gotoSearch(queryString);
 		}
 
 		return false;
+	}
+
+	gotoSearch(queryString) {
+		this.context.router.push("/search/" + encodeURIComponent(queryString));
+	}
+
+	render() {
+		const searchTerm = this.props.params && this.props.params.query
+		                  ? this.props.params.query
+		                  : "";
+
+		return (
+			<div className="content">
+				<form className="search-form" onSubmit={this.submitSeach}>
+					<input className="input" type="text" ref={elem => this.inputElem = elem}
+					       defaultValue={searchTerm} />
+					<div className="submit-button" onClick={this.submitSeach}>
+						Search
+					</div>
+				</form>
+			</div>
+		);
+	}
+}
+
+class SearchResult extends JustSearch {
+	static get contextTypes () {
+		return {
+			router: React.PropTypes.object
+		};
+	}
+
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			searching: props.params && props.params.query,
+			results: []
+		};
+
+		if (this.state.searching)
+			this.performSearch(props.params.query);
+	}
+
+	componentWillReceiveProps(nextProps) {
+		const newState = {
+			searching: nextProps.params && nextProps.params.query,
+			results: []
+		};
+
+		this.setState(newState);
+
+		if (newState.searching)
+			this.performSearch(nextProps.params.query);
+	}
+
+	performSearch(query) {
+		SuperAgent.get("/api/search")
+			.query({q: query})
+			.set("Accept", "application/json")
+			.end((err, res) => {
+				if (!err && res.statusCode == 200 && res.body instanceof Array) {
+					this.setState({searching: false, results: res.body});
+				} else {
+					this.setState({searching: false, results: []});
+					console.error(err, res);
+				}
+			});
 	}
 
 	renderResult(result, idx) {
@@ -87,12 +129,7 @@ class Root extends React.Component {
 	render() {
 		return (
 			<div className="content">
-				<form className="search-form" onSubmit={this.submitSeach}>
-					<input className="input" type="text" ref={elem => this.inputElem = elem} />
-					<div className="submit-button" onClick={this.submitSeach}>
-						Search
-					</div>
-				</form>
+				{super.render()}
 				<div className="results">
 					{this.renderResults()}
 				</div>
@@ -103,5 +140,11 @@ class Root extends React.Component {
 
 // Load event
 window.addEventListener("load", function () {
-	ReactDOM.render(<Root />, document.getElementById("canvas"));
+	ReactDOM.render(
+		<Router history={browserHistory}>
+			<Route path="/" component={JustSearch} />
+			<Route path="/search/:query" component={SearchResult} />
+		</Router>,
+		document.getElementById("canvas")
+	);
 });

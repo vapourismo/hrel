@@ -62,8 +62,11 @@ searchForTorrents tags =
 	                       AND tag IN ($(insertCommaSeperated (map insertTag tags)))
 	                 GROUP BY id
 	                 ORDER BY score DESC
+	             ),
+	             scores AS (
+	                 SELECT MAX(score) AS maxScore FROM allResults
 	             )
-	             SELECT #Torrent(r) FROM allResults r WHERE r.score = $(length tags) |]
+	             SELECT #Torrent(r) FROM allResults r, scores WHERE r.score >= maxScore |]
 	where
 		insertTag =
 			insertEntity . T.toLower

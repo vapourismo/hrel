@@ -17,6 +17,7 @@ library
                        HRel.Sources
                        HRel.Names
                        HRel.Parser
+                       HRel.Parser2
                        HRel.Parser.XML
 
 executable hrel-webserver
@@ -40,6 +41,6 @@ executable hrel-test
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -threaded -with-rtsopts -N
   default-language:    Haskell2010
   build-depends:       base, hrel-server, bytestring, text, mtl, http-client, http-client-tls,
-                       pg-store, postgresql-libpq
+                       pg-store, postgresql-libpq, attoparsec
   hs-source-dirs:      src
   main-is:             Test.hs

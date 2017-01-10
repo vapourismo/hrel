@@ -2,6 +2,7 @@
 
 module HRel.XML (
 	xml,
+	content,
 	Content (..),
 	Attribute
 ) where
@@ -309,9 +310,9 @@ data Content
 	| DocType
 	deriving (Show, Eq, Ord)
 
-contents :: Parser [Content]
-contents =
-	many (angleOpened <|> (Text <$> charData))
+content :: Parser Content
+content =
+	angleOpened <|> (Text <$> charData)
 	where
 		angleOpened = do
 			char '<'
@@ -324,4 +325,4 @@ contents =
 			      Comment <$> comment]
 
 xml :: Parser [Content]
-xml = contents <* endOfInput
+xml = many content <* endOfInput

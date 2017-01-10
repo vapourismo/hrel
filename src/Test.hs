@@ -1,17 +1,29 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+import           Control.Monad.State.Strict
+import           Control.Monad.Trans.Resource
+
 import qualified Data.Text    as T
-import qualified Data.Text.IO as T
 
 import           Data.Attoparsec.Text
 
+import           Data.Conduit
+import qualified Data.Conduit.List as C
+import           Data.Conduit.Text
+import           Data.Conduit.Binary (sourceFile)
+import           Data.Conduit.Attoparsec
+
 import           HRel.XML
--- import           HRel.Parser
--- import           HRel.Parser.XML
+
+type S m = StateT
 
 main :: IO ()
 main = do
-	contents <- T.readFile "/data/downloads/tpb-head.xml"
-	either putStrLn (mapM_ print) (parseOnly xml contents)
-	-- either (const (putStrLn "Oops")) (mapM_ print) (runParser xml contents)
-	-- case runParser xml contents of
-	-- 	Left _        -> putStrLn "Left"
-	-- 	Right (xs, _) -> mapM_ print xs
+	c <- runResourceT $ runConduit $
+		sourceFile "/data/downloads/tpb-head.xml"
+			=$= decode utf8
+			=$= conduitParser content
+			=$= C.map snd
+			=$= C.consume
+
+	mapM_ print c

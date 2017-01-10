@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.Parser2 (
+module HRel.XML (
 	xml,
 	Content (..),
 	Attribute
@@ -15,28 +15,6 @@ import           Data.List
 import qualified Data.Text as T
 
 import           Data.Attoparsec.Text as A hiding (space)
-
-exact :: Char -> Parser Char
-exact c = satisfy (== c)
-
-stringUntil :: T.Text -> (Char -> Bool) -> T.Text -> Maybe (T.Text, T.Text)
-stringUntil term cond =
-	action
-	where
-		action input =
-			case T.break breaker input of
-				(body, rest) | T.isPrefixOf (T.take 1 term) rest && not (T.isPrefixOf term rest) ->
-					case action (T.tail rest) of
-						Just (body', rest') ->
-							Just (T.concat [body, T.take 1 term, body'], rest')
-						Nothing ->
-							Just (T.snoc body (T.head term), T.tail rest)
-
-				("", _) -> Nothing
-
-				x -> Just x
-
-		breaker c = c == T.head term || not (cond c)
 
 isXMLChar :: Char -> Bool
 isXMLChar c =
@@ -54,8 +32,8 @@ space =
 
 charEntity :: Parser T.Text
 charEntity = do
-	exact '&'
-	msum [string "#x" >> hexChar, string "#" >> decChar, entName] <* exact ';'
+	char '&'
+	msum [string "#x" >> hexChar, string "#" >> decChar, entName] <* char ';'
 	where
 		fromChar x =
 			case x of
@@ -87,7 +65,7 @@ clearEntities :: T.Text -> T.Text
 clearEntities input =
 	extractResult' (parse parser input)
 	where
-		parser = many (A.takeWhile1 (/= '&') <|> charEntity <|> (T.singleton <$> exact '&'))
+		parser = many (A.takeWhile1 (/= '&') <|> charEntity <|> (T.singleton <$> char '&'))
 
 		extractResult' (Partial f) = extractResult (f T.empty)
 		extractResult' x           = extractResult x
@@ -145,7 +123,7 @@ openTag = do
 	(,) <$> name
 	    <*> many (space >> attribute)
 	    <*  space
-	    <*  exact '>'
+	    <*  char '>'
 
 emptyTag :: Parser (T.Text, [Attribute])
 emptyTag = do
@@ -157,12 +135,12 @@ emptyTag = do
 closeTag :: Parser T.Text
 closeTag = do
 	string "/"
-	name <* space <* exact '>'
+	name <* space <* char '>'
 
 attributeValue :: Parser T.Text
 attributeValue = do
-	(exact '\'' *> A.takeWhile (/= '\'') <* exact '\'')
-	<|> (exact '"' *> A.takeWhile (/= '"') <* exact '"')
+	(char '\'' *> A.takeWhile (/= '\'') <* char '\'')
+	<|> (char '"' *> A.takeWhile (/= '"') <* char '"')
 
 type Attribute = (T.Text, T.Text)
 
@@ -170,7 +148,7 @@ attribute :: Parser Attribute
 attribute =
 	(,) <$> name
 	    <*  space
-	    <*  exact '='
+	    <*  char '='
 	    <*  space
 	    <*> (clearEntities <$> attributeValue)
 
@@ -184,13 +162,13 @@ instruction = do
 
 systemLiteral :: Parser ()
 systemLiteral =
-	(exact '\'' *> skipWhile (/= '\'') <* exact '\'')
-	<|> (exact '"' *> skipWhile (/= '"') <* exact '"')
+	(char '\'' *> skipWhile (/= '\'') <* char '\'')
+	<|> (char '"' *> skipWhile (/= '"') <* char '"')
 
 publicIDLiteral :: Parser ()
 publicIDLiteral =
-	(exact '\'' *> skipWhile (\ c -> c /= '\'' && isPublicIDChar c) <* exact '\'')
-	<|> (exact '"' *> skipWhile (isPublicIDChar) <* exact '"')
+	(char '\'' *> skipWhile (\ c -> c /= '\'' && isPublicIDChar c) <* char '\'')
+	<|> (char '"' *> skipWhile (isPublicIDChar) <* char '"')
 	where
 		isPublicIDChar c =
 			c == ' '
@@ -212,7 +190,7 @@ externalID = do
 			systemLiteral
 
 declSep :: Parser ()
-declSep = space <|> (exact '%' *> void name <* exact ';')
+declSep = space <|> (char '%' *> void name <* char ';')
 
 sepBy2 :: Parser a -> Parser s -> Parser [a]
 sepBy2 a sep =
@@ -227,7 +205,7 @@ elementDecl = do
 	name
 	contentSpec
 	space
-	() <$ exact '>'
+	() <$ char '>'
 	where
 		contentSpec =
 			msum [() <$ string "EMPTY",
@@ -236,35 +214,35 @@ elementDecl = do
 			      children]
 
 		mixedOne = do
-			exact '('
+			char '('
 			space
 			string "#PCDATA"
-			many (space >> exact '|' >> space >> name)
+			many (space >> char '|' >> space >> name)
 			space
 			() <$ string ")*"
 
 		mixedTwo = do
-			exact '('
+			char '('
 			space
 			string "#PCDATA"
 			space
-			() <$ exact ')'
+			() <$ char ')'
 
 		children = do
 			choice <|> seq
 			() <$ optional (satisfy (`elem` ("?*+" :: String)))
 
 		choice = do
-			exact '('
-			sepBy2 (space >> cp) (space >> exact '|')
+			char '('
+			sepBy2 (space >> cp) (space >> char '|')
 			space
-			() <$ exact ')'
+			() <$ char ')'
 
 		seq = do
-			exact '('
-			sepBy1 (space >> cp) (space >> exact ',')
+			char '('
+			sepBy1 (space >> cp) (space >> char ',')
 			space
-			() <$ exact ')'
+			() <$ char ')'
 
 		cp = do
 			void name <|> choice <|> seq
@@ -277,7 +255,7 @@ elementDecl = do
 -- 	name
 -- 	many attDef
 -- 	space
--- 	() <$ exact '>'
+-- 	() <$ char '>'
 -- 	where
 -- 		attDef = do
 -- 			space
@@ -317,9 +295,9 @@ docType = do
 	name
 	optional (space >> externalID)
 	space
-	optional (exact '[' *> intSubSet <* exact ']')
+	optional (char '[' *> intSubSet <* char ']')
 	space
-	() <$ exact '>'
+	() <$ char '>'
 
 data Content
 	= Text T.Text
@@ -336,7 +314,7 @@ contents =
 	many (angleOpened <|> (Text <$> charData))
 	where
 		angleOpened = do
-			exact '<'
+			char '<'
 			msum [uncurry Open <$> openTag,
 			      Close <$> closeTag,
 			      uncurry Empty <$> emptyTag,

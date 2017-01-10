@@ -51,7 +51,7 @@ traverseTags (tag : restTags) stack =
 					                       : restNodes)
 
 		X.Empty name attrs ->
-			traverseTags restTags (TNode name attrs [] : stack)
+			mergeNodes restTags name (TNode name attrs [] : stack)
 
 		_ -> traverseTags restTags stack
 

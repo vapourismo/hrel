@@ -72,13 +72,13 @@ main :: IO ()
 main = do
 	-- db <- P.connectdb "user=hrel dbname=hrel"
 	input <- T.readFile "/data/downloads/tpb-head.xml"
-	print (runParser xml input)
-	-- case (parseTextMarkup input >>= \ node -> runNodeFilter node dumpFilter) of
-	-- 	Nothing ->
-	-- 		putStrLn "Failed"
+	-- print (runParser xml input)
+	case (parseTextMarkup input >>= \ node -> runNodeFilter node dumpFilter) of
+		Nothing ->
+			putStrLn "Failed"
 
-	-- 	Just torrents ->
-	-- 		forM_ torrents print
-	-- 		-- forM_ (chunkify 1000 torrents) $ \ ts -> do
-	-- 		-- 	r <- runErrand db (insertMany (map Torrent ts))
-	-- 		-- 	either print print r
+		Just torrents ->
+			forM_ torrents print
+			-- forM_ (chunkify 1000 torrents) $ \ ts -> do
+			-- 	r <- runErrand db (insertMany (map Torrent ts))
+			-- 	either print print r

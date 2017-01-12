@@ -13,14 +13,15 @@ module HRel.Parser (
 import           Control.Monad
 import           Control.Applicative
 import           Data.Semigroup
-import           Data.Bifunctor
 
 newtype Parser s a = Parser { runParser :: s -> Either s (a, s) }
 
 instance Functor (Parser s) where
 	fmap f (Parser producer) =
 		Parser $ \ src ->
-			first f <$> producer src
+			case producer src of
+				Left src'       -> Left src'
+				Right (x, src') -> Right (f x, src')
 
 	{-# INLINE fmap #-}
 
@@ -65,6 +66,8 @@ inspect f =
 	Parser $ \ src ->
 		maybe (Left src) Right (f src)
 
+{-# INLINE inspect #-}
+
 save :: Parser s (Parser s ())
 save =
 	Parser (\ src -> Right (restore src, src))
@@ -72,12 +75,16 @@ save =
 		restore src =
 			Parser (const (Right ((), src)))
 
+{-# INLINE save #-}
+
 mustFail :: Parser s a -> Parser s ()
 mustFail parser = do
 	restore <- save
 	result <- (False <$ parser) <|> pure True
 	restore
 	guard result
+
+{-# INLINE mustFail #-}
 
 validate :: Parser s a -> (a -> Bool) -> Parser s a
 validate parser pred = do
@@ -90,19 +97,29 @@ validate parser pred = do
 		restore
 		mzero
 
+{-# INLINE validate #-}
+
 excludeFrom :: Parser s b -> Parser s a -> Parser s a
 excludeFrom a b = do
 	mustFail a
 	b
 
+{-# INLINE excludeFrom #-}
+
 sepBy :: Parser s a -> Parser s b -> Parser s [a]
 sepBy elem sep =
 	((:) <$> elem <*> many (sep >> elem)) <|> pure []
+
+{-# INLINE sepBy #-}
 
 sepBy1 :: Parser s a -> Parser s b -> Parser s [a]
 sepBy1 elem sep =
 	(:) <$> elem <*> many (sep >> elem)
 
+{-# INLINE sepBy1 #-}
+
 sepBy2 :: Parser s a -> Parser s b -> Parser s [a]
 sepBy2 elem sep =
 	(:) <$> elem <*> some (sep >> elem)
+
+{-# INLINE sepBy2 #-}

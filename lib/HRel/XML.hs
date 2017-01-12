@@ -78,16 +78,13 @@ name :: Parser T.Text
 name =
 	T.cons <$> satisfy startChar <*> A.takeWhile bodyChar
 	where
+		startChar ':' = True
+		startChar '_' = True
 		startChar c = let n = ord c in
-			c == ':'
-			|| c == '_'
-			|| ('A' <= c && c <= 'Z')
-			|| ('a' <= c && c <= 'z')
-			|| (0xC0 <= n && n <= 0xD6)
-			|| (0xD8 <= n && n <= 0xF6)
+			isAlpha c
+			|| (0xC0 <= n && n <= 0xF6 && n /= 0xD7)
 			|| (0xF8 <= n && n <= 0x2FF)
-			|| (0x370 <= n && n <= 0x37D)
-			|| (0x37F <= n && n <= 0x1FFF)
+			|| (0x370 <= n && n <= 0x1FFF && n /= 0x37E)
 			|| (0x200C <= n && n <= 0x200D)
 			|| (0x2070 <= n && n <= 0x218F)
 			|| (0x2C00 <= n && n <= 0x2FEF)
@@ -96,12 +93,12 @@ name =
 			|| (0xFDF0 <= n && n <= 0xFFFD)
 			|| (0x10000 <= n && n <= 0xEFFF)
 
+		bodyChar '-' = True
+		bodyChar '.' = True
 		bodyChar c = let n = ord c in
 			startChar c
-			|| c == '-'
-			|| c == '.'
+			|| isDigit c
 			|| n == 0xB7
-			|| ('0' <= c && c <= '9')
 			|| (0x0300 <= n && n <= 0x036F)
 			|| (0x203F <= n && n <= 0x2040)
 

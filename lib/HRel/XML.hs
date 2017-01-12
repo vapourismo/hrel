@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.Parser.XML (
+module HRel.XML (
 	xml,
+	content,
 	Content (..),
 	Attribute
 ) where
@@ -14,60 +15,7 @@ import           Data.Bits
 import           Data.List
 import qualified Data.Text as T
 
-import           HRel.Parser
-
-type P = Parser T.Text
-
-single :: P Char
-single = inspect T.uncons
-
-satisfy :: (Char -> Bool) -> P Char
-satisfy = validate single
-
-exact :: Char -> P Char
-exact c = satisfy (== c)
-
-string :: T.Text -> P T.Text
-string txt =
-	inspect $ \ src ->
-		if T.isPrefixOf txt src then
-			Just (txt, T.drop (T.length txt) src)
-		else
-			Nothing
-
-satisfySome :: (Char -> Bool) -> P T.Text
-satisfySome cond =
-	inspect $ \ src ->
-		case T.span cond src of
-			(x, _) | T.null x -> Nothing
-			x                 -> Just x
-
-satisfyMany :: (Char -> Bool) -> P T.Text
-satisfyMany cond =
-	inspect (Just . T.span cond)
-
-discardMany :: (Char -> Bool) -> P ()
-discardMany cond =
-	inspect (\ src -> Just ((), T.dropWhile cond src))
-
-stringUntil :: T.Text -> (Char -> Bool) -> T.Text -> Maybe (T.Text, T.Text)
-stringUntil term cond =
-	action
-	where
-		action input =
-			case T.break breaker input of
-				(body, rest) | T.isPrefixOf (T.take 1 term) rest && not (T.isPrefixOf term rest) ->
-					case action (T.tail rest) of
-						Just (body', rest') ->
-							Just (T.concat [body, T.take 1 term, body'], rest')
-						Nothing ->
-							Just (T.snoc body (T.head term), T.tail rest)
-
-				("", _) -> Nothing
-
-				x -> Just x
-
-		breaker c = c == T.head term || not (cond c)
+import           Data.Attoparsec.Text as A hiding (space)
 
 isXMLChar :: Char -> Bool
 isXMLChar c =
@@ -79,14 +27,14 @@ isXMLChar c =
 	|| (0x10000 <= n && n <= 0x10FFFF)
 	where n = ord c
 
-space :: P ()
+space :: Parser ()
 space =
-	discardMany (\ c -> c == ' ' || c == '\t' || c == '\n' || c == '\r')
+	skipWhile (\ c -> c == ' ' || c == '\t' || c == '\n' || c == '\r')
 
-charEntity :: P T.Text
+charEntity :: Parser T.Text
 charEntity = do
-	exact '&'
-	msum [string "#x" >> hexChar, string "#" >> decChar, entName] <* exact ';'
+	char '&'
+	msum [string "#x" >> hexChar, string "#" >> decChar, entName] <* char ';'
 	where
 		fromChar x =
 			case x of
@@ -97,10 +45,10 @@ charEntity = do
 			foldl' (\ n c -> shiftL n 4 .|. fromChar c) 0
 
 		hexChar =
-			T.singleton . chr . foldChars . T.unpack <$> satisfySome isHexDigit
+			T.singleton . chr . foldChars . T.unpack <$> A.takeWhile1 isHexDigit
 
 		decChar =
-			T.singleton . chr . foldChars . T.unpack <$> satisfySome isDigit
+			T.singleton . chr . foldChars . T.unpack <$> A.takeWhile1 isDigit
 
 		fromName n =
 			case n of
@@ -116,29 +64,20 @@ charEntity = do
 
 clearEntities :: T.Text -> T.Text
 clearEntities input =
-	extractResult (runParser parser input)
+	extractResult' (parse parser input)
 	where
-		parser = many (satisfySome (/= '&') <|> charEntity <|> (T.singleton <$> exact '&'))
+		parser = many (A.takeWhile1 (/= '&') <|> charEntity <|> (T.singleton <$> char '&'))
 
-		extractResult (Right (body, rest)) = T.concat (body ++ [rest])
-		extractResult _                    = input
+		extractResult' (Partial f) = extractResult (f T.empty)
+		extractResult' x           = extractResult x
 
-name :: P T.Text
+		extractResult (Done rest body) = T.concat (body ++ [rest])
+		extractResult _                = input
+
+name :: Parser T.Text
 name =
-	inspect $ \ src ->
-		if T.null src then
-			Nothing
-		else
-			spanAcross src
-
+	T.cons <$> satisfy startChar <*> A.takeWhile bodyChar
 	where
-		spanAcross src =
-			spanAcross' (T.head src) (T.tail src)
-
-		spanAcross' h t
-			| startChar h = let (a, b) = T.span bodyChar t in Just (T.cons h a, b)
-			| otherwise = Nothing
-
 		startChar ':' = True
 		startChar '_' = True
 		startChar c = let n = ord c in
@@ -154,8 +93,6 @@ name =
 			|| (0xFDF0 <= n && n <= 0xFFFD)
 			|| (0x10000 <= n && n <= 0xEFFF)
 
-		{-# INLINE startChar #-}
-
 		bodyChar '-' = True
 		bodyChar '.' = True
 		bodyChar c = let n = ord c in
@@ -165,75 +102,71 @@ name =
 			|| (0x0300 <= n && n <= 0x036F)
 			|| (0x203F <= n && n <= 0x2040)
 
-		{-# INLINE bodyChar #-}
-
-{-# INLINE name #-}
-
-charData :: P T.Text
+charData :: Parser T.Text
 charData =
-	clearEntities <$> satisfySome (/= '<')
+	clearEntities <$> A.takeWhile1 (/= '<')
 
-comment :: P T.Text
+comment :: Parser T.Text
 comment = do
 	string "!--"
-	inspect (stringUntil "-->" isXMLChar) <* string "-->"
+	T.pack <$> manyTill (satisfy isXMLChar) (string "-->") <* string "-->"
 
-cData :: P T.Text
+cData :: Parser T.Text
 cData = do
 	string "![CDATA["
-	inspect (stringUntil "]]>" isXMLChar) <* string "]]>"
+	T.pack <$> manyTill (satisfy isXMLChar) (string "-->") <* string "]]>"
 
-openTag :: P (T.Text, [Attribute])
+openTag :: Parser (T.Text, [Attribute])
 openTag = do
 	(,) <$> name
 	    <*> many (space >> attribute)
 	    <*  space
-	    <*  exact '>'
+	    <*  char '>'
 
-emptyTag :: P (T.Text, [Attribute])
+emptyTag :: Parser (T.Text, [Attribute])
 emptyTag = do
 	(,) <$> name
 	    <*> many (space >> attribute)
 	    <*  space
 	    <*  string "/>"
 
-closeTag :: P T.Text
+closeTag :: Parser T.Text
 closeTag = do
 	string "/"
-	name <* space <* exact '>'
+	name <* space <* char '>'
 
-attributeValue :: P T.Text
+attributeValue :: Parser T.Text
 attributeValue = do
-	(exact '\'' *> satisfyMany (/= '\'') <* exact '\'')
-	<|> (exact '"' *> satisfyMany (/= '"') <* exact '"')
+	(char '\'' *> A.takeWhile (/= '\'') <* char '\'')
+	<|> (char '"' *> A.takeWhile (/= '"') <* char '"')
 
 type Attribute = (T.Text, T.Text)
 
-attribute :: P Attribute
+attribute :: Parser Attribute
 attribute =
 	(,) <$> name
 	    <*  space
-	    <*  exact '='
+	    <*  char '='
 	    <*  space
 	    <*> (clearEntities <$> attributeValue)
 
-instruction :: P (T.Text, T.Text)
+instruction :: Parser (T.Text, T.Text)
 instruction = do
 	string "?"
 	(,) <$> name
 	    <*  space
-	    <*> (T.strip <$> inspect (stringUntil "?>" isXMLChar))
+	    <*> (T.strip . T.pack <$> manyTill (satisfy isXMLChar) (string "?>"))
 	    <*  string "?>"
 
-systemLiteral :: P ()
+systemLiteral :: Parser ()
 systemLiteral =
-	(exact '\'' *> discardMany (/= '\'') <* exact '\'')
-	<|> (exact '"' *> discardMany (/= '"') <* exact '"')
+	(char '\'' *> skipWhile (/= '\'') <* char '\'')
+	<|> (char '"' *> skipWhile (/= '"') <* char '"')
 
-publicIDLiteral :: P ()
+publicIDLiteral :: Parser ()
 publicIDLiteral =
-	(exact '\'' *> discardMany (\ c -> c /= '\'' && isPublicIDChar c) <* exact '\'')
-	<|> (exact '"' *> discardMany (isPublicIDChar) <* exact '"')
+	(char '\'' *> skipWhile (\ c -> c /= '\'' && isPublicIDChar c) <* char '\'')
+	<|> (char '"' *> skipWhile (isPublicIDChar) <* char '"')
 	where
 		isPublicIDChar c =
 			c == ' '
@@ -244,7 +177,7 @@ publicIDLiteral =
 			|| ('0' <= c && c <= '9')
 			|| elem c ("-'()+,./:=?;!*#@$_%" :: String)
 
-externalID :: P ()
+externalID :: Parser ()
 externalID = do
 	(string "SYSTEM" >> space >> systemLiteral)
 	<|> (string "PUBLIC" >> space >> publicLiteral)
@@ -254,17 +187,23 @@ externalID = do
 			space
 			systemLiteral
 
-declSep :: P ()
-declSep = space <|> (exact '%' *> void name <* exact ';')
+declSep :: Parser ()
+declSep = space <|> (char '%' *> void name <* char ';')
 
-elementDecl :: P ()
+sepBy2 :: Parser a -> Parser s -> Parser [a]
+sepBy2 a sep =
+	(:) <$> a
+	    <*  sep
+	    <*> sepBy1 a sep
+
+elementDecl :: Parser ()
 elementDecl = do
 	string "<!ELEMENT"
 	space
 	name
 	contentSpec
 	space
-	() <$ exact '>'
+	() <$ char '>'
 	where
 		contentSpec =
 			msum [() <$ string "EMPTY",
@@ -273,48 +212,48 @@ elementDecl = do
 			      children]
 
 		mixedOne = do
-			exact '('
+			char '('
 			space
 			string "#PCDATA"
-			many (space >> exact '|' >> space >> name)
+			many (space >> char '|' >> space >> name)
 			space
 			() <$ string ")*"
 
 		mixedTwo = do
-			exact '('
+			char '('
 			space
 			string "#PCDATA"
 			space
-			() <$ exact ')'
+			() <$ char ')'
 
 		children = do
 			choice <|> seq
 			() <$ optional (satisfy (`elem` ("?*+" :: String)))
 
 		choice = do
-			exact '('
-			sepBy2 (space >> cp) (space >> exact '|')
+			char '('
+			sepBy2 (space >> cp) (space >> char '|')
 			space
-			() <$ exact ')'
+			() <$ char ')'
 
 		seq = do
-			exact '('
-			sepBy1 (space >> cp) (space >> exact ',')
+			char '('
+			sepBy1 (space >> cp) (space >> char ',')
 			space
-			() <$ exact ')'
+			() <$ char ')'
 
 		cp = do
 			void name <|> choice <|> seq
 			() <$ optional (satisfy (`elem` ("?*+" :: String)))
 
--- attributeListDecl :: P ()
+-- attributeListDecl :: Parser ()
 -- attributeListDecl = do
 -- 	string "<!ATTLIST"
 -- 	space
 -- 	name
 -- 	many attDef
 -- 	space
--- 	() <$ exact '>'
+-- 	() <$ char '>'
 -- 	where
 -- 		attDef = do
 -- 			space
@@ -328,13 +267,13 @@ elementDecl = do
 
 -- 		defaultDecl = undefined
 
--- entityDecl :: P ()
+-- entityDecl :: Parser ()
 -- entityDecl = undefined
 
--- notationDecl :: P ()
+-- notationDecl :: Parser ()
 -- notationDecl = undefined
 
-markupDecl :: P ()
+markupDecl :: Parser ()
 markupDecl =
 	msum [elementDecl,
 	      -- attributeListDecl,
@@ -343,20 +282,20 @@ markupDecl =
 	      void instruction,
 	      void comment]
 
-intSubSet :: P ()
+intSubSet :: Parser ()
 intSubSet =
 	() <$ many (markupDecl <|> declSep)
 
-docType :: P ()
+docType :: Parser ()
 docType = do
 	string "!DOCTYPE"
 	space
 	name
 	optional (space >> externalID)
 	space
-	optional (exact '[' *> intSubSet <* exact ']')
+	optional (char '[' *> intSubSet <* char ']')
 	space
-	() <$ exact '>'
+	() <$ char '>'
 
 data Content
 	= Text T.Text
@@ -368,12 +307,12 @@ data Content
 	| DocType
 	deriving (Show, Eq, Ord)
 
-contents :: P [Content]
-contents =
-	many (angleOpened <|> (Text <$> charData))
+content :: Parser Content
+content =
+	angleOpened <|> (Text <$> charData)
 	where
 		angleOpened = do
-			exact '<'
+			char '<'
 			msum [uncurry Open <$> openTag,
 			      Close <$> closeTag,
 			      uncurry Empty <$> emptyTag,
@@ -382,13 +321,5 @@ contents =
 			      DocType <$ docType,
 			      Comment <$> comment]
 
-endReached :: P ()
-endReached =
-	inspect $ \ src ->
-		if T.null src then
-			Just ((), src)
-		else
-			Nothing
-
-xml :: P [Content]
-xml = contents <* endReached
+xml :: Parser [Content]
+xml = many content <* endOfInput

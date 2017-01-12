@@ -7,17 +7,18 @@ library
   ghc-options:         -Wall -fno-warn-tabs -fno-warn-name-shadowing -Wno-unused-do-bind
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5, pg-store, bytestring, text, mtl, transformers,
-                       http-client, http-client-tls, http-types, attoparsec
+                       http-client, http-client-tls, http-types, attoparsec, containers, conduit
   hs-source-dirs:      lib
   exposed-modules:     HRel.Torrents
                        HRel.Markup
+                       HRel.Markup2
                        HRel.NodeFilter
+                       HRel.NodeFilter2
                        HRel.Network
                        HRel.Feeds
                        HRel.Sources
                        HRel.Names
-                       HRel.Parser
-                       HRel.Parser.XML
+                       HRel.XML
 
 executable hrel-webserver
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -Wno-name-shadowing -threaded
@@ -37,9 +38,10 @@ executable hrel-scanner
   main-is:             Scanner.hs
 
 executable hrel-test
-  ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -threaded -with-rtsopts -N
+  ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind
   default-language:    Haskell2010
   build-depends:       base, hrel-server, bytestring, text, mtl, http-client, http-client-tls,
-                       pg-store, postgresql-libpq
+                       pg-store, postgresql-libpq, attoparsec, conduit, conduit-extra, resourcet,
+                       containers
   hs-source-dirs:      src
   main-is:             Test.hs

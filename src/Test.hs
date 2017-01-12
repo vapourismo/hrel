@@ -33,5 +33,3 @@ main = do
 	case unifyNodes nodes >>= runNodeFilter dumpFilter of
 		Nothing -> putStrLn "Nothing"
 		Just xs -> mapM_ print xs
-
-	putStrLn "parser-2-conduit"

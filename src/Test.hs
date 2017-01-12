@@ -82,3 +82,5 @@ main = do
 			-- forM_ (chunkify 1000 torrents) $ \ ts -> do
 			-- 	r <- runErrand db (insertMany (map Torrent ts))
 			-- 	either print print r
+
+	putStrLn "master"

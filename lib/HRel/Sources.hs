@@ -11,9 +11,7 @@ module HRel.Sources (
 import           Control.Monad.Trans.Resource
 
 import           Data.Conduit
-import qualified Data.Conduit.List as C
 import           Data.Conduit.Text
-import           Data.Conduit.Attoparsec
 
 import qualified Data.Text as T
 
@@ -23,7 +21,6 @@ import           HRel.NodeFilter
 import           HRel.Network
 import           HRel.Markup
 import           HRel.Torrents
-import qualified HRel.XML as X
 
 -- | Pirate Bay source
 pirateBaySource :: NodeFilter [Torrent]

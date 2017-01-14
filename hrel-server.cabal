@@ -34,8 +34,8 @@ executable hrel-webserver
 executable hrel-scanner
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind
   default-language:    Haskell2010
-  build-depends:       base, hrel-server, bytestring, http-client, http-client-tls, transformers,
-                       mtl, pg-store, postgresql-libpq, text
+  build-depends:       base, hrel-server, http-client, http-client-tls, transformers,
+                       pg-store, postgresql-libpq, conduit, resourcet
   hs-source-dirs:      src
   main-is:             Scanner.hs
 

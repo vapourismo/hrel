@@ -2,12 +2,17 @@ module HRel.Markup2 (
 	Node (..),
 	Content (..),
 	buildNodes,
-	unifyNodes
+	unifyNodes,
+	processXML
 ) where
 
+import           Control.Monad.Catch
 import           Control.Monad.State.Strict
 
 import           Data.Conduit
+import qualified Data.Conduit.List as C
+import           Data.Conduit.Attoparsec
+
 import qualified Data.Text     as T
 
 import qualified HRel.XML      as X
@@ -96,3 +101,8 @@ unifyNodes :: [Node] -> Maybe Node
 unifyNodes []  = Nothing
 unifyNodes [x] = Just x
 unifyNodes xs  = Just (Node T.empty [] (map Nested xs))
+
+-- | Process
+processXML :: (Monad m, MonadThrow m) => Conduit T.Text m Node
+processXML =
+	conduitParser X.content =$= C.map snd =$= buildNodes

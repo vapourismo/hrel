@@ -7,17 +7,15 @@ module HRel.XML (
 	Attribute
 ) where
 
-import           Prelude hiding (takeWhile)
-
 import           Control.Monad
 import           Control.Applicative
 
 import           Data.Char
 import           Data.Bits
-import           Data.List hiding (takeWhile)
+import           Data.List
 import qualified Data.Text as T
 
-import           HRel.Parser
+import           Data.Attoparsec.Text as A hiding (space)
 
 isXMLChar :: Char -> Bool
 isXMLChar c =
@@ -47,10 +45,10 @@ charEntity = do
 			foldl' (\ n c -> shiftL n 4 .|. fromChar c) 0
 
 		hexChar =
-			T.singleton . chr . foldChars . T.unpack <$> takeWhile1 isHexDigit
+			T.singleton . chr . foldChars . T.unpack <$> A.takeWhile1 isHexDigit
 
 		decChar =
-			T.singleton . chr . foldChars . T.unpack <$> takeWhile1 isDigit
+			T.singleton . chr . foldChars . T.unpack <$> A.takeWhile1 isDigit
 
 		fromName n =
 			case n of
@@ -68,17 +66,17 @@ clearEntities :: T.Text -> T.Text
 clearEntities input =
 	extractResult' (parse parser input)
 	where
-		parser = many (takeWhile1 (/= '&') <|> charEntity <|> (T.singleton <$> char '&'))
+		parser = many (A.takeWhile1 (/= '&') <|> charEntity <|> (T.singleton <$> char '&'))
 
-		extractResult' (Incomplete f) = extractResult (f T.empty)
-		extractResult' x              = extractResult x
+		extractResult' (Partial f) = extractResult (f T.empty)
+		extractResult' x           = extractResult x
 
-		extractResult (Complete rest body) = T.concat (body ++ [rest])
-		extractResult _                    = input
+		extractResult (Done rest body) = T.concat (body ++ [rest])
+		extractResult _                = input
 
 name :: Parser T.Text
 name =
-	T.cons <$> satisfy startChar <*> takeWhile bodyChar
+	T.cons <$> satisfy startChar <*> A.takeWhile bodyChar
 	where
 		startChar ':' = True
 		startChar '_' = True
@@ -106,7 +104,7 @@ name =
 
 charData :: Parser T.Text
 charData =
-	clearEntities <$> takeWhile1 (/= '<')
+	clearEntities <$> A.takeWhile1 (/= '<')
 
 comment :: Parser T.Text
 comment = do
@@ -139,8 +137,8 @@ closeTag = do
 
 attributeValue :: Parser T.Text
 attributeValue = do
-	(char '\'' *> takeWhile (/= '\'') <* char '\'')
-	<|> (char '"' *> takeWhile (/= '"') <* char '"')
+	(char '\'' *> A.takeWhile (/= '\'') <* char '\'')
+	<|> (char '"' *> A.takeWhile (/= '"') <* char '"')
 
 type Attribute = (T.Text, T.Text)
 

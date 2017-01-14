@@ -19,7 +19,6 @@ library
                        HRel.Sources
                        HRel.Names
                        HRel.XML
-                       HRel.Parser
 
 executable hrel-webserver
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -Wno-name-shadowing

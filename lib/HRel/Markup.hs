@@ -13,8 +13,8 @@ import qualified Data.ByteString as B
 import qualified Data.Text          as T
 import qualified Data.Text.Encoding as T
 
+import           Data.Attoparsec.Text
 
-import           HRel.Parser
 import qualified HRel.XML as X
 
 -- | Temporary instantiation of a 'Node' inside a markup source
@@ -86,9 +86,7 @@ transformContent (ContentText t) = Text t
 -- |
 parseTags :: T.Text -> Maybe [X.Content]
 parseTags input =
-	case feed (parse X.xml input) T.empty of
-		Complete _ x -> Just x
-		_            -> Nothing
+	either (const Nothing) Just (parseOnly X.xml input)
 
 -- | Parse a given markup input and transform it into a list of 'Node's.
 collectNodes :: T.Text -> Maybe [Node]

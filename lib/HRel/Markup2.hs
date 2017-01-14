@@ -13,17 +13,21 @@ import qualified Data.Sequence as S
 
 import qualified HRel.XML      as X
 
+-- | Markup node with its name, attributes and contents
 data Node = Node T.Text [X.Attribute] (S.Seq Content)
 	deriving (Show, Eq, Ord)
 
+-- | Node content
 data Content
 	= Nested Node
 	| Text T.Text
 	deriving (Show, Eq, Ord)
 
-type M m r = StateT [Node] (ConduitM X.Content Node m) r
+-- | Helper state transformer
+type NodeBuilder m r = StateT [Node] (ConduitM X.Content Node m) r
 
-finalizeStack :: (Monad m) => M m ()
+-- | Close all open nodes, then yield the result.
+finalizeStack :: (Monad m) => NodeBuilder m ()
 finalizeStack = do
 	s <- get
 	lift (mapM_ yield (finalize s))
@@ -31,14 +35,17 @@ finalizeStack = do
 		finalize (node : Node n a c : rest) = finalize (Node n a (c S.|> Nested node) : rest)
 		finalize x                          = x
 
+-- | Push a new node onto the stack.
 pushOpen :: T.Text -> [X.Attribute] -> [Node] -> [Node]
 pushOpen n a rest = Node n a S.empty : rest
 
+-- | Insert text into the top-most node.
 pushText :: T.Text -> [Node] -> [Node]
 pushText t (Node n a c : rest) = Node n a (c S.|> Text t) : rest
 pushText _ x                   = x
 
-closeNode :: (Monad m) => T.Text -> M m ()
+-- | Close the top-most node (if there is any).
+closeNode :: (Monad m) => T.Text -> NodeBuilder m ()
 closeNode name = do
 	s <- get
 	case s of
@@ -54,7 +61,8 @@ closeNode name = do
 
 		_ -> pure ()
 
-interpretContent :: (Monad m) => X.Content -> M m ()
+-- | Do something with an instance of 'X.Content'.
+interpretContent :: (Monad m) => X.Content -> NodeBuilder m ()
 interpretContent c = do
 	case c of
 		X.Open n a  -> modify (pushOpen n a)
@@ -63,7 +71,8 @@ interpretContent c = do
 		X.Empty n a -> modify (pushOpen n a) >> closeNode n
 		_           -> pure ()
 
-processContents :: (Monad m) => M m ()
+-- | Process inputs in order to produce 'Node's.
+processContents :: (Monad m) => NodeBuilder m ()
 processContents = do
 	mbContent <- lift await
 	case mbContent of
@@ -74,10 +83,12 @@ processContents = do
 			interpretContent c
 			processContents
 
+-- | Build 'Node's with incomming 'X.Content's.
 buildNodes :: (Monad m) => Conduit X.Content m Node
 buildNodes =
 	void (runStateT processContents [])
 
+-- | Merge multiple 'Node's into one.
 unifyNodes :: [Node] -> Maybe Node
 unifyNodes []  = Nothing
 unifyNodes [x] = Just x

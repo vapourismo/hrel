@@ -1,12 +1,14 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
 
 module HRel.Network (
-	httpRequest
+	httpRequest,
+	httpDownload
 ) where
 
 import           Control.Monad
 import           Control.Monad.Trans
 import           Control.Monad.Trans.Resource
+import           Control.Exception
 
 import           Data.Conduit
 
@@ -31,3 +33,14 @@ httpRequest mgr url = do
 			unless (B.null chunk) $ do
 				yield chunk
 				yieldAll reader
+
+-- | Perform a HTTP request, return chunks of its response body.
+httpDownload :: Manager -> String -> IO [B.ByteString]
+httpDownload mgr url = do
+	interimReq <- parseRequest url
+	let req =
+		interimReq {
+			requestHeaders = [(hUserAgent, "hrel-haskell/0.0.0")]
+		}
+
+	bracket (responseOpen req mgr) responseClose (brConsume . responseBody)

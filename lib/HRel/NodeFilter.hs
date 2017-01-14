@@ -1,4 +1,4 @@
-module HRel.NodeFilter2 (
+module HRel.NodeFilter (
 	NodeFilter,
 	runNodeFilter,
 	filterNodes,

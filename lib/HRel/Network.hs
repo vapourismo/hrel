@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
 
-module HRel.Network2 (
+module HRel.Network (
 	httpRequest
 ) where
 

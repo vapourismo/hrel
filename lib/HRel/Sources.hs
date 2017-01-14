@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
 
-module HRel.Sources2 (
+module HRel.Sources (
 	pirateBaySource,
 	rarbgSource,
 

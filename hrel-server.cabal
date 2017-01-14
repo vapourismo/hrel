@@ -11,10 +11,10 @@ library
                        resourcet, http-types, conduit-extra, exceptions
   hs-source-dirs:      lib
   exposed-modules:     HRel.Torrents
-                       HRel.Markup2
-                       HRel.NodeFilter2
-                       HRel.Network2
-                       HRel.Sources2
+                       HRel.Markup
+                       HRel.NodeFilter
+                       HRel.Network
+                       HRel.Sources
                        HRel.Names
                        HRel.XML
 

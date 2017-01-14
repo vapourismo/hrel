@@ -1,4 +1,4 @@
-module HRel.Markup2 (
+module HRel.Markup (
 	Node (..),
 	Content (..),
 	buildNodes,

@@ -9,7 +9,7 @@ import qualified Data.Conduit.List as C
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 
-import           HRel.Sources2
+import           HRel.Sources
 import           HRel.Torrents
 
 sources :: (MonadResource m) => Manager -> Producer m [Torrent]

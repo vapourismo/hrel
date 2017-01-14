@@ -26,7 +26,7 @@ import           Data.Maybe (catMaybes)
 
 import qualified Data.Text as T
 
-import           HRel.Markup2
+import           HRel.Markup
 
 -- | Node filter
 type NodeFilter = ReaderT Node Maybe

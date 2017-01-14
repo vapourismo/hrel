@@ -19,9 +19,9 @@ import qualified Data.Text as T
 
 import           Network.HTTP.Client
 
-import           HRel.NodeFilter2
-import           HRel.Network2
-import           HRel.Markup2
+import           HRel.NodeFilter
+import           HRel.Network
+import           HRel.Markup
 import           HRel.Torrents
 import qualified HRel.XML as X
 

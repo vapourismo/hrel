@@ -13,7 +13,7 @@ import           Network.HTTP.Client.TLS
 import qualified Database.PostgreSQL.LibPQ as P
 import           Database.PostgreSQL.Store
 
-import           HRel.Sources2
+import           HRel.Sources
 import           HRel.Torrents
 import           HRel.Names
 

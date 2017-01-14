@@ -20,7 +20,7 @@ import           Control.Monad.Trans.Maybe
 
 import           Data.List
 import           Data.Foldable
-import qualified Data.Sequence as S
+import           Data.Maybe
 import qualified Data.Text     as T
 
 import           HRel.Markup2
@@ -38,17 +38,15 @@ runNodeFilter_ f n =
 	MaybeT (pure (runNodeFilter f n))
 
 -- | Traverse the sequence to transform certain nodes that match the given criteria.
-mapFilterCat :: (Node -> Bool) -> (Node -> Maybe b) -> S.Seq Content -> [b]
-mapFilterCat cond fun seq =
-	traverse (S.viewl seq)
+mapFilterCat :: (Node -> Bool) -> (Node -> Maybe b) -> [Content] -> [b]
+mapFilterCat cond fun contents =
+	catMaybes (map fun' (filter cond' contents))
 	where
-		traverse S.EmptyL = []
-		traverse (x S.:< xs) =
-			case x of
-				Nested node | cond node -> maybe rest (: rest) (fun node)
-				_                       -> rest
-			where
-				rest = traverse (S.viewl xs)
+		fun' (Nested node) = fun node
+		fun' _             = Nothing
+
+		cond' (Nested node) = cond node
+		cond' _             = False
 
 -- | Do something for nodes which match a certain predicate.
 forNodes :: (Node -> Bool) -> NodeFilter a -> NodeFilter [a]
@@ -59,7 +57,7 @@ forNodes cond (ReaderT fun) =
 forNode :: (Node -> Bool) -> NodeFilter a -> NodeFilter a
 forNode cond (ReaderT fun) =
 	ReaderT $ \ (Node _ _ contents) -> do
-		Nested elem <- S.index contents <$> S.findIndexL cond' contents
+		Nested elem <- find cond' contents
 		fun elem
 	where
 		cond' (Nested node) = cond node

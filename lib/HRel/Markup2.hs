@@ -9,12 +9,11 @@ import           Control.Monad.State.Strict
 
 import           Data.Conduit
 import qualified Data.Text     as T
-import qualified Data.Sequence as S
 
 import qualified HRel.XML      as X
 
 -- | Markup node with its name, attributes and contents
-data Node = Node T.Text [X.Attribute] (S.Seq Content)
+data Node = Node T.Text [X.Attribute] [Content]
 	deriving (Show, Eq, Ord)
 
 -- | Node content
@@ -26,22 +25,26 @@ data Content
 -- | Helper state transformer
 type NodeBuilder m r = StateT [Node] (ConduitM X.Content Node m) r
 
+-- |
+snoc :: [a] -> a -> [a]
+snoc xs x = xs ++ [x]
+
 -- | Close all open nodes, then yield the result.
 finalizeStack :: (Monad m) => NodeBuilder m ()
 finalizeStack = do
 	s <- get
 	lift (mapM_ yield (finalize s))
 	where
-		finalize (node : Node n a c : rest) = finalize (Node n a (c S.|> Nested node) : rest)
+		finalize (node : Node n a c : rest) = finalize (Node n a (c `snoc` Nested node) : rest)
 		finalize x                          = x
 
 -- | Push a new node onto the stack.
 pushOpen :: T.Text -> [X.Attribute] -> [Node] -> [Node]
-pushOpen n a rest = Node n a S.empty : rest
+pushOpen n a rest = Node n a [] : rest
 
 -- | Insert text into the top-most node.
 pushText :: T.Text -> [Node] -> [Node]
-pushText t (Node n a c : rest) = Node n a (c S.|> Text t) : rest
+pushText t (Node n a c : rest) = Node n a (c `snoc` Text t) : rest
 pushText _ x                   = x
 
 -- | Close the top-most node (if there is any).
@@ -55,7 +58,7 @@ closeNode name = do
 				lift (yield node1)
 
 		node1@(Node name1 _ _) : Node n2 a2 c2 : rest -> do
-			put (Node n2 a2 (c2 S.|> Nested node1) : rest)
+			put (Node n2 a2 (c2 `snoc` Nested node1) : rest)
 			unless (name == name1) $
 				closeNode name
 
@@ -92,4 +95,4 @@ buildNodes =
 unifyNodes :: [Node] -> Maybe Node
 unifyNodes []  = Nothing
 unifyNodes [x] = Just x
-unifyNodes xs  = Just (Node T.empty [] (S.fromList (map Nested xs)))
+unifyNodes xs  = Just (Node T.empty [] (map Nested xs))

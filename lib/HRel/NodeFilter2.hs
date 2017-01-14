@@ -1,7 +1,7 @@
 module HRel.NodeFilter2 (
 	NodeFilter,
 	runNodeFilter,
-	runNodeFilter_,
+	filterNodes,
 	forNodes,
 	forNode,
 	forTags,
@@ -16,12 +16,15 @@ module HRel.NodeFilter2 (
 
 import           Control.Applicative
 import           Control.Monad.Reader
-import           Control.Monad.Trans.Maybe
+
+import           Data.Conduit
+import           Data.Conduit.List (mapMaybe)
 
 import           Data.List
 import           Data.Foldable
-import           Data.Maybe
-import qualified Data.Text     as T
+import           Data.Maybe (catMaybes)
+
+import qualified Data.Text as T
 
 import           HRel.Markup2
 
@@ -32,10 +35,10 @@ type NodeFilter = ReaderT Node Maybe
 runNodeFilter :: NodeFilter a -> Node -> Maybe a
 runNodeFilter = runReaderT
 
--- |
-runNodeFilter_ :: (Applicative m) => NodeFilter a -> Node -> MaybeT m a
-runNodeFilter_ f n =
-	MaybeT (pure (runNodeFilter f n))
+-- | Run a 'NodeFilter' on incoming
+filterNodes :: (Monad m) => NodeFilter a -> Conduit Node m a
+filterNodes nf =
+	mapMaybe (runNodeFilter nf)
 
 -- | Traverse the sequence to transform certain nodes that match the given criteria.
 mapFilterCat :: (Node -> Bool) -> (Node -> Maybe b) -> [Content] -> [b]

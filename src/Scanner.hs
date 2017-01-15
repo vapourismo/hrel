@@ -33,8 +33,8 @@ type HRelSource m o = HRelT SourceError (ConduitM () o) m ()
 sources :: (MonadCatch m, MonadResource m) => Manager -> HRelSource m [Torrent]
 sources mgr =
 	mapM_ (\ src -> reportAndRecover (reportSourceError src) (torrentSource mgr src))
-	      [RARBG "https://$rarbg.to/rssdd_magnet.php?category=41",
-	       RARBG "https://$rarbg.to/rssdd_magnet.php?category=48;44;45;42"]
+	      [RARBG "https://rarbg.to/rssdd_magnet.php?category=41",
+	       RARBG "https://rarbg.to/rssdd_magnet.php?category=48;44;45;42"]
 
 type HRelSink i m r = HRelT SourceError (ConduitM i Void) m r
 

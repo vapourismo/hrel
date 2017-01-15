@@ -25,7 +25,7 @@ reportSourceError :: TorrentSource -> SourceError -> IO ()
 reportSourceError src err = do
 	putStr "SourceError during "
 	putStr (show src)
-	putStr ": \n\t"
+	putStr ": "
 	print err
 
 type HRelSource m o = HRelT SourceError (ConduitM () o) m ()

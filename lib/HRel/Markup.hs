@@ -103,6 +103,6 @@ unifyNodes [x] = Just x
 unifyNodes xs  = Just (Node T.empty [] (map Nested xs))
 
 -- | Process
-processXML :: (Monad m, MonadThrow m) => Conduit T.Text m Node
+processXML :: (MonadThrow m) => Conduit T.Text m Node
 processXML =
 	conduitParser X.content =$= C.map snd =$= buildNodes

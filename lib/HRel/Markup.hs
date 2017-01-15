@@ -1,8 +1,10 @@
 module HRel.Markup (
 	Node (..),
 	Content (..),
-	buildNodes,
-	unifyNodes,
+
+	XmlError,
+
+	XmlConduit,
 	processXML
 ) where
 
@@ -16,6 +18,7 @@ import           Data.Conduit.Attoparsec
 import qualified Data.Text     as T
 
 import qualified HRel.XML      as X
+import           HRel.Monad
 
 -- | Markup node with its name, attributes and contents
 data Node = Node T.Text [X.Attribute] [Content]
@@ -96,13 +99,13 @@ buildNodes :: (Monad m) => Conduit X.Content m Node
 buildNodes =
 	void (runStateT processContents [])
 
--- | Merge multiple 'Node's into one.
-unifyNodes :: [Node] -> Maybe Node
-unifyNodes []  = Nothing
-unifyNodes [x] = Just x
-unifyNodes xs  = Just (Node T.empty [] (map Nested xs))
+-- | XML error
+type XmlError = ParseError
 
--- | Process
-processXML :: (MonadThrow m) => Conduit T.Text m Node
+-- | XML processor
+type XmlConduit i m o = HRelT ParseError (ConduitM i o) m ()
+
+-- | Process incoming 'T.Text' in order to build 'Node's.
+processXML :: (MonadCatch m) => XmlConduit T.Text m Node
 processXML =
-	conduitParser X.content =$= C.map snd =$= buildNodes
+	toHRelT (conduitParser X.content =$= C.map snd =$= buildNodes)

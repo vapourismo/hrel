@@ -1,11 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import           Control.Monad
-import           Control.Monad.IO.Class
+import           Control.Monad.Catch
+import           Control.Monad.Except
 import           Control.Monad.Trans.Resource
 
 import           Data.Conduit
 import qualified Data.Conduit.List as C
+
+import           Data.Void
 
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
@@ -16,14 +19,26 @@ import           Database.PostgreSQL.Store
 import           HRel.Sources
 import           HRel.Torrents
 import           HRel.Names
+import           HRel.Monad
 
-sources :: (MonadResource m) => Manager -> Source m [Torrent]
+reportSourceError :: TorrentSource -> SourceError -> IO ()
+reportSourceError src err = do
+	putStr "SourceError during "
+	putStr (show src)
+	putStr ": \n\t"
+	print err
+
+type HRelSource m o = HRelT SourceError (ConduitM () o) m ()
+
+sources :: (MonadCatch m, MonadResource m) => Manager -> HRelSource m [Torrent]
 sources mgr =
-	mapM_ (torrentSource mgr)
-	      [RARBG "https://rarbg.to/rssdd_magnet.php?category=41",
-	       RARBG "https://rarbg.to/rssdd_magnet.php?category=48;44;45;42"]
+	mapM_ (\ src -> reportAndRecover (reportSourceError src) (torrentSource mgr src))
+	      [RARBG "https://$rarbg.to/rssdd_magnet.php?category=41",
+	       RARBG "https://$rarbg.to/rssdd_magnet.php?category=48;44;45;42"]
 
-sink :: (MonadResource m) => P.Connection -> Sink [Torrent] m ()
+type HRelSink i m r = HRelT SourceError (ConduitM i Void) m r
+
+sink :: (MonadResource m) => P.Connection -> HRelSink [Torrent] m ()
 sink db =
 	C.mapM_ $ \ torrents -> liftIO $
 		forM_ torrents $ \ torrent@(Torrent title _) -> do
@@ -41,5 +56,7 @@ main :: IO ()
 main = do
 	db <- P.connectdb "user=hrel dbname=hrel"
 	mgr <- newManager tlsManagerSettings
-	runResourceT $ runConduit $
+	result <- runResourceT $ runExceptT $ runConduit $
 		sources mgr =$= sink db
+
+	either print (const (pure ())) result

@@ -1,14 +1,20 @@
-{-# LANGUAGE OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE OverloadedStrings, RankNTypes, FlexibleContexts #-}
 
 module HRel.Network (
+	HttpError,
+
+	HttpProducer,
 	httpRequest,
+
+	HttpIO,
 	httpDownload
 ) where
 
 import           Control.Monad
 import           Control.Monad.Trans
+import           Control.Monad.Catch
+import           Control.Monad.Except
 import           Control.Monad.Trans.Resource
-import           Control.Exception
 
 import           Data.Conduit
 
@@ -17,10 +23,20 @@ import qualified Data.ByteString as B
 import           Network.HTTP.Client
 import           Network.HTTP.Types
 
+import           HRel.Monad
+
+-- | Error during one of the operations in this module
+data HttpError = HttpError Request HttpException
+	deriving (Show)
+
+-- | Producer which may come across a 'HttpError'
+type HttpProducer m o = forall i . HRelT HttpError (ConduitM i o) m ()
+
 -- | Perform a HTTP request, yield chunks of its response body.
-httpRequest :: (MonadResource m) => Manager -> Request -> Producer m B.ByteString
+httpRequest :: (MonadCatch m, MonadResource m) => Manager -> Request -> HttpProducer m B.ByteString
 httpRequest mgr interimReq =
-	bracketP (responseOpen req mgr) responseClose (yieldAll . responseBody)
+	catch (bracketP (responseOpen req mgr) responseClose (yieldAll . responseBody))
+	      (\ err -> throwError (HttpError req err))
 	where
 		req =
 			interimReq {
@@ -33,10 +49,14 @@ httpRequest mgr interimReq =
 				yield chunk
 				yieldAll reader
 
+-- | Operation which may result in a 'HttpError'
+type HttpIO a = ExceptT HttpError IO a
+
 -- | Perform a HTTP request, return chunks of its response body.
-httpDownload :: Manager -> Request -> IO [B.ByteString]
+httpDownload :: Manager -> Request -> HttpIO [B.ByteString]
 httpDownload mgr interimReq =
-	bracket (responseOpen req mgr) responseClose (brConsume . responseBody)
+	catch (liftIO (bracket (responseOpen req mgr) responseClose (brConsume . responseBody)))
+	      (\ err -> throwError (HttpError req err))
 	where
 		req =
 			interimReq {

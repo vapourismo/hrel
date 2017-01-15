@@ -4,10 +4,14 @@ module HRel.Sources (
 	pirateBaySource,
 	rarbgSource,
 
+	SourceError (..),
+
 	TorrentSource (..),
-	torrentSource
+	torrentSource,
 ) where
 
+import           Control.Monad.Catch
+import           Control.Monad.Except
 import           Control.Monad.Trans.Resource
 
 import           Data.Conduit
@@ -21,6 +25,7 @@ import           HRel.NodeFilter
 import           HRel.Network
 import           HRel.Markup
 import           HRel.Torrents
+import           HRel.Monad
 
 -- | Pirate Bay source
 pirateBaySource :: NodeFilter [Torrent]
@@ -48,13 +53,27 @@ data TorrentSource
 	| RARBG String
 	deriving (Show, Eq, Ord)
 
+-- | An error that might occur during the processing of a source
+data SourceError
+	= XmlError XmlError
+	| HttpError HttpError
+	| InvalidUrl String
+	deriving (Show)
+
+-- | Torrent producer
+type TorrentProducer m o = forall i. HRelT SourceError (ConduitM i o) m ()
+
 -- | Process the given torrent source.
-torrentSource :: (MonadResource m) => Manager -> TorrentSource -> Producer m [Torrent]
+torrentSource :: (MonadCatch m, MonadResource m) => Manager -> TorrentSource -> TorrentProducer m [Torrent]
 torrentSource mgr src = do
-	req <- parseRequest url
-	httpRequest mgr req
+	req <- lift $
+		case parseRequest url of
+			Just x  -> pure x
+			Nothing -> throwError (InvalidUrl url)
+
+	withHRelT HttpError (httpRequest mgr req)
 		=$= decode utf8
-		=$= processXML
+		=$= withHRelT XmlError processXML
 		=$= filterNodes nf
 	where
 		(url, nf) =

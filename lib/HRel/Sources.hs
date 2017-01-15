@@ -50,8 +50,9 @@ data TorrentSource
 
 -- | Process the given torrent source.
 torrentSource :: (MonadResource m) => Manager -> TorrentSource -> Producer m [Torrent]
-torrentSource mgr src =
-	httpRequest mgr url
+torrentSource mgr src = do
+	req <- parseRequest url
+	httpRequest mgr req
 		=$= decode utf8
 		=$= processXML
 		=$= filterNodes nf

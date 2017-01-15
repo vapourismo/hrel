@@ -121,4 +121,5 @@ search taMgr token searchString =
 	                          token
 	                          [("mode",          "search"),
 	                           ("search_string", searchString),
-	                           ("limit",         "100")]
+	                           ("limit",         "100"),
+	                           ("ranked",        "0")]

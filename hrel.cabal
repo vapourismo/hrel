@@ -19,6 +19,7 @@ library
                        HRel.XML
                        HRel.Monad
                        HRel.Feeds
+                       HRel.TorrentAPI
 
 executable hrel-webserver
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -Wno-name-shadowing
@@ -42,6 +43,6 @@ executable hrel-test
   default-language:    Haskell2010
   build-depends:       base, hrel, bytestring, text, mtl, http-client, http-client-tls,
                        pg-store, postgresql-libpq, attoparsec, conduit, conduit-extra, resourcet,
-                       containers, http-types, exceptions
+                       containers, http-types, exceptions, aeson
   hs-source-dirs:      src
   main-is:             Test.hs

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 import           Control.Monad.Except
 import           Control.Monad.Trans.Resource

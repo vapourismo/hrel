@@ -1,12 +1,14 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
 
 module HRel.Sources (
+	TorrentSource (..),
+
 	pirateBaySource,
 	rarbgSource,
 
 	SourceError (..),
 
-	TorrentSource (..),
+	TorrentProducer,
 	torrentSource,
 ) where
 
@@ -57,6 +59,7 @@ data TorrentSource
 data SourceError
 	= XmlError XmlError
 	| HttpError HttpError
+	| NodeFilterError NodeFilterError
 	| InvalidUrl String
 	deriving (Show)
 
@@ -74,7 +77,7 @@ torrentSource mgr src = do
 	withHRelT HttpError (httpRequest mgr req)
 		=$= decode utf8
 		=$= withHRelT XmlError processXML
-		=$= filterNodes nf
+		=$= withHRelT NodeFilterError (filterNodes nf)
 	where
 		(url, nf) =
 			case src of

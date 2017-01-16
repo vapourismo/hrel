@@ -13,6 +13,7 @@ import           GHC.Generics
 import           Control.Monad.Except
 
 import           Data.Int
+import           Data.Tagged
 import qualified Data.Text as T
 
 import           Database.PostgreSQL.Store
@@ -32,10 +33,9 @@ data Torrent = Torrent {
 instance Entity Torrent
 
 instance TableEntity Torrent where
-	describeTableType _ =
-		Table "torrents"
-		      [Column "title" anyColumnType,
-		       Column "uri"   anyColumnType]
+	describeTableType =
+		Tagged (Table "torrents" [Column "title" anyColumnType,
+		                          Column "uri"   anyColumnType])
 
 -- |
 insertTorrent :: Torrent -> Errand Int64

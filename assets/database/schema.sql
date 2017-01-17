@@ -35,6 +35,52 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: feed_contents; Type: TABLE; Schema: public; Owner: hrel
+--
+
+CREATE TABLE feed_contents (
+    feed bigint NOT NULL,
+    title character varying NOT NULL
+);
+
+
+ALTER TABLE feed_contents OWNER TO hrel;
+
+--
+-- Name: feeds; Type: TABLE; Schema: public; Owner: hrel
+--
+
+CREATE TABLE feeds (
+    id bigint NOT NULL,
+    title character varying DEFAULT ''::character varying NOT NULL,
+    url character varying NOT NULL
+);
+
+
+ALTER TABLE feeds OWNER TO hrel;
+
+--
+-- Name: feeds_id_seq; Type: SEQUENCE; Schema: public; Owner: hrel
+--
+
+CREATE SEQUENCE feeds_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE feeds_id_seq OWNER TO hrel;
+
+--
+-- Name: feeds_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: hrel
+--
+
+ALTER SEQUENCE feeds_id_seq OWNED BY feeds.id;
+
+
+--
 -- Name: tags; Type: TABLE; Schema: public; Owner: hrel
 --
 
@@ -82,10 +128,41 @@ ALTER SEQUENCE torrents_id_seq OWNED BY torrents.id;
 
 
 --
+-- Name: feeds id; Type: DEFAULT; Schema: public; Owner: hrel
+--
+
+ALTER TABLE ONLY feeds ALTER COLUMN id SET DEFAULT nextval('feeds_id_seq'::regclass);
+
+
+--
 -- Name: torrents id; Type: DEFAULT; Schema: public; Owner: hrel
 --
 
 ALTER TABLE ONLY torrents ALTER COLUMN id SET DEFAULT nextval('torrents_id_seq'::regclass);
+
+
+--
+-- Name: feed_contents feed_contents_title_key; Type: CONSTRAINT; Schema: public; Owner: hrel
+--
+
+ALTER TABLE ONLY feed_contents
+    ADD CONSTRAINT feed_contents_title_key UNIQUE (title);
+
+
+--
+-- Name: feeds feeds_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel
+--
+
+ALTER TABLE ONLY feeds
+    ADD CONSTRAINT feeds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: feeds feeds_url_key; Type: CONSTRAINT; Schema: public; Owner: hrel
+--
+
+ALTER TABLE ONLY feeds
+    ADD CONSTRAINT feeds_url_key UNIQUE (url);
 
 
 --
@@ -110,6 +187,14 @@ ALTER TABLE ONLY torrents
 
 ALTER TABLE ONLY torrents
     ADD CONSTRAINT torrents_title_uri_key UNIQUE (title, uri);
+
+
+--
+-- Name: feed_contents feed_contents_feed_fkey; Type: FK CONSTRAINT; Schema: public; Owner: hrel
+--
+
+ALTER TABLE ONLY feed_contents
+    ADD CONSTRAINT feed_contents_feed_fkey FOREIGN KEY (feed) REFERENCES feeds(id);
 
 
 --

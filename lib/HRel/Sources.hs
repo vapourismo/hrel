@@ -10,6 +10,9 @@ module HRel.Sources (
 
 	TorrentProducer,
 	torrentSource,
+
+	TorrentConduit,
+	fetchTorrents
 ) where
 
 import           Control.Monad.Catch
@@ -83,3 +86,11 @@ torrentSource mgr src = do
 			case src of
 				PirateBay url -> (url, pirateBaySource)
 				RARBG url     -> (url, rarbgSource)
+
+-- | Source transformer, torrent producer
+type TorrentConduit i m o = HRelT SourceError (ConduitM i o) m ()
+
+-- | Fetch torrents from the given sources
+fetchTorrents :: (MonadCatch m, MonadResource m) => Manager -> TorrentConduit TorrentSource m [Torrent]
+fetchTorrents mgr =
+	awaitForever (torrentSource mgr)

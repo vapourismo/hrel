@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.XML (
+module HRel.XML {-(
 	xml,
 	content,
 	Content (..),
 	Attribute
-) where
+)-} where
 
 import           Control.Monad
 import           Control.Applicative
@@ -109,12 +109,12 @@ charData =
 comment :: Parser T.Text
 comment = do
 	string "!--"
-	T.pack <$> manyTill (satisfy isXMLChar) (string "-->") <* string "-->"
+	T.pack <$> manyTill (satisfy isXMLChar) (string "-->")
 
 cData :: Parser T.Text
 cData = do
 	string "![CDATA["
-	T.pack <$> manyTill (satisfy isXMLChar) (string "-->") <* string "]]>"
+	T.pack <$> manyTill (satisfy isXMLChar) (string "-->")
 
 openTag :: Parser (T.Text, [Attribute])
 openTag = do
@@ -152,11 +152,10 @@ attribute =
 
 instruction :: Parser (T.Text, T.Text)
 instruction = do
-	string "?"
+	char '?'
 	(,) <$> name
 	    <*  space
 	    <*> (T.strip . T.pack <$> manyTill (satisfy isXMLChar) (string "?>"))
-	    <*  string "?>"
 
 systemLiteral :: Parser ()
 systemLiteral =

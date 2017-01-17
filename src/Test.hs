@@ -1,9 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
 
-import           Control.Monad.Trans
-import           Control.Monad.Trans.Resource
 import           Control.Monad.Except
-import           Control.Monad.Catch
+import           Control.Monad.Trans.Resource
 
 import           Data.Conduit
 import qualified Data.Conduit.List as C
@@ -11,22 +9,13 @@ import qualified Data.Conduit.List as C
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 
-import           HRel.Sources
-import           HRel.Torrents
-import           HRel.Monad
-
-type HRelSource m o = HRelT SourceError (ConduitM () o) m ()
-
-sources :: (MonadCatch m, MonadResource m) => Manager -> HRelSource m [Torrent]
-sources mgr =
-	mapM_ (torrentSource mgr)
-	      [RARBG "https://rarbg.to/rssdd_magnet.php?category=41",
-	       RARBG "https://rarbg.to/rssdd_magnet.php?category=48;44;45;42"]
+import           HRel.Feeds
 
 main :: IO ()
 main = do
 	mgr <- newManager tlsManagerSettings
 	result <- runResourceT $ runExceptT $ runConduit $
-		sources mgr =$= C.mapM_ (liftIO . mapM_ print)
+		feedSource mgr "https://www.xrel.to/releases-usrss.html?u=20470&s=ee663473a8da8a161902c908326ebe1c&favs=1"
+		=$= C.consume
 
-	either print (const (pure ())) result
+	print result

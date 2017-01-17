@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.XML {-(
+module HRel.XML (
 	xml,
 	content,
 	Content (..),
 	Attribute
-)-} where
+) where
 
 import           Control.Monad
 import           Control.Applicative

@@ -103,7 +103,7 @@ buildNodes =
 type XmlError = ParseError
 
 -- | XML processor
-type XmlConduit i m o = HRelT ParseError (ConduitM i o) m ()
+type XmlConduit i m o = HRelT XmlError (ConduitM i o) m ()
 
 -- | Process incoming 'T.Text' in order to build 'Node's.
 processXML :: (MonadCatch m) => XmlConduit T.Text m Node

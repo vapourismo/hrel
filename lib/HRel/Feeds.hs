@@ -1,7 +1,11 @@
-{-# LANGUAGE OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE OverloadedStrings, RankNTypes, QuasiQuotes #-}
 
 module HRel.Feeds (
 	Feed (..),
+
+	listFeeds,
+	updateFeedTitle,
+	insertFeedContents,
 
 	atomFilter,
 	rssFilter,
@@ -20,21 +24,43 @@ import           Control.Monad.Trans.Resource
 import           Data.Conduit
 import           Data.Conduit.Text
 
+import           Data.Int
 import qualified Data.Text as T
 
 import           Network.HTTP.Client
+
+import           Database.PostgreSQL.Store
+import           Database.PostgreSQL.Store.Query
 
 import           HRel.Monad
 import           HRel.Network
 import           HRel.Markup
 import           HRel.NodeFilter
 
-
 -- | Feed
 data Feed = Feed {
 	feedTitle    :: T.Text,
-	feedContents ::  [T.Text]
+	feedContents :: [T.Text]
 } deriving (Show, Eq, Ord)
+
+-- |
+listFeeds :: Errand [(Int64, T.Text, String)]
+listFeeds =
+	query [pgsq| SELECT id, title, url FROM feeds |]
+
+-- |
+updateFeedTitle :: Int64 -> T.Text -> Errand ()
+updateFeedTitle fid title =
+	() <$ execute [pgsq| UPDATE feeds SET title = $title WHERE id = $fid |]
+
+-- |
+insertFeedContents :: Int64 -> [T.Text] -> Errand ()
+insertFeedContents fid contents =
+	() <$ execute [pgsq| INSERT INTO feed_contents (feed, title)
+	                     VALUES $(insertCommaSeperated (map insertContent contents))
+	                     ON CONFLICT (title) DO NOTHING |]
+	where
+		insertContent content = [pgsq| ($fid, $content) |]
 
 -- | Atom feeds
 atomFilter :: NodeFilter Feed

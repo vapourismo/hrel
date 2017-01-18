@@ -5,7 +5,7 @@ module HRel.Feeds (
 
 	listFeeds,
 	updateFeedTitle,
-	insertFeedContents,
+	associateSuitableTorrents,
 
 	atomFilter,
 	rssFilter,
@@ -36,6 +36,8 @@ import           HRel.Monad
 import           HRel.Network
 import           HRel.Markup
 import           HRel.NodeFilter
+import           HRel.Names
+import           HRel.Torrents
 
 -- | Feed
 data Feed = Feed {
@@ -54,13 +56,20 @@ updateFeedTitle fid title =
 	() <$ execute [pgsq| UPDATE feeds SET title = $title WHERE id = $fid |]
 
 -- |
-insertFeedContents :: Int64 -> [T.Text] -> Errand ()
-insertFeedContents fid contents =
-	() <$ execute [pgsq| INSERT INTO feed_contents (feed, title)
-	                     VALUES $(insertCommaSeperated (map insertContent contents))
-	                     ON CONFLICT (title) DO NOTHING |]
+associateSuitableTorrents :: Int64 -> T.Text -> Errand [Int64]
+associateSuitableTorrents fid name =
+	query [pgsq| WITH allResults AS (
+	                 SELECT id, COUNT(tags) AS score
+	                 FROM @Torrent, tags
+	                 WHERE id = torrent
+	                       AND tag IN ($(insertCommaSeperated (map insertEntity tags)))
+	                 GROUP BY id
+	                 ORDER BY score DESC
+	             )
+	             INSERT INTO feed_contents (feed, torrent)
+	             SELECT $fid, id FROM allResults WHERE score >= $(length tags) |]
 	where
-		insertContent content = [pgsq| ($fid, $content) |]
+		tags = parseTags name
 
 -- | Atom feeds
 atomFilter :: NodeFilter Feed

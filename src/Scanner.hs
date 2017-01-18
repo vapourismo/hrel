@@ -82,7 +82,7 @@ feedSink db =
 	C.mapM_ $ \ (fid, Feed title contents) -> liftIO $ do
 		result <- runErrand db $ do
 			optional (updateFeedTitle fid title)
-			insertFeedContents fid contents
+			mapM_ (associateSuitableTorrents fid) contents
 
 		case result of
 			Left err -> print err

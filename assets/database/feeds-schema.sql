@@ -26,7 +26,7 @@ SET default_with_oids = false;
 
 CREATE TABLE feed_contents (
     feed bigint NOT NULL,
-    title character varying NOT NULL
+    torrent bigint NOT NULL
 );
 
 
@@ -74,14 +74,6 @@ ALTER TABLE ONLY feeds ALTER COLUMN id SET DEFAULT nextval('feeds_id_seq'::regcl
 
 
 --
--- Name: feed_contents feed_contents_title_key; Type: CONSTRAINT; Schema: public; Owner: hrel
---
-
-ALTER TABLE ONLY feed_contents
-    ADD CONSTRAINT feed_contents_title_key UNIQUE (title);
-
-
---
 -- Name: feeds feeds_pkey; Type: CONSTRAINT; Schema: public; Owner: hrel
 --
 
@@ -103,6 +95,14 @@ ALTER TABLE ONLY feeds
 
 ALTER TABLE ONLY feed_contents
     ADD CONSTRAINT feed_contents_feed_fkey FOREIGN KEY (feed) REFERENCES feeds(id);
+
+
+--
+-- Name: feed_contents feed_contents_torrent_fkey; Type: FK CONSTRAINT; Schema: public; Owner: hrel
+--
+
+ALTER TABLE ONLY feed_contents
+    ADD CONSTRAINT feed_contents_torrent_fkey FOREIGN KEY (torrent) REFERENCES torrents(id);
 
 
 --

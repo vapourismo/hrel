@@ -43,19 +43,11 @@ search :: T.Text -> Errand [Torrent]
 search =
 	searchForTorrents . parseTags
 
-searchRoutePost :: P.Connection -> ServerPartT IO Response
-searchRoutePost db = do
-	method POST
-	requestBody >>= searchRoute db
-
-searchRouteGet :: P.Connection -> ServerPartT IO Response
-searchRouteGet db = do
+searchRoute :: P.Connection -> ServerPartT IO Response
+searchRoute db = do
 	method GET
-	decodeBody (defaultBodyPolicy "/tmp" 1024 1024 1024)
-	lookBS "q" >>= searchRoute db
+	searchTerm <- lookBS "q"
 
-searchRoute :: P.Connection -> BL.ByteString -> ServerPartT IO Response
-searchRoute db searchTerm = do
 	result <- liftIO (runErrand db (search (decodeQueryString searchTerm)))
 	case result of
 		Left err -> do
@@ -75,5 +67,5 @@ main :: IO ()
 main = do
 	db <- P.connectdb "user=hrel dbname=hrel"
 
-	simpleHTTP httpConf (msum [dir "search" (searchRoutePost db <|> searchRouteGet db),
+	simpleHTTP httpConf (msum [dir "search" (searchRoute db),
 	                           defaultRoute])

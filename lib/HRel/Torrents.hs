@@ -14,6 +14,7 @@ import           Control.Monad.Except
 
 import           Data.Int
 import           Data.Tagged
+import           Data.Aeson
 import qualified Data.Text as T
 
 import           Database.PostgreSQL.Store
@@ -36,6 +37,10 @@ instance TableEntity Torrent where
 	describeTableType =
 		Tagged (Table "torrents" [Column "title" anyColumnType,
 		                          Column "uri"   anyColumnType])
+
+instance ToJSON Torrent where
+	toJSON (Torrent title uri) =
+		object ["title" .= title, "uri" .= uri]
 
 -- |
 insertTorrent :: Torrent -> Errand Int64

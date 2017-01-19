@@ -40,12 +40,7 @@ getSearch db = do
 			text "Search failed"
 
 		Right torrents ->
-			json (map transformResult torrents)
-
-	where
-		transformResult (Torrent title uri) =
-			object ["title" .= title,
-			        "uri"   .= uri]
+			json torrents
 
 postFeeds :: Manager -> P.Connection -> ActionM ()
 postFeeds mgr db = do

@@ -5,6 +5,7 @@ module HRel.Feeds (
 
 	insertFeed,
 	listFeeds,
+	listFeedContents,
 	updateFeedTitle,
 	associateSuitableTorrents,
 
@@ -61,6 +62,13 @@ insertFeed url = do
 listFeeds :: Errand [(Int64, T.Text, String)]
 listFeeds =
 	query [pgsq| SELECT id, title, url FROM feeds |]
+
+-- |
+listFeedContents :: Int64 -> Errand [Torrent]
+listFeedContents fid =
+	query [pgsq| SELECT #Torrent(t)
+	             FROM @Torrent t JOIN feed_contents fc ON t.id = fc.torrent
+	             WHERE fc.feed = $fid |]
 
 -- |
 updateFeedTitle :: Int64 -> T.Text -> Errand ()

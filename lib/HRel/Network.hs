@@ -7,7 +7,9 @@ module HRel.Network (
 	httpRequest,
 
 	HttpIO,
-	httpDownload
+	httpDownload,
+
+	httpProbe
 ) where
 
 import           Control.Monad
@@ -57,6 +59,17 @@ httpDownload :: Manager -> Request -> HttpIO [B.ByteString]
 httpDownload mgr interimReq =
 	catch (liftIO (bracket (responseOpen req mgr) responseClose (brConsume . responseBody)))
 	      (\ err -> throwError (HttpError req err))
+	where
+		req =
+			interimReq {
+				requestHeaders = (hUserAgent, "hrel-haskell/0.0.0") : requestHeaders interimReq
+			}
+
+-- | Test if the request can potentially be performed.
+httpProbe :: Manager -> Request -> IO Bool
+httpProbe mgr interimReq =
+	catch (True <$ (responseOpen req mgr >>= responseClose))
+	      (\ (SomeException _) -> pure False)
 	where
 		req =
 			interimReq {

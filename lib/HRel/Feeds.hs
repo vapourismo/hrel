@@ -76,18 +76,19 @@ updateFeedTitle fid title =
 	() <$ execute [pgsq| UPDATE feeds SET title = $title WHERE id = $fid |]
 
 -- |
-associateSuitableTorrents :: Int64 -> T.Text -> Errand [Int64]
+associateSuitableTorrents :: Int64 -> T.Text -> Errand ()
 associateSuitableTorrents fid name =
-	query [pgsq| WITH allResults AS (
-	                 SELECT id, COUNT(tags) AS score
-	                 FROM @Torrent, tags
-	                 WHERE id = torrent
-	                       AND tag IN ($(insertCommaSeperated (map insertEntity tags)))
-	                 GROUP BY id
-	                 ORDER BY score DESC
-	             )
-	             INSERT INTO feed_contents (feed, torrent)
-	             SELECT $fid, id FROM allResults WHERE score >= $(length tags) |]
+	() <$ execute [pgsq| WITH allResults AS (
+	                         SELECT id, COUNT(tags) AS score
+	                         FROM @Torrent, tags
+	                         WHERE id = torrent
+	                               AND tag IN ($(insertCommaSeperated (map insertEntity tags)))
+	                         GROUP BY id
+	                         ORDER BY score DESC
+	                     )
+	                     INSERT INTO feed_contents (feed, torrent)
+	                     SELECT $fid, id FROM allResults WHERE score >= $(length tags)
+	                     ON CONFLICT (feed, torrent) DO NOTHING |]
 	where
 		tags = parseTags name
 

@@ -3,6 +3,7 @@
 module HRel.Feeds (
 	Feed (..),
 
+	insertFeed,
 	listFeeds,
 	updateFeedTitle,
 	associateSuitableTorrents,
@@ -44,6 +45,17 @@ data Feed = Feed {
 	feedTitle    :: T.Text,
 	feedContents :: [T.Text]
 } deriving (Show, Eq, Ord)
+
+-- |
+insertFeed :: T.Text -> Errand Int64
+insertFeed url = do
+	r <- query [pgsq| INSERT INTO feeds (url)
+	                  VALUES ($url)
+	                  ON CONFLICT (url) DO UPDATE SET url = feeds.url
+	                  RETURNING id |]
+	case r of
+		[fid] -> pure fid
+		_     -> throwError (UserError "Invalid number of feeds inserted (not 1)")
 
 -- |
 listFeeds :: Errand [(Int64, T.Text, String)]

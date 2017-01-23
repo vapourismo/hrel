@@ -1,0 +1,47 @@
+name:                hrel-server
+version:             0.0.0
+build-type:          Simple
+cabal-version:       >= 1.10
+
+library
+  ghc-options:         -Wall -fno-warn-tabs -fno-warn-name-shadowing -Wno-unused-do-bind
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5, pg-store, bytestring, text, mtl, transformers,
+                       http-client, http-client-tls, http-types, attoparsec, containers, conduit,
+                       resourcet, http-types, conduit-extra, exceptions, mmorph, tagged, aeson
+  hs-source-dirs:      lib
+  exposed-modules:     HRel.Torrents
+                       HRel.Markup
+                       HRel.NodeFilter
+                       HRel.Network
+                       HRel.Sources
+                       HRel.Names
+                       HRel.XML
+                       HRel.Monad
+                       HRel.Feeds
+
+executable hrel-webserver
+  ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -Wno-name-shadowing
+  default-language:    Haskell2010
+  build-depends:       base, hrel-server, pg-store, postgresql-libpq, aeson, mtl, scotty,
+                       text, bytestring, http-types, http-client, http-client-tls, lucid,
+                       network-uri
+  hs-source-dirs:      src
+  main-is:             WebServer.hs
+
+executable hrel-scanner
+  ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind
+  default-language:    Haskell2010
+  build-depends:       base, hrel-server, http-client, http-client-tls, transformers,
+                       pg-store, postgresql-libpq, conduit, resourcet, mtl, exceptions
+  hs-source-dirs:      src
+  main-is:             Scanner.hs
+
+executable hrel-test
+  ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind
+  default-language:    Haskell2010
+  build-depends:       base, hrel-server, bytestring, text, mtl, http-client, http-client-tls,
+                       pg-store, postgresql-libpq, attoparsec, conduit, conduit-extra, resourcet,
+                       containers, http-types, exceptions
+  hs-source-dirs:      src
+  main-is:             Test.hs

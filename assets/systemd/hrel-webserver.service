@@ -6,7 +6,7 @@ After=postgresql.service
 [Service]
 Type=simple
 ExecStart=/usr/bin/stack exec hrel-webserver
-WorkingDirectory=/var/hrel/hrel-server
+WorkingDirectory=/var/hrel/hrel
 User=hrel
 Group=hrel
 Restart=on-failure

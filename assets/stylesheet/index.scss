@@ -1,0 +1,150 @@
+/* Copyright (C) 2015-2016, Ole Krüger <ole@vprsm.de> */
+
+@import url("https://fonts.googleapis.com/css?family=Inconsolata");
+
+* {
+	box-sizing: border-box;
+}
+
+/* General */
+body {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	background-color: #222222;
+	color: #fff;
+	font-family: "Inconsolata", monospace;
+	font-size: 10pt;
+}
+
+html, body {
+	height: 100%;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+/* Canvas */
+#canvas {
+	flex: 1;
+	height: 100%;
+	overflow-y: auto;
+	padding: 10px;
+	display: flex;
+	justify-content: center;
+
+	noscript {
+		padding: 15px;
+		text-align: center;
+		color: #afafaf;
+		display: flex;
+		align-content: center;
+		align-items: center;
+		justify-content: center;
+	}
+}
+
+/* Footer */
+#footer {
+	z-index: 300;
+	text-align: center;
+	padding: 10px;
+	border-top: solid 1px #666666;
+	min-height: min-content;
+	box-shadow: 0 -3px 10px #111111;
+
+	.link {
+		padding: 5px;
+		transition: all 500ms;
+		text-decoration: none;
+		font-size: 0.9em;
+		color: #afafaf;
+
+		&:hover {
+			color: #fff;
+			background-color: #96373c;
+		}
+	}
+}
+
+/* Content */
+.content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+
+	min-height: min-content;
+
+	.search-form {
+		display: flex;
+		flex-direction: row;
+		margin: 0;
+		padding: 5px;
+		width: 100%;
+
+		.input {
+			flex: 1;
+			border: none;
+			outline: none;
+			font-family: "Inconsolata", monospace;
+			font-size: 10pt;
+			padding: 10px;
+			background-color: #1a1a1a;
+			color: #efefef;
+			transition: all 200ms;
+			min-width: 500px;
+
+			&:hover, &:active, &:focus {
+				background-color: #96373c;
+			}
+		}
+
+		.submit-button {
+			margin-left: 5px;
+			background-color: #1a1a1a;
+			color: #efefef;
+			padding: 10px;
+			transition: all 200ms;
+			cursor: pointer;
+
+			&:hover, &:active, &:focus {
+				background-color: #96373c;
+			}
+		}
+	}
+
+	.results {
+		display: table;
+		border-spacing: 5px;
+		border-top: solid 1px #666666;
+		width: 100%;
+
+		.empty {
+			text-align: center;
+		}
+
+		.result {
+			display: table-row;
+
+			.cell {
+				display: table-cell;
+				padding: 10px;
+				color: #efefef;
+				background-color: #1a1a1a;
+				transition: all 200ms;
+				text-decoration: none;
+			}
+
+			.link, .add {
+				text-align: center;
+			}
+
+			&:hover .cell, &:active .cell, &:focus .cell {
+				background-color: #96373c;
+			}
+		}
+	}
+}

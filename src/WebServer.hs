@@ -2,6 +2,7 @@
 
 module Main where
 
+import           Control.Applicative
 import           Control.Monad.Trans
 
 import           Data.Monoid
@@ -186,7 +187,7 @@ main = do
 
 	scotty 3401 $ do
 		get "/" indexPage
-		get "/search" (searchPage db)
+		get "/search" (searchPage db <|> redirect "/")
 		-- get "/search" (getSearch db)
 		-- get "/feeds" (getFeeds db)
 		-- post "/feeds" (postFeeds mgr db)

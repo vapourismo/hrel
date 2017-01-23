@@ -165,20 +165,33 @@ indexPage =
 searchPage :: P.Connection -> ActionM ()
 searchPage db = do
 	searchTerm <- param "q"
-	result <- liftIO (runErrand db (search searchTerm))
 
-	case result of
-		Left err -> do
-			liftIO (print err)
-			status internalServerError500
-			text "Search failed"
+	if T.null searchTerm then
+		indexPage
+	else do
+		result <- liftIO (runErrand db (search searchTerm))
+		case result of
+			Left err -> do
+				liftIO (print err)
+				status internalServerError500
+				text "Search failed"
 
-		Right torrents ->
-			lucid $ pageBody $
-				div_ [class_ "content"] $ do
-					searchForm (Just searchTerm)
-					div_ [class_ "results"] $
-						mapM_ searchResult torrents
+			Right torrents
+				| null torrents ->
+					lucid $ pageBody $
+						div_ [class_ "content"] $ do
+							searchForm (Just searchTerm)
+							div_ [class_ "no-results"] $ do
+								div_ "Nothing has been found."
+								div_ "Check again later."
+
+				| otherwise ->
+					lucid $ pageBody $
+						div_ [class_ "content"] $ do
+							searchForm (Just searchTerm)
+							div_ [class_ "results"] $
+								mapM_ searchResult torrents
+
 
 main :: IO ()
 main = do

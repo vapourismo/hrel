@@ -75,7 +75,7 @@ searchForTorrents tags =
 	                 WHERE id = torrent
 	                       AND tag IN ($(insertCommaSeperated (map insertTag tags)))
 	                 GROUP BY id
-	                 ORDER BY score DESC
+	                 ORDER BY score DESC, insertion DESC
 	             ),
 	             scores AS (
 	                 SELECT MAX(score) AS maxScore FROM allResults

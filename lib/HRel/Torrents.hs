@@ -2,15 +2,11 @@
 
 module HRel.Torrents (
 	Torrent (..),
-	insertTorrent,
-	searchForTorrents,
-
-	associateTags
+	insertTorrents,
+	searchForTorrents
 ) where
 
 import           GHC.Generics
-
-import           Control.Monad.Except
 
 import           Data.Int
 import           Data.Tagged
@@ -20,12 +16,14 @@ import qualified Data.Text as T
 import           Database.PostgreSQL.Store
 import           Database.PostgreSQL.Store.Query
 
--- |
+import           HRel.Names
+
+-- | Column type wildcard
 anyColumnType :: ColumnType
 anyColumnType =
 	ColumnType "blob" True Nothing
 
--- |
+-- | Torrent
 data Torrent = Torrent {
 	torrentTitle :: T.Text,
 	torrentURI   :: T.Text
@@ -42,21 +40,32 @@ instance ToJSON Torrent where
 	toJSON (Torrent title uri) =
 		object ["title" .= title, "uri" .= uri]
 
--- |
-insertTorrent :: Torrent -> Errand Int64
-insertTorrent torrent = do
-	r <- query qry
-	case r of
-		[r] -> pure r
-		_   -> throwError (UserError "Torrent upsertion returned 0 or more than 1 result")
-	where
-		qry =
-			[pgsq| INSERT INTO @Torrent (title, uri)
-			       VALUES ($torrent)
-			       ON CONFLICT (title, uri) DO UPDATE SET title = @Torrent.title
-			       RETURNING id |]
+-- | Insert a comma-seperated list where each element is surrounded with parentheses.
+insertTuples :: (Entity e) => [e] -> QueryBuilder
+insertTuples es =
+	insertCommaSeperated (map (\ e -> insertCode "(" >> insertEntity e >> insertCode ")") es)
 
--- |
+-- | Insert many torrents.
+insertTorrents :: [Torrent] -> Errand Int
+insertTorrents [] = pure 0
+insertTorrents torrents = do
+	inserted <- query [pgsq| INSERT INTO @Torrent (title, uri)
+	                         VALUES $(insertTuples torrents)
+	                         ON CONFLICT (title, uri) DO NOTHING
+	                         RETURNING id, title |]
+
+	case concatMap buildTagMap inserted of
+		[]   -> pure ()
+		tags -> () <$ execute [pgsq| INSERT INTO tags (torrent, tag)
+		                             VALUES $(insertTuples tags)
+		                             ON CONFLICT (torrent, tag) DO NOTHING |]
+
+	pure (length inserted)
+	where
+		buildTagMap :: (Int64, T.Text) -> [(Int64, T.Text)]
+		buildTagMap (tid, title) = map ((,) tid) (parseTags title)
+
+-- | For torrents with the given tags.
 searchForTorrents :: [T.Text] -> Errand [Torrent]
 searchForTorrents [] = pure []
 searchForTorrents tags =
@@ -75,13 +84,3 @@ searchForTorrents tags =
 	where
 		insertTag =
 			insertEntity . T.toLower
-
--- |
-associateTags :: Int64 -> [T.Text] -> Errand ()
-associateTags tid tags =
-	() <$ execute [pgsq| INSERT INTO tags (torrent, tag)
-	                     VALUES $(insertCommaSeperated (map insertTag tags))
-	                     ON CONFLICT (torrent, tag) DO NOTHING |]
-	where
-		insertTag tag =
-			[pgsq| ($tid, $tag) |]

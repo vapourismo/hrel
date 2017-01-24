@@ -21,7 +21,6 @@ import           Database.PostgreSQL.Store
 import           HRel.Sources
 import           HRel.Feeds
 import           HRel.Torrents
-import           HRel.Names
 import           HRel.Monad
 
 data ScannerError
@@ -48,15 +47,11 @@ torrentSources mgr =
 
 torrentSink :: (MonadIO m) => P.Connection -> HRelSink [Torrent] m ()
 torrentSink db =
-	C.mapM_ $ \ torrents -> liftIO $
-		forM_ torrents $ \ torrent@(Torrent title _) -> do
-			upsertionResult <- runErrand db $ do
-				tid <- insertTorrent torrent
-				associateTags tid (parseTags title)
-
-			case upsertionResult of
-				Left err -> print err
-				_        -> pure ()
+	C.mapM_ $ \ torrents -> liftIO $ do
+		result <- runErrand db (insertTorrents torrents)
+		case result of
+			Left err -> print err
+			Right n  -> putStrLn ("Inserted " ++ show n ++ " new torrents")
 
 feedSources :: (MonadCatch m, MonadResource m) => Manager -> P.Connection -> HRelSource m (Int64, Feed)
 feedSources mgr db = do

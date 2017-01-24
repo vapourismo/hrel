@@ -8,7 +8,8 @@ library
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5, pg-store, bytestring, text, mtl, transformers,
                        http-client, http-client-tls, http-types, attoparsec, containers, conduit,
-                       resourcet, http-types, conduit-extra, exceptions, mmorph, tagged, aeson
+                       resourcet, http-types, conduit-extra, exceptions, mmorph, tagged, aeson,
+                       scotty, lucid, network-uri
   hs-source-dirs:      lib
   exposed-modules:     HRel.Torrents
                        HRel.Markup
@@ -20,6 +21,7 @@ library
                        HRel.Monad
                        HRel.Feeds
                        HRel.TorrentAPI
+                       HRel.Web.Templates
 
 executable hrel-webserver
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -Wno-name-shadowing

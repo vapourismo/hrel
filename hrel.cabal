@@ -9,7 +9,7 @@ library
   build-depends:       base >= 4.7 && < 5, pg-store, bytestring, text, mtl, transformers,
                        http-client, http-client-tls, http-types, attoparsec, containers, conduit,
                        resourcet, http-types, conduit-extra, exceptions, mmorph, tagged, aeson,
-                       scotty, lucid, network-uri
+                       scotty, lucid, network-uri, warp, postgresql-libpq
   hs-source-dirs:      lib
   exposed-modules:     HRel.Torrents
                        HRel.Markup
@@ -21,14 +21,14 @@ library
                        HRel.Monad
                        HRel.Feeds
                        HRel.TorrentAPI
+                       HRel.Database
+                       HRel.Web.Server
                        HRel.Web.Templates
 
 executable hrel-webserver
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -Wno-name-shadowing
   default-language:    Haskell2010
-  build-depends:       base, hrel, pg-store, postgresql-libpq, aeson, mtl, scotty,
-                       text, bytestring, http-types, http-client, http-client-tls, lucid,
-                       network-uri
+  build-depends:       base, hrel, scotty, warp
   hs-source-dirs:      src
   main-is:             WebServer.hs
 

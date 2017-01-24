@@ -1,52 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Main where
+module Main (main) where
 
-import           Control.Applicative
-import           Control.Monad.Trans
+import           Network.Wai.Handler.Warp
 
-import qualified Data.Text            as T
+import           Web.Scotty (scottyApp)
 
-import qualified Database.PostgreSQL.LibPQ as P
-import           Database.PostgreSQL.Store
+import           HRel.Database
+import           HRel.Web.Server
 
-import           Network.HTTP.Types
+-- | Web server settings
+settings :: Settings
+settings =
+	setPort 3401
+	$ setServerName "hrel"
+	$ defaultSettings
 
-import           Web.Scotty
-
-import           HRel.Names
-import           HRel.Torrents
-import           HRel.Web.Templates
-
-search :: T.Text -> Errand [Torrent]
-search =
-	searchForTorrents . parseTags
-
-indexRoute :: ActionM ()
-indexRoute =
-	lucid (indexPage)
-
-searchRoute :: P.Connection -> ActionM ()
-searchRoute db = do
-	searchTerm <- param "q"
-
-	if T.null (T.strip searchTerm) then
-		indexRoute
-	else do
-		result <- liftIO (runErrand db (search searchTerm))
-		case result of
-			Left err -> do
-				liftIO (print err)
-				status internalServerError500
-				text "Search failed"
-
-			Right torrents ->
-				lucid (searchResultPage searchTerm torrents)
-
+-- | Run the web server.
 main :: IO ()
 main = do
-	db <- P.connectdb "user=hrel dbname=hrel"
+	db <- connectDatabase "user=hrel dbname=hrel"
+	app <- scottyApp (webServer db)
 
-	scotty 3401 $ do
-		get "/" indexRoute
-		get "/search" (searchRoute db <|> redirect "/")
+	runSettings settings app

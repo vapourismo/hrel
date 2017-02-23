@@ -156,4 +156,28 @@ html, body {
 		border-top: solid 1px #666666;
 		padding: 5px;
 	}
+
+	.feeds {
+		display: table;
+		border-spacing: 5px;
+		border-top: solid 1px #666666;
+		width: 100%;
+
+		.feed {
+			display: table-row;
+			text-decoration: none;
+
+			.cell {
+				display: table-cell;
+				padding: 10px;
+				color: #efefef;
+				background-color: #1a1a1a;
+				transition: all 200ms;
+			}
+
+			&:hover .cell, &:active .cell, &:focus .cell {
+				background-color: #96373c;
+			}
+		}
+	}
 }

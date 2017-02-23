@@ -69,7 +69,9 @@ listFeedContents :: Int64 -> Errand [Torrent]
 listFeedContents fid =
 	query [pgQuery| SELECT #Torrent(t)
 	                FROM @Torrent t JOIN feed_contents fc ON t.id = fc.torrent
-	                WHERE fc.feed = $fid |]
+	                WHERE fc.feed = $fid
+	                ORDER BY t.insertion DESC
+	                LIMIT 500 |]
 
 -- |
 updateFeedTitle :: Int64 -> T.Text -> Errand ()

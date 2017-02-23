@@ -3,9 +3,14 @@
 module HRel.Web.Templates (
 	lucid,
 	indexPage,
-	searchResultPage
+	searchResultPage,
+	feedsOverviewPage,
+	feedContentsPage
 ) where
 
+import           Control.Monad
+
+import           Data.Int
 import           Data.Monoid
 import qualified Data.Text as T
 
@@ -61,28 +66,48 @@ indexPage :: Html ()
 indexPage =
 	documentBody (searchForm Nothing)
 
--- | Search result page
-searchResultPage :: T.Text -> [Torrent] -> Html ()
-searchResultPage searchTerm torrents =
-	documentBody $ do
-		searchForm (Just searchTerm)
-
-		if null torrents then
-			div_ [class_ "no-results"] $ do
-				div_ "Nothing has been found."
-				div_ "Check again later."
-		else
-			div_ [class_ "results"] $
-				mapM_ searchResultRow torrents
-
+-- | Torrent tesult table
+resultBody :: [Torrent] -> Html ()
+resultBody [] = do
+	div_ [class_ "no-results"] $ do
+		div_ "Nothing has been found."
+		div_ "Check again later."
+resultBody torrents = do
+	div_ [class_ "results"] $
+		mapM_ resultRow torrents
 	where
 		generateAddUrl url =
 			"https://www.premiumize.me/downloader?magnet="
 			<> T.concatMap (T.pack . escapeURIChar isUnescapedInURIComponent) url
 
-		searchResultRow :: Torrent -> Html ()
-		searchResultRow (Torrent title url) =
+		resultRow :: Torrent -> Html ()
+		resultRow (Torrent title url) =
 			div_ [class_ "result"] $ do
 				div_ [class_ "cell title"] (toHtml title)
 				a_ [class_ "cell link", target_ "blank", href_ url] "link"
 				a_ [class_ "cell add", target_ "blank", href_ (generateAddUrl url)] "add"
+
+-- | Search result page
+searchResultPage :: T.Text -> [Torrent] -> Html ()
+searchResultPage searchTerm torrents =
+	documentBody $ do
+		searchForm (Just searchTerm)
+		resultBody torrents
+
+-- | Feeds overview
+feedsOverviewPage :: [(Int64, T.Text, String)] -> Html ()
+feedsOverviewPage feeds =
+	documentBody $ do
+		searchForm Nothing
+		div_ [class_ "feeds"] $
+			forM_ feeds $ \ (fid, title, url) ->
+				a_ [class_ "feed", href_ ("/feeds/" <> T.pack (show fid))] $ do
+					div_ [class_ "cell title"] (toHtml title)
+					div_ [class_ "cell url"] (toHtml url)
+
+-- | Feed contents page
+feedContentsPage :: [Torrent] -> Html ()
+feedContentsPage torrents =
+	documentBody $ do
+		searchForm Nothing
+		resultBody torrents

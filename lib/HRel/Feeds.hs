@@ -33,6 +33,7 @@ import           Network.HTTP.Client
 
 import           Database.PostgreSQL.Store
 import           Database.PostgreSQL.Store.Query
+import           Database.PostgreSQL.Store.Entity
 
 import           HRel.Monad
 import           HRel.Network
@@ -50,10 +51,10 @@ data Feed = Feed {
 -- |
 insertFeed :: T.Text -> Errand Int64
 insertFeed url = do
-	r <- query [pgsq| INSERT INTO feeds (url)
-	                  VALUES ($url)
-	                  ON CONFLICT (url) DO UPDATE SET url = feeds.url
-	                  RETURNING id |]
+	r <- query [pgQuery| INSERT INTO feeds (url)
+	                     VALUES ($url)
+	                     ON CONFLICT (url) DO UPDATE SET url = feeds.url
+	                     RETURNING id |]
 	case r of
 		[fid] -> pure fid
 		_     -> throwError (UserError "Invalid number of feeds inserted (not 1)")
@@ -61,34 +62,34 @@ insertFeed url = do
 -- |
 listFeeds :: Errand [(Int64, T.Text, String)]
 listFeeds =
-	query [pgsq| SELECT id, title, url FROM feeds |]
+	query [pgQuery| SELECT id, title, url FROM feeds |]
 
 -- |
 listFeedContents :: Int64 -> Errand [Torrent]
 listFeedContents fid =
-	query [pgsq| SELECT #Torrent(t)
-	             FROM @Torrent t JOIN feed_contents fc ON t.id = fc.torrent
-	             WHERE fc.feed = $fid |]
+	query [pgQuery| SELECT #Torrent(t)
+	                FROM @Torrent t JOIN feed_contents fc ON t.id = fc.torrent
+	                WHERE fc.feed = $fid |]
 
 -- |
 updateFeedTitle :: Int64 -> T.Text -> Errand ()
 updateFeedTitle fid title =
-	() <$ execute [pgsq| UPDATE feeds SET title = $title WHERE id = $fid |]
+	() <$ execute [pgQuery| UPDATE feeds SET title = $title WHERE id = $fid |]
 
 -- |
 associateSuitableTorrents :: Int64 -> T.Text -> Errand ()
 associateSuitableTorrents fid name =
-	() <$ execute [pgsq| WITH allResults AS (
-	                         SELECT id, COUNT(tags) AS score
-	                         FROM @Torrent, tags
-	                         WHERE id = torrent
-	                               AND tag IN ($(insertCommaSeperated (map insertEntity tags)))
-	                         GROUP BY id
-	                         ORDER BY score DESC
-	                     )
-	                     INSERT INTO feed_contents (feed, torrent)
-	                     SELECT $fid, id FROM allResults WHERE score >= $(length tags)
-	                     ON CONFLICT (feed, torrent) DO NOTHING |]
+	() <$ execute [pgQuery| WITH allResults AS (
+	                            SELECT id, COUNT(tags) AS score
+	                            FROM @Torrent, tags
+	                            WHERE id = torrent
+	                                  AND tag IN ($(joinGens "," (map embedEntity tags)))
+	                            GROUP BY id
+	                            ORDER BY score DESC
+	                        )
+	                        INSERT INTO feed_contents (feed, torrent)
+	                        SELECT $fid, id FROM allResults WHERE score >= $(embedEntity (length tags))
+	                        ON CONFLICT (feed, torrent) DO NOTHING |]
 	where
 		tags = parseTags name
 

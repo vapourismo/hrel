@@ -75,7 +75,10 @@ searchForTorrents tags =
 	                scores AS (
 	                    SELECT MAX(score) AS maxScore FROM allResults
 	                )
-	                SELECT #Torrent(r) FROM allResults r, scores WHERE r.score >= maxScore |]
+	                SELECT #Torrent(r)
+	                FROM allResults r, scores
+	                WHERE r.score >= maxScore
+	                LIMIT 500 |]
 	where
 		insertTag =
 			embedEntity . T.toLower

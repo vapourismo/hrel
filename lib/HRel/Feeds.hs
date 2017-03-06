@@ -49,7 +49,7 @@ data Feed = Feed {
 } deriving (Show, Eq, Ord)
 
 -- |
-insertFeed :: T.Text -> Errand Int64
+insertFeed :: String -> Errand Int64
 insertFeed url = do
 	r <- query [pgQuery| INSERT INTO feeds (url)
 	                     VALUES ($url)

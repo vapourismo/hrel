@@ -2,10 +2,10 @@
 
 module HRel.Web.Templates (
 	lucid,
-	indexPage,
 	searchResultPage,
 	feedsOverviewPage,
-	feedContentsPage
+	feedContentsPage,
+	addFeedPage
 ) where
 
 import           Control.Monad
@@ -48,7 +48,13 @@ documentBody contents = do
 				a_ [class_ "link", target_ "blank", href_ "https://github.com/vapourismo/hrel"]
 					"hrel"
 
--- | Search form
+-- |
+navigationBar :: Html ()
+navigationBar =
+	div_ [class_ "navigation"] $
+		a_ [class_ "link", href_ "/feeds/new"] "Track new feed"
+
+-- |
 searchForm :: Maybe T.Text -> Html ()
 searchForm mbSearchTerm =
 	form_ [class_ "search-form", action_ "/search"] $ do
@@ -59,12 +65,7 @@ searchForm mbSearchTerm =
 			Nothing ->
 				[class_ "input", name_ "q", type_ "text", autofocus_]
 
-		div_ [class_ "submit-button"] "Search"
-
--- | Index page
-indexPage :: Html ()
-indexPage =
-	documentBody (searchForm Nothing)
+		input_ [class_ "submit-button", type_ "submit", value_ "Search"]
 
 -- | Torrent tesult table
 resultBody :: [Torrent] -> Html ()
@@ -91,6 +92,7 @@ resultBody torrents = do
 searchResultPage :: T.Text -> [Torrent] -> Html ()
 searchResultPage searchTerm torrents =
 	documentBody $ do
+		navigationBar
 		searchForm (Just searchTerm)
 		resultBody torrents
 
@@ -98,7 +100,9 @@ searchResultPage searchTerm torrents =
 feedsOverviewPage :: [(Int64, T.Text, String)] -> Html ()
 feedsOverviewPage feeds =
 	documentBody $ do
+		navigationBar
 		searchForm Nothing
+
 		div_ [class_ "feeds"] $
 			forM_ feeds $ \ (fid, title, url) ->
 				a_ [class_ "feed", href_ ("/feeds/" <> T.pack (show fid))] $ do
@@ -109,5 +113,16 @@ feedsOverviewPage feeds =
 feedContentsPage :: [Torrent] -> Html ()
 feedContentsPage torrents =
 	documentBody $ do
+		navigationBar
 		searchForm Nothing
 		resultBody torrents
+
+-- |
+addFeedPage :: Html ()
+addFeedPage =
+	documentBody $ do
+		navigationBar
+
+		form_ [class_ "add-feed-form", method_ "post", action_ "/feeds/new"] $ do
+			input_ [class_ "input", name_ "url", type_ "text", autofocus_]
+			input_ [class_ "submit-button", type_ "submit", value_ "Track"]

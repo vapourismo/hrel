@@ -6,20 +6,26 @@ import           Network.Wai.Handler.Warp
 
 import           Web.Scotty (scottyApp)
 
+import qualified Data.ByteString as B
+
 import           HRel.Database
 import           HRel.Web.Server
 
 -- | Web server settings
-settings :: Settings
-settings =
+webSettings :: Settings
+webSettings =
 	setPort 3401
 	$ setServerName "hrel"
 	$ defaultSettings
 
+-- | PostgreSQL connection string
+dbConnString :: B.ByteString
+dbConnString = "user=hrel dbname=hrel"
+
 -- | Run the web server.
 main :: IO ()
 main = do
-	db <- connectDatabase "user=hrel dbname=hrel"
+	db <- connectDatabase dbConnString
 	app <- scottyApp (webServer db)
 
-	runSettings settings app
+	runSettings webSettings app

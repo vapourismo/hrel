@@ -28,7 +28,7 @@ library
 executable hrel-webserver
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -Wno-name-shadowing
   default-language:    Haskell2010
-  build-depends:       base, hrel, scotty, warp
+  build-depends:       base, hrel, scotty, warp, bytestring
   hs-source-dirs:      src
   main-is:             WebServer.hs
 

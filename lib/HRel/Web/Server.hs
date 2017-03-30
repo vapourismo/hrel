@@ -101,7 +101,7 @@ addFeedPostRoute db = do
 			                                  $$ processFeedContents url)))
 
 		processFeedContents url =
-			C.mapM_ $ \ (Feed title cnt) -> liftIO $ do
+			C.mapM_ $ \ (Feed title _) -> liftIO $ do
 				result <- runErrand db $ do
 					fid <- insertFeed url
 					optional (updateFeedTitle fid title)

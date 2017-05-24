@@ -20,7 +20,7 @@ webSettings =
 
 -- | PostgreSQL connection string
 dbConnString :: B.ByteString
-dbConnString = "user=hrel dbname=hrel"
+dbConnString = "host=localhost user=hrel dbname=hrel"
 
 -- | Run the web server.
 main :: IO ()

@@ -28,7 +28,7 @@ library
 executable hrel-webserver
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind -Wno-name-shadowing
   default-language:    Haskell2010
-  build-depends:       base, hrel, scotty, warp, bytestring
+  build-depends:       base, hrel, scotty, warp, bytestring, unix
   hs-source-dirs:      src
   main-is:             WebServer.hs
 
@@ -36,7 +36,7 @@ executable hrel-scanner
   ghc-options:         -Wall -fno-warn-tabs -Wno-unused-do-bind
   default-language:    Haskell2010
   build-depends:       base, hrel, http-client, http-client-tls, transformers,
-                       pg-store, postgresql-libpq, conduit, resourcet, mtl, exceptions
+                       pg-store, postgresql-libpq, conduit, resourcet, mtl, exceptions, unix
   hs-source-dirs:      src
   main-is:             Scanner.hs
 

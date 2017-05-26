@@ -8,6 +8,8 @@ import           Web.Scotty (scottyApp)
 
 import qualified Data.ByteString as B
 
+import           System.Posix.Env.ByteString
+
 import           HRel.Database
 import           HRel.Web.Server
 
@@ -18,14 +20,11 @@ webSettings =
 	$ setServerName "hrel"
 	$ defaultSettings
 
--- | PostgreSQL connection string
-dbConnString :: B.ByteString
-dbConnString = "host=localhost user=hrel dbname=hrel"
-
 -- | Run the web server.
 main :: IO ()
 main = do
-	db <- connectDatabase dbConnString
+	connStr <- getEnvDefault "PGINFO" "host=localhost user=hrel dbname=hrel"
+	db <- connectDatabase connStr
 	app <- scottyApp (webServer db)
 
 	runSettings webSettings app

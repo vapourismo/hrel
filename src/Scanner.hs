@@ -18,6 +18,8 @@ import           Network.HTTP.Client.TLS
 import qualified Database.PostgreSQL.LibPQ as P
 import           Database.PostgreSQL.Store
 
+import           System.Posix.Env.ByteString
+
 import           HRel.Sources
 import           HRel.Feeds
 import           HRel.Torrents
@@ -85,7 +87,8 @@ feedSink db =
 
 main :: IO ()
 main = do
-	db <- P.connectdb "user=hrel dbname=hrel"
+	connStr <- getEnvDefault "PGINFO" "host=localhost user=hrel dbname=hrel"
+	db <- P.connectdb connStr
 	mgr <- newManager tlsManagerSettings
 
 	run (torrentSources mgr $$ torrentSink db)

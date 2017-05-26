@@ -1,7 +1,7 @@
 FROM base/archlinux
 
 # Setup system
-RUN pacman -Sy --noconfirm postgresql-libs git sed tar make stack ghc grep awk && \
+RUN pacman -Sy --noconfirm postgresql-libs git sed tar make stack ghc grep gawk && \
 	useradd -d /hrel -m hrel
 
 # Switch to user
@@ -21,9 +21,9 @@ ADD hrel.cabal Setup.hs stack.yaml build/app/
 RUN cd build/app && stack setup && stack build && stack install
 
 # Clean up system
-RUN rm -rf build
 USER root
-RUN pacman -Rs git sed tar make stack grep awk
+RUN rm -rf build
+RUN pacman -Rs --noconfirm git sed tar make stack grep gawk
 
 # Setup entrypoint
 USER hrel

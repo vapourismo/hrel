@@ -1,0 +1,38 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: hrel-web-server
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: hrel-web-server
+    spec:
+      containers:
+        - name: hrel-internal-web-server
+          image: eu.gcr.io/hrel-168422/hrel:master
+          imagePullPolicy: Always
+          command:
+            - hrel-webserver
+          ports:
+            - containerPort: 3401
+          env:
+            - name: PGINFO
+              value: "host=hrel-database user=hrel dbname=hrel"
+        - name: hrel-external-web-server
+          image: eu.gcr.io/hrel-168422/hrel-nginx:master
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hrel-web-server
+spec:
+  type: LoadBalancer
+  selector:
+    app: hrel-web-server
+  ports:
+    - protocol: TCP
+      port: 80

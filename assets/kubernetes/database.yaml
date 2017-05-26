@@ -1,0 +1,36 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: hrel-database
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: hrel-database
+    spec:
+      containers:
+        - name: hrel-database
+          image: postgres:9.6
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: hrel-database-vol
+      volumes:
+        - name: hrel-database-vol
+          gcePersistentDisk:
+            pdName: hrel-database-disk
+            fsType: ext4
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hrel-database
+spec:
+  type: ClusterIP
+  selector:
+    app: hrel-database
+  ports:
+    - protocol: TCP
+      port: 5432

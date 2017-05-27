@@ -2,7 +2,7 @@ FROM base/archlinux
 
 # Setup system
 RUN pacman -Sy --noconfirm postgresql-libs git sed tar make stack ghc grep gawk && \
-	useradd -d /hrel -m hrel
+    useradd -d /hrel -m hrel
 
 # Switch to user
 USER hrel

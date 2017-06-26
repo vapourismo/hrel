@@ -1,14 +1,14 @@
 module.exports = {
-	entry: "./client/source/index.jsx",
+	entry: "./src/index.jsx",
 	output: {
-		filename: "./client/static/index.js"
+		filename: "./out/index.js"
 	},
 	module: {
 		loaders: [
 			{
 				test: /\.jsx$/,
 				exclude: /node_modules/,
-				loader: "babel",
+				loader: "babel-loader",
 				query: {
 					presets: ["react", "es2015"],
 					plugins: ["transform-runtime"]

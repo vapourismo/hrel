@@ -1,10 +1,9 @@
 # Node Dependencies
-node_modules/
+node_modules
 
 # Client-side stuff
-client/static/index.js
-client/static/index.css
-client/static/index.css.map
+client/out/index.js
+client/out/index.css
 .sass-cache
 
 # Ignore local configuration files

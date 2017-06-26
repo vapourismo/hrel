@@ -74,7 +74,7 @@ closeNode name = do
 
 -- | Do something with an instance of 'X.Content'.
 interpretContent :: (Monad m) => X.Content -> NodeBuilder m ()
-interpretContent c = do
+interpretContent c =
 	case c of
 		X.Open n a  -> modify (pushOpen n a)
 		X.Close n   -> closeNode n

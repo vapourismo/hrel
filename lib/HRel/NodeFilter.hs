@@ -60,7 +60,7 @@ filterNodes nf =
 -- | Traverse the sequence to transform certain nodes that match the given criteria.
 mapFilterCat :: (Node -> Bool) -> (Node -> Maybe b) -> [Content] -> [b]
 mapFilterCat cond fun contents =
-	catMaybes (map fun' (filter cond' contents))
+	mapMaybe fun' (filter cond' contents)
 	where
 		fun' (Nested node) = fun node
 		fun' _             = Nothing

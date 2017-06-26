@@ -117,14 +117,14 @@ cData = do
 	T.pack <$> manyTill (satisfy isXMLChar) (string "-->")
 
 openTag :: Parser (T.Text, [Attribute])
-openTag = do
+openTag =
 	(,) <$> name
 	    <*> many (space >> attribute)
 	    <*  space
 	    <*  char '>'
 
 emptyTag :: Parser (T.Text, [Attribute])
-emptyTag = do
+emptyTag =
 	(,) <$> name
 	    <*> many (space >> attribute)
 	    <*  space
@@ -136,7 +136,7 @@ closeTag = do
 	name <* space <* char '>'
 
 attributeValue :: Parser T.Text
-attributeValue = do
+attributeValue =
 	(char '\'' *> A.takeWhile (/= '\'') <* char '\'')
 	<|> (char '"' *> A.takeWhile (/= '"') <* char '"')
 
@@ -165,7 +165,7 @@ systemLiteral =
 publicIDLiteral :: Parser ()
 publicIDLiteral =
 	(char '\'' *> skipWhile (\ c -> c /= '\'' && isPublicIDChar c) <* char '\'')
-	<|> (char '"' *> skipWhile (isPublicIDChar) <* char '"')
+	<|> (char '"' *> skipWhile isPublicIDChar <* char '"')
 	where
 		isPublicIDChar c =
 			c == ' '
@@ -177,7 +177,7 @@ publicIDLiteral =
 			|| elem c ("-'()+,./:=?;!*#@$_%" :: String)
 
 externalID :: Parser ()
-externalID = do
+externalID =
 	(string "SYSTEM" >> space >> systemLiteral)
 	<|> (string "PUBLIC" >> space >> publicLiteral)
 	where
@@ -210,39 +210,40 @@ elementDecl = do
 			      mixedOne <|> mixedTwo,
 			      children]
 
-		mixedOne = do
+		pcDataIntro = do
 			char '('
 			space
 			string "#PCDATA"
+
+		mixedOne = do
+			pcDataIntro
 			many (space >> char '|' >> space >> name)
 			space
 			() <$ string ")*"
 
 		mixedTwo = do
-			char '('
-			space
-			string "#PCDATA"
+			pcDataIntro
 			space
 			() <$ char ')'
 
 		children = do
-			choice <|> seq
+			choices <|> sequenced
 			() <$ optional (satisfy (`elem` ("?*+" :: String)))
 
-		choice = do
+		choices = do
 			char '('
 			sepBy2 (space >> cp) (space >> char '|')
 			space
 			() <$ char ')'
 
-		seq = do
+		sequenced = do
 			char '('
 			sepBy1 (space >> cp) (space >> char ',')
 			space
 			() <$ char ')'
 
 		cp = do
-			void name <|> choice <|> seq
+			void name <|> choices <|> sequenced
 			() <$ optional (satisfy (`elem` ("?*+" :: String)))
 
 -- attributeListDecl :: Parser ()

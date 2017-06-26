@@ -73,16 +73,16 @@ type TorrentProducer m o = forall i. HRelT SourceError (ConduitM i o) m ()
 torrentSource :: (MonadCatch m, MonadResource m) => Manager -> TorrentSource -> TorrentProducer m [Torrent]
 torrentSource mgr src = do
 	req <- lift $
-		case parseRequest url of
+		case parseRequest feedUrl of
 			Just x  -> pure x
-			Nothing -> throwError (InvalidUrl url)
+			Nothing -> throwError (InvalidUrl feedUrl)
 
 	withHRelT HttpError (httpRequest mgr req)
 		=$= decode utf8
 		=$= withHRelT XmlError processXML
 		=$= withHRelT NodeFilterError (filterNodes nf)
 	where
-		(url, nf) =
+		(feedUrl, nf) =
 			case src of
 				PirateBay url -> (url, pirateBaySource)
 				RARBG url     -> (url, rarbgSource)

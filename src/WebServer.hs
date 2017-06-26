@@ -6,8 +6,6 @@ import           Network.Wai.Handler.Warp
 
 import           Web.Scotty (scottyApp)
 
-import qualified Data.ByteString as B
-
 import           System.Posix.Env.ByteString
 
 import           HRel.Database
@@ -16,9 +14,9 @@ import           HRel.Web.Server
 -- | Web server settings
 webSettings :: Settings
 webSettings =
-	setPort 3401
-	$ setServerName "hrel"
-	$ defaultSettings
+	setPort 3401 $
+	setServerName "hrel"
+		defaultSettings
 
 -- | Run the web server.
 main :: IO ()

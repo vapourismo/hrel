@@ -69,11 +69,11 @@ searchForm mbSearchTerm =
 
 -- | Torrent tesult table
 resultBody :: [Torrent] -> Html ()
-resultBody [] = do
+resultBody [] =
 	div_ [class_ "no-results"] $ do
 		div_ "Nothing has been found."
 		div_ "Check again later."
-resultBody torrents = do
+resultBody torrents =
 	div_ [class_ "results"] $
 		mapM_ resultRow torrents
 	where

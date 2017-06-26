@@ -38,7 +38,7 @@ type HttpProducer m o = forall i . HRelT HttpError (ConduitM i o) m ()
 httpRequest :: (MonadCatch m, MonadResource m) => Manager -> Request -> HttpProducer m B.ByteString
 httpRequest mgr interimReq =
 	catch (bracketP (responseOpen req mgr) responseClose (yieldAll . responseBody))
-	      (\ err -> throwError (HttpError req err))
+	      (throwError . HttpError req)
 	where
 		req =
 			interimReq {
@@ -58,7 +58,7 @@ type HttpIO a = ExceptT HttpError IO a
 httpDownload :: Manager -> Request -> HttpIO [B.ByteString]
 httpDownload mgr interimReq =
 	catch (liftIO (bracket (responseOpen req mgr) responseClose (brConsume . responseBody)))
-	      (\ err -> throwError (HttpError req err))
+	      (throwError . HttpError req)
 	where
 		req =
 			interimReq {

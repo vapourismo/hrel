@@ -4,10 +4,6 @@
   "author": "Ole Krüger <ole@vprsm.de>",
   "license": "UNLICENSED",
   "private": true,
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/vapourismo/hrel"
-  },
   "scripts": {
     "build-client": "node --harmony assets/build-client.js",
     "reset-database": "node --harmony assets/reset-database.js",

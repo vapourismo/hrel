@@ -1,6 +1,9 @@
 # Node Dependencies
 node_modules
 
+# VS Code
+.vscode/
+
 # Client-side stuff
 client/out/index.js
 client/out/index.css

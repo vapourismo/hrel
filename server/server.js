@@ -14,7 +14,7 @@ var app = express();
 
 app.use(bodyParser.json());
 
-app.get(/^\/feeds\/(\d+)$/, function (req, res) {
+app.get(/^\/api\/feeds\/(\d+)$/, function (req, res) {
 	feeds.one(Number.parseInt(req.params[0])).then(
 		result => {
 			res.json(result);
@@ -26,7 +26,7 @@ app.get(/^\/feeds\/(\d+)$/, function (req, res) {
 	);
 });
 
-app.get("/feeds", function (req, res) {
+app.get("/api/feeds", function (req, res) {
 	feeds.all().then(
 		result => {
 			res.json(result);
@@ -38,7 +38,7 @@ app.get("/feeds", function (req, res) {
 	);
 });
 
-app.post("/feeds", function (req, res) {
+app.post("/api/feeds", function (req, res) {
 	if (!(req.body instanceof Object) || !req.body.uri)
 		return res.status(400).json({error: "Invalid request body"});
 
@@ -51,6 +51,22 @@ app.post("/feeds", function (req, res) {
 			res.status(400).json({error: error.message});
 		}
 	);
+});
+
+const sendFileOptions = {
+	root: process.cwd()
+};
+
+app.get("/", function (req, res) {
+	res.sendFile("./client/out/index.html", sendFileOptions);
+});
+
+app.get("/index.js", function (req, res) {
+	res.sendFile("./client/out/index.js", sendFileOptions);
+});
+
+app.get("/index.css", function (req, res) {
+	res.sendFile("./client/out/index.css", sendFileOptions);
 });
 
 const server = http.createServer(app);

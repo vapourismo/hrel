@@ -8,7 +8,7 @@ const pg           = config.usePGNative ? require("pg").native : require("pg");
 const util         = require("./utilities");
 
 // Connect
-const db = new pg.Client(config.database || {});
+const db = new pg.Client();
 db.connect();
 
 /**

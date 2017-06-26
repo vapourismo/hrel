@@ -1,13 +1,6 @@
 /* Copyright (C) 2015-2016, Ole Krüger <ole@vprsm.de> */
 
 module.exports = {
-	// Database settings (passed to pg.Client)
-	database: {
-		host: "127.0.0.1",
-		user: "hrel",
-		database: "hrelv1"
-	},
-
 	// Web server settings (passed to http.Server#listen)
 	server: {
 		host: "127.0.0.1",

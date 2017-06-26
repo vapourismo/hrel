@@ -3,9 +3,9 @@
 module.exports = {
 	// Database settings (passed to pg.Client)
 	database: {
-		host: "localhost",
+		host: "127.0.0.1",
 		user: "hrel",
-		database: "hrel"
+		database: "hrelv1"
 	},
 
 	// Web server settings (passed to http.Server#listen)
@@ -25,9 +25,9 @@ module.exports = {
 	sources: {
 		// kat.cr
 		kat: [
-			"http://kickasstorrents.to/highres-movies/?rss=1",
-			"http://kickasstorrents.to/movies/?rss=1",
-			"http://kickasstorrents.to/tv/?rss=1"
+			// "http://kickasstorrents.to/highres-movies/?rss=1",
+			// "http://kickasstorrents.to/movies/?rss=1",
+			// "http://kickasstorrents.to/tv/?rss=1"
 		],
 
 		// movie-blog.org
@@ -45,11 +45,11 @@ module.exports = {
 
 		// thepiratebay.org
 		thepiratebay: [
-			"https://thepiratebay.org/rss/top100/0",
-			"https://thepiratebay.org/rss/top100/201",
-			"https://thepiratebay.org/rss/top100/205",
-			"https://thepiratebay.org/rss/top100/207",
-			"https://thepiratebay.org/rss/top100/208"
+			// "https://thepiratebay.org/rss/top100/0",
+			// "https://thepiratebay.org/rss/top100/201",
+			// "https://thepiratebay.org/rss/top100/205",
+			// "https://thepiratebay.org/rss/top100/207",
+			// "https://thepiratebay.org/rss/top100/208"
 		],
 
 		// rarbg.to

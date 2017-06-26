@@ -8,6 +8,7 @@
     "express": "^4.13.4",
     "html-entities": "^1.2.0",
     "pg": "^4.5.3",
+    "pg-native": "^1.10.1",
     "valid-url": "^1.0.9",
     "xml2js": "^0.4.16"
   },

@@ -1,30 +1,19 @@
 FROM base/archlinux
 
-# Setup system
+# Setup
 RUN pacman -Sy --noconfirm postgresql-libs git sed tar make stack grep gawk && \
-    useradd -d /hrel -m hrel
+    mkdir build build/hrel && \
+    stack setup --resolver ghc-8.0.2
 
-# Switch to user
-USER hrel
-WORKDIR /hrel
+ENV PATH=$PATH:/root/.local/bin
 
-# Prepare build environment
-RUN mkdir build build/app && \
-    git clone https://github.com/vapourismo/pg-store.git build/pg-store
-
-# Copy source tree
-ADD src build/app/src
-ADD lib build/app/lib
-ADD hrel.cabal Setup.hs stack.yaml build/app/
-
-# Build the application
-RUN cd build/app && stack setup && stack build && stack install
-
-# Clean up system
-USER root
-RUN rm -rf build
-RUN pacman -Rs --noconfirm git sed tar make stack grep gawk
-
-# Setup entrypoint
-USER hrel
-ENV PATH=/hrel/.local/bin:$PATH
+# Build
+ADD src build/hrel/src
+ADD lib build/hrel/lib
+ADD Setup.hs stack.yaml hrel.cabal build/hrel/
+RUN git clone https://github.com/vapourismo/pg-store.git build/pg-store && \
+    cd build/hrel && \
+    stack install && \
+    cd ../.. && \
+    rm -rf build && \
+    pacman -Rs --noconfirm git sed tar make stack grep gawk

@@ -17,6 +17,7 @@ module HRel.Sources (
 
 import           Control.Monad.Catch
 import           Control.Monad.Except
+import           Control.Monad.Morph
 import           Control.Monad.Trans.Resource
 
 import           Data.Conduit
@@ -31,6 +32,7 @@ import           HRel.Network
 import           HRel.Markup
 import           HRel.Torrents
 import           HRel.Monad
+import qualified HRel.TorrentApi as TA
 
 -- | Pirate Bay source
 pirateBaySource :: NodeFilter [Torrent]
@@ -56,6 +58,7 @@ rarbgSource =
 data TorrentSource
 	= PirateBay String
 	| RARBG String
+	| TorrentApi
 	deriving (Show, Eq, Ord)
 
 -- | An error that might occur during the processing of a source
@@ -63,6 +66,7 @@ data SourceError
 	= XmlError XmlError
 	| HttpError HttpError
 	| NodeFilterError NodeFilterError
+	| TorrentApiError TA.TorrentApiError
 	| InvalidUrl String
 	deriving (Show)
 
@@ -72,20 +76,24 @@ type TorrentProducer m o = forall i. HRelT SourceError (ConduitM i o) m ()
 -- | Process the given torrent source.
 torrentSource :: (MonadCatch m, MonadResource m) => Manager -> TorrentSource -> TorrentProducer m [Torrent]
 torrentSource mgr src = do
-	req <- lift $
-		case parseRequest feedUrl of
-			Just x  -> pure x
-			Nothing -> throwError (InvalidUrl feedUrl)
-
-	withHRelT HttpError (httpRequest mgr req)
-		=$= decode utf8
-		=$= withHRelT XmlError processXML
-		=$= withHRelT NodeFilterError (filterNodes nf)
+	case src of
+		PirateBay url -> processFeed url pirateBaySource
+		RARBG url     -> processFeed url rarbgSource
+		TorrentApi    -> do
+			taMgr <- liftIO (TA.newTAManager mgr)
+			torrents <- withHRelT TorrentApiError (lift (hoist liftIO (TA.list taMgr)))
+			yield torrents
 	where
-		(feedUrl, nf) =
-			case src of
-				PirateBay url -> (url, pirateBaySource)
-				RARBG url     -> (url, rarbgSource)
+		processFeed url nf = do
+			req <- lift $
+				case parseRequest url of
+					Just x  -> pure x
+					Nothing -> throwError (InvalidUrl url)
+
+			withHRelT HttpError (httpRequest mgr req)
+				=$= decode utf8
+				=$= withHRelT XmlError processXML
+				=$= withHRelT NodeFilterError (filterNodes nf)
 
 -- | Source transformer, torrent producer
 type TorrentConduit i m o = HRelT SourceError (ConduitM i o) m ()

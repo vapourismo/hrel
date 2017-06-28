@@ -39,7 +39,8 @@ torrentSources mgr =
 	withHRelT SourceError $
 		mapM_ (\ src -> reportAndRecover (report src) (torrentSource mgr src))
 		      [RARBG "https://rarbg.to/rssdd_magnet.php?category=41",
-		       RARBG "https://rarbg.to/rssdd_magnet.php?category=48;44;45;42"]
+		       RARBG "https://rarbg.to/rssdd_magnet.php?category=48;44;45;42",
+		       TorrentApi]
 	where
 		report src err = do
 			putStr "SourceError during "

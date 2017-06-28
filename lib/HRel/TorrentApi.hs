@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, TypeApplications, BangPatterns #-}
 
-module HRel.TorrentAPI where
+module HRel.TorrentApi where
 
 import           Control.Monad.Except
 
@@ -108,3 +108,12 @@ search taMgr searchString =
 	                          ("search_string", searchString),
 	                          ("limit",         "100"),
 	                          ("ranked",        "0")]
+
+-- |
+list :: TorrentApi -> TorrentApiM [Torrent]
+list taMgr =
+	unSearchResult <$> query @[(T.Text, T.Text)]
+	                         taMgr
+	                         [("mode",   "list"),
+	                          ("limit",  "100"),
+	                          ("ranked", "0")]

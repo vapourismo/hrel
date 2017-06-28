@@ -20,7 +20,7 @@ library
                        HRel.XML
                        HRel.Monad
                        HRel.Feeds
-                       HRel.TorrentAPI
+                       HRel.TorrentApi
                        HRel.Database
                        HRel.Web.Server
                        HRel.Web.Templates

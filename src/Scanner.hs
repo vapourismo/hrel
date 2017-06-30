@@ -15,11 +15,11 @@ import           Data.Void
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 
-import qualified Database.PostgreSQL.LibPQ as P
 import           Database.PostgreSQL.Store
 
 import           System.Posix.Env.ByteString
 
+import           HRel.Database
 import           HRel.Sources
 import           HRel.Feeds
 import           HRel.Torrents
@@ -48,7 +48,7 @@ torrentSources mgr =
 			putStr ": "
 			print err
 
-torrentSink :: (MonadIO m) => P.Connection -> HRelSink [Torrent] m ()
+torrentSink :: (MonadIO m) => Database -> HRelSink [Torrent] m ()
 torrentSink db =
 	C.mapM_ $ \ torrents -> liftIO $ do
 		result <- runErrand db (insertTorrents torrents)
@@ -56,7 +56,7 @@ torrentSink db =
 			Left err -> print err
 			Right n  -> putStrLn ("Inserted " ++ show n ++ " new torrents")
 
-feedSources :: (MonadCatch m, MonadResource m) => Manager -> P.Connection -> HRelSource m (Int64, Feed)
+feedSources :: (MonadCatch m, MonadResource m) => Manager -> Database -> HRelSource m (Int64, Feed)
 feedSources mgr db = do
 	feeds <- liftIO $ do
 		result <- runErrand db listFeeds
@@ -75,7 +75,7 @@ feedSources mgr db = do
 			putStr ": "
 			print err
 
-feedSink :: (MonadIO m) => P.Connection -> HRelSink (Int64, Feed) m ()
+feedSink :: (MonadIO m) => Database -> HRelSink (Int64, Feed) m ()
 feedSink db =
 	C.mapM_ $ \ (fid, Feed title contents) -> liftIO $ do
 		result <- runErrand db $ do
@@ -89,7 +89,7 @@ feedSink db =
 main :: IO ()
 main = do
 	connStr <- getEnvDefault "PGINFO" "host=localhost user=hrel dbname=hrel"
-	db <- P.connectdb connStr
+	db <- connectDatabase connStr
 	mgr <- newManager tlsManagerSettings
 
 	run (torrentSources mgr $$ torrentSink db)

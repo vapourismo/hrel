@@ -1,8 +1,7 @@
 FROM base/archlinux
 
 # Setup system
-RUN pacman -Sy --noconfirm nginx ruby && \
-	gem install -n /usr/bin sass && \
+RUN pacman -Sy --noconfirm nginx ruby-sass && \
     mkdir /hrel
 
 # Provide nginx configuration
@@ -13,7 +12,7 @@ ADD index.scss /hrel/index.scss
 RUN sass /hrel/index.scss /hrel/index.css && \
 	rm -f /hrel/index.scss && \
     chown -R http:http /hrel && \
-	pacman -Rs --noconfirm ruby
+	pacman -Rs --noconfirm ruby-sass
 
 # Setup command
 CMD nginx -g "daemon off;"

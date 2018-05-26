@@ -1,0 +1,2 @@
+packages:      hrel.cabal
+jobs:          $ncpus

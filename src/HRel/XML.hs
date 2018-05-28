@@ -3,7 +3,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HRel.XML
-    ( ParseError (..)
+    ( TextSegment (..)
+    , Component (..)
+    , ParseError (..)
     , parseXml )
 where
 
@@ -20,21 +22,25 @@ import Numeric (readHex)
 
 import HRel.XML.Ranges
 
+-- | Name
 name :: Parser Text.Text
 name =
     Text.cons
         <$> satisfy isNameStartChar
         <*> takeWhile isNameChar
 
+-- | Skip over space.
 skipSpace :: Parser ()
 skipSpace = skip isSpace
 
+-- | Text segment
 data TextSegment
-    = TextSegment Text.Text
-    | CharReference Int
-    | NameReference Text.Text
+    = TextSegment Text.Text   -- ^ Normal text
+    | CharReference Int       -- ^ Character reference (e.g. @&#1234;@ or @&#xABCD;@)
+    | NameReference Text.Text -- ^ Name reference (e.g. @&amp;@ or @&quot;@)
     deriving (Show, Eq)
 
+-- | 'CharReference' or 'NameReference'
 reference :: Parser TextSegment
 reference =
     entityRef <|> charHexRef <|> charDecRef
@@ -57,6 +63,7 @@ reference =
             _ <- char ';'
             pure (CharReference (fst (head (readHex digits))))
 
+-- | Attribute value in single or double quotes
 attributeValue :: Parser [TextSegment]
 attributeValue =
     quoted '"' <|> quoted '\''
@@ -70,6 +77,7 @@ attributeValue =
         inQuotes delim =
             TextSegment <$> takeWhile1 (\ input -> input /= '<' && input /= '&' && input /= delim)
 
+-- | Attribute
 attribute :: Parser (Text.Text, [TextSegment])
 attribute = do
     attrName <- name
@@ -78,8 +86,9 @@ attribute = do
     skipSpace
     pure (attrName, attrValue)
 
-startTag :: Parser (Text.Text, [(Text.Text, [TextSegment])])
-startTag = do
+-- | Opening tag
+openingTag :: Parser (Text.Text, [(Text.Text, [TextSegment])])
+openingTag = do
     _ <- char '<'
     tagName <- name
     skipSpace
@@ -88,14 +97,16 @@ startTag = do
     _ <- char '>'
     pure (tagName, tagAttrs)
 
-endTag :: Parser Text.Text
-endTag = do
+-- | Closing tag
+closingTag :: Parser Text.Text
+closingTag = do
     _ <- string "</"
     tagName <- name
     skipSpace
     _ <- char '>'
     pure tagName
 
+-- | Empty tag
 emptyTag :: Parser (Text.Text, [(Text.Text, [TextSegment])])
 emptyTag = do
     _ <- char '<'
@@ -106,6 +117,7 @@ emptyTag = do
     _ <- char '>'
     pure (tagName, tagAttrs)
 
+-- | Character data
 charData :: Parser Text.Text
 charData =
     Text.concat <$> many (generalBody <|> taboo)
@@ -116,6 +128,7 @@ charData =
 
         taboo = (string "]]>" >> empty) <|> Text.singleton <$> anyChar
 
+-- | Comment
 comment :: Parser Text.Text
 comment = do
     _ <- string "<!--"
@@ -125,6 +138,7 @@ comment = do
     where
         taboo = (string "-->" >> empty) <|> Text.singleton <$> anyChar
 
+-- | CData section
 cdataSection :: Parser Text.Text
 cdataSection = do
     _ <- string "<![CDATA["
@@ -134,6 +148,7 @@ cdataSection = do
     where
         taboo = (string "]]>" >> empty) <|> Text.singleton <$> anyChar
 
+-- | Process instructions
 processInstruction :: Parser (Text.Text, Text.Text)
 processInstruction = do
     _ <- string "<?"
@@ -144,19 +159,21 @@ processInstruction = do
     where
         taboo = (string "?>" >> empty) <|> Text.singleton <$> anyChar
 
+-- | XML componetn
 data Component
-    = StartTag Text.Text [(Text.Text, [TextSegment])]
-    | EndTag Text.Text
-    | EmptyTag Text.Text [(Text.Text, [TextSegment])]
-    | Text TextSegment
-    | ProcessInstruction Text.Text Text.Text
-    | Comment Text.Text
+    = StartTag Text.Text [(Text.Text, [TextSegment])] -- ^ @<tag ...>@
+    | EndTag Text.Text                                -- ^ @</tag>@
+    | EmptyTag Text.Text [(Text.Text, [TextSegment])] -- ^ @<tag ... />@
+    | Text TextSegment                                -- ^ Text segments
+    | ProcessInstruction Text.Text Text.Text          -- ^ @<?name ... ?>@
+    | Comment Text.Text                               -- ^ @<!-- ... -->@
 
+-- | XML component
 component :: Parser Component
 component =
     choice
-        [ uncurry StartTag <$> startTag
-        , EndTag <$> endTag
+        [ uncurry StartTag <$> openingTag
+        , EndTag <$> closingTag
         , uncurry EmptyTag <$> emptyTag
         , Text . TextSegment <$> charData
         , Text . TextSegment <$> cdataSection

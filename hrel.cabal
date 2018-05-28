@@ -25,3 +25,5 @@ executable hrel
                     attoparsec,
                     containers
   other-modules:    HRel.Network
+                    HRel.XML
+                    HRel.XML.Ranges

@@ -19,5 +19,6 @@ executable hrel
                     http-client,
                     http-client-tls,
                     http-types,
-                    bytestring
+                    bytestring,
+                    xeno
   other-modules:    HRel.Network

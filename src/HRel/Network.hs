@@ -3,35 +3,41 @@
 {-# LANGUAGE OverloadedStrings         #-}
 
 module HRel.Network
-    ( performRequestConduit )
+    ( RequestError (..)
+    , requestResponseBody )
 where
 
-import Control.Monad.Except
-import Control.Monad.Trans.Resource
+import Control.Exception      (handle)
+import Control.Monad.Except   (MonadError, liftEither)
+import Control.Monad.IO.Class (MonadIO (..))
 
 import qualified Data.ByteString as ByteString
-import           Data.Conduit
 
-import Network.HTTP.Conduit
-import Network.HTTP.Types   (Status (..), hUserAgent)
+import Network.HTTP.Client
+import Network.HTTP.Types
 
 -- | Error that occurs when performing a 'Request'
-data RequestError = forall b. BadResponseStatus (Response b)
+data RequestError
+    = BadResponseStatus (Response ())
+    | RequestException HttpException
+    deriving Show
 
--- | Perform a request and
-performRequestConduit
-    :: ( MonadError RequestError m
-       , MonadResource m )
+-- | Perform an HTTP request and retrieve the response body if successful.
+requestResponseBody
+    :: (MonadError RequestError m, MonadIO m)
     => Manager
     -> Request
-    -> ConduitT i ByteString.ByteString m ()
-performRequestConduit manager baseRequest = do
-    response <- lift (http request manager)
-    case responseStatus response of
-        Status 200 _ -> responseBody response
-        _            -> throwError (BadResponseStatus response)
+    -> m ByteString.ByteString
+requestResponseBody manager baseRequest =
+    liftIO (handleException (withResponse request manager handleResponse)) >>= liftEither
     where
         userAgent = (hUserAgent, "hrel/3")
 
-        request =
-            baseRequest {requestHeaders = userAgent : requestHeaders baseRequest}
+        request = baseRequest {requestHeaders = userAgent : requestHeaders baseRequest}
+
+        handleResponse response =
+            case responseStatus response of
+                Status 200 _ -> Right . ByteString.concat <$> brConsume (responseBody response)
+                _            -> pure (Left (BadResponseStatus (() <$ response)))
+
+        handleException = handle (pure . Left . RequestException)

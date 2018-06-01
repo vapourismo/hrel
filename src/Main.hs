@@ -1,16 +1,20 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main (main) where
 
+
 import Control.Monad.Except
+
+import qualified Data.ByteString as ByteString
 
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 
-import Xeno.DOM
 import Xeno.Types
 
 import HRel.Network
+import HRel.XML
 
 withMonadError
     :: MonadError e' m
@@ -25,6 +29,13 @@ exampleRequest =
     parseRequest_
         "https://www.xrel.to/releases-usrss.html?u=20470&s=ee663473a8da8a161902c908326ebe1c&favs=1"
 
+exampleTraversal :: XmlTraversal [(ByteString.ByteString, ByteString.ByteString)]
+exampleTraversal =
+    child "feed" $
+        children "entry" $
+            (,) <$> child "title" text
+                <*> child "link" (attribute "href")
+
 data Error
     = RequestError RequestError
     | XmlError XenoException
@@ -35,7 +46,8 @@ main = do
     manager <- newManager tlsManagerSettings
     result <- runExceptT $ do
         contents <- withMonadError RequestError (requestResponseBody manager exampleRequest)
-        withMonadError XmlError (liftEither (parse contents))
+        withMonadError XmlError (liftEither (runXmlTraversal exampleTraversal contents))
+
     case result of
         Left error   -> print error
         Right result -> print result

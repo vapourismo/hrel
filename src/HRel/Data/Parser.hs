@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 module HRel.Data.Parser
-    ( Parser
+    ( Parser (..)
     , terminate
     , seal
     , feed
@@ -55,6 +55,8 @@ instance Monad (Parser i) where
     Fail         >>= _ = Fail
     Pure x       >>= f = f x
     With handler >>= f = With (\ i -> handler i >>= f)
+
+    fail _ = Fail
 
 instance MonadPlus (Parser i)
 

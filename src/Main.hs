@@ -3,10 +3,11 @@
 
 module Main (main) where
 
-
 import Control.Monad.Except
 
+import           Data.Bifoldable
 import qualified Data.ByteString as ByteString
+import           Data.Foldable
 
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
@@ -50,4 +51,4 @@ main = do
 
     case result of
         Left error   -> print error
-        Right result -> print result
+        Right result -> traverse_ (bitraverse_ print print) result

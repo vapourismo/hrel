@@ -12,6 +12,8 @@ module HRel.XML
     , child )
 where
 
+import Control.Applicative
+
 import qualified Data.ByteString as ByteString
 
 import qualified Xeno.SAX   as XML
@@ -32,38 +34,32 @@ data Message
 -- | XML parser
 type XmlParser = Parser Message
 
--- | Delegate a 'Message' to another 'XmlParser'.
-delegate :: Message -> XmlParser a -> XmlParser a
-delegate message (With handler) = handler message
-delegate _       other          = other
-
 -- | Run the 'XmlParser' against an XML document.
 runXmlTraversal :: XmlParser a -> ByteString.ByteString -> Either XML.XenoException a
 runXmlTraversal baseAction contents = do
     result <-
         XML.fold
-            (\ action name -> delegate (Open name) action)
-            (\ action name value -> delegate (Attribute name value) action)
-            (\ action name -> delegate (OpenEnd name) action)
-            (\ action value -> delegate (Text value) action)
-            (\ action name -> delegate (Close name) action)
-            (\ action value -> delegate (Text value) action)
+            (\ action name -> feed (Open name) action)
+            (\ action name value -> feed (Attribute name value) action)
+            (\ action name -> feed (OpenEnd name) action)
+            (\ action value -> feed (Text value) action)
+            (\ action name -> feed (Close name) action)
+            (\ action value -> feed (Text value) action)
             baseAction
             contents
 
-    case delegate Terminate result of
-        Fail   -> Left (XML.XenoParseError "Fail")
-        Pure x -> Right x
-        With _ -> Left (XML.XenoParseError "Incomplete")
+    case terminate result of
+        Nothing -> Left (XML.XenoParseError "Fail")
+        Just x  -> Right x
 
 -- | Value for an attribute.
 attribute :: ByteString.ByteString -> XmlParser ByteString.ByteString
 attribute needle =
-    With $ \case
+    pull >>= \case
         Attribute name value
-            | name == needle -> Pure value
+            | name == needle -> pure value
             | otherwise      -> attribute needle
-        _                    -> Fail
+        _                    -> empty
 
 -- | Gather all attributes.
 attributes :: XmlParser [(ByteString.ByteString, ByteString.ByteString)]
@@ -71,59 +67,31 @@ attributes =
     step []
     where
         step state =
-            With $ \case
+            pull >>= \case
                 Attribute name value -> step ((name, value) : state)
-                _                    -> Pure state
+                _                    -> pure state
 
 -- | Gather all text.
 text :: XmlParser ByteString.ByteString
 text =
-    ByteString.concat <$> step
+    ByteString.concat <$> many step
     where
         step =
-            With $ \case
-                Terminate -> Pure []
-                Text text -> (text :) <$> step
+            pull >>= \case
+                Text text -> pure text
                 _         -> step
+
+-- | Skip everything until exiting the current node.
+skipNode :: ByteString.ByteString -> XmlParser a -> XmlParser a
+skipNode name cont =
+    pull >>= \case
+        Open openName                       -> skipNode openName (skipNode name cont)
+        Close closeName | closeName == name -> cont
+        _                                   -> skipNode name cont
 
 -- | Traverse all child nodes with the given name.
 children :: ByteString.ByteString -> XmlParser a -> XmlParser [a]
-children tagName baseAction =
-    withRoot
-    where
-        withRoot =
-            With $ \case
-                Open name
-                    | tagName == name -> withInside baseAction (0 :: Word)
-                    | otherwise       -> skipNode name withRoot
-                Terminate             -> Pure []
-                _                     -> withRoot
-
-        skipNode name cont =
-            With $ \case
-                Open openName                       -> skipNode openName (skipNode name cont)
-                Close closeName | closeName == name -> cont
-                _                                   -> skipNode name cont
-
-        withInside action depth =
-            With $ \case
-                Terminate ->
-                    case delegate Terminate action of
-                        Pure x -> Pure [x]
-                        _      -> Pure []
-
-                message@(Open name) | tagName == name ->
-                    withInside (delegate message action) (depth + 1)
-
-                message@(Close name) | tagName == name ->
-                    if depth > 0 then
-                        withInside (delegate message action) (depth - 1)
-                    else
-                        case delegate Terminate action of
-                            Pure x -> (x :) <$> withRoot
-                            _      -> withRoot
-
-                message -> withInside (delegate message action) depth
+children name action = many (child name action)
 
 -- | Traverse a child node with the given name.
 child :: ByteString.ByteString -> XmlParser a -> XmlParser a
@@ -131,30 +99,25 @@ child tagName baseAction =
     withRoot
     where
         withRoot =
-            With $ \case
+            pull >>= \case
                 Open name
                     | tagName == name -> withInside baseAction (0 :: Word)
                     | otherwise       -> skipNode name withRoot
-                Terminate             -> Fail
                 _                     -> withRoot
 
-        skipNode name cont =
-            With $ \case
-                Open openName                       -> skipNode openName (skipNode name cont)
-                Close closeName | closeName == name -> cont
-                _                                   -> skipNode name cont
-
         withInside action depth =
-            With $ \case
-                Terminate -> delegate Terminate action
+            await >>= \case
+                Nothing      -> seal action
+                Just message -> handleInside action depth message
 
-                message@(Open name) | tagName == name ->
-                    withInside (delegate message action) (depth + 1)
+        handleInside action depth = \case
+            message@(Open name) | tagName == name ->
+                withInside (feed message action) (depth + 1)
 
-                message@(Close name) | tagName == name ->
-                    if depth > 0 then
-                        withInside (delegate message action) (depth - 1)
-                    else
-                        delegate Terminate action
+            message@(Close name) | tagName == name ->
+                if depth > 0 then
+                    withInside (feed message action) (depth - 1)
+                else
+                    seal action
 
-                message -> withInside (delegate message action) depth
+            message -> withInside (feed message action) depth

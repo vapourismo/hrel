@@ -22,5 +22,5 @@ executable hrel
                     bytestring,
                     xeno
   other-modules:    HRel.Network
-                    HRel.XML
+                    HRel.Data.XML
                     HRel.Data.Parser

@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.XML
+module HRel.Data.XML
     ( XmlParser
     , runXmlTraversal
     , attribute
@@ -64,12 +64,12 @@ attribute needle =
 -- | Gather all attributes.
 attributes :: XmlParser [(ByteString.ByteString, ByteString.ByteString)]
 attributes =
-    step []
+    many anAttribute
     where
-        step state =
+        anAttribute =
             pull >>= \case
-                Attribute name value -> step ((name, value) : state)
-                _                    -> pure state
+                Attribute name value -> pure (name, value)
+                _                    -> empty
 
 -- | Gather all text.
 text :: XmlParser ByteString.ByteString

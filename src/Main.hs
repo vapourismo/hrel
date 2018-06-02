@@ -14,8 +14,8 @@ import Network.HTTP.Client.TLS
 
 import Xeno.Types
 
+import HRel.Data.XML
 import HRel.Network
-import HRel.XML
 
 withMonadError
     :: MonadError e' m

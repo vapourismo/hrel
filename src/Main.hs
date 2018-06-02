@@ -29,7 +29,7 @@ exampleRequest =
     parseRequest_
         "https://www.xrel.to/releases-usrss.html?u=20470&s=ee663473a8da8a161902c908326ebe1c&favs=1"
 
-exampleTraversal :: XmlTraversal [(ByteString.ByteString, ByteString.ByteString)]
+exampleTraversal :: XmlParser [(ByteString.ByteString, ByteString.ByteString)]
 exampleTraversal =
     child "feed" $
         children "entry" $

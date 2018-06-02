@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module HRel.XML
-    ( XmlTraversal
+    ( XmlParser
     , runXmlTraversal
     , attribute
     , attributes
@@ -12,12 +12,12 @@ module HRel.XML
     , child )
 where
 
-import Control.Applicative
-
 import qualified Data.ByteString as ByteString
 
 import qualified Xeno.SAX   as XML
 import qualified Xeno.Types as XML
+
+import HRel.Data.Parser
 
 -- | Fold message
 data Message
@@ -29,43 +29,16 @@ data Message
     | Terminate
     deriving (Show, Eq)
 
--- | XML traversal
-data XmlTraversal a
-    = Fail
-    | Pure a
-    | With (Message -> XmlTraversal a)
+-- | XML parser
+type XmlParser = Parser Message
 
-instance Functor XmlTraversal where
-    fmap f = \case
-        Fail         -> Fail
-        Pure x       -> Pure (f x)
-        With handler -> With (fmap f . handler)
-
-instance Applicative XmlTraversal where
-    pure = Pure
-
-    Fail     <*> _        = Fail
-    _        <*> Fail     = Fail
-    Pure f   <*> rhs      = f <$> rhs
-    lhs      <*> Pure x   = ($ x) <$> lhs
-    With lhs <*> With rhs = With (\ message -> lhs message <*> rhs message)
-
-instance Alternative XmlTraversal where
-    empty = Fail
-
-    Fail         <|> rhs      = rhs
-    lhs          <|> Fail     = lhs
-    Pure x       <|> _        = Pure x
-    With lhs     <|> With rhs = With (\ message -> lhs message <|> rhs message)
-    With handler <|> rhs      = With (\ message -> handler message <|> rhs)
-
--- | Delegate a 'Message' to another 'XmlTraversal'.
-delegate :: Message -> XmlTraversal a -> XmlTraversal a
+-- | Delegate a 'Message' to another 'XmlParser'.
+delegate :: Message -> XmlParser a -> XmlParser a
 delegate message (With handler) = handler message
 delegate _       other          = other
 
--- | Run the 'XmlTraversal' against an XML document.
-runXmlTraversal :: XmlTraversal a -> ByteString.ByteString -> Either XML.XenoException a
+-- | Run the 'XmlParser' against an XML document.
+runXmlTraversal :: XmlParser a -> ByteString.ByteString -> Either XML.XenoException a
 runXmlTraversal baseAction contents = do
     result <-
         XML.fold
@@ -84,7 +57,7 @@ runXmlTraversal baseAction contents = do
         With _ -> Left (XML.XenoParseError "Incomplete")
 
 -- | Value for an attribute.
-attribute :: ByteString.ByteString -> XmlTraversal ByteString.ByteString
+attribute :: ByteString.ByteString -> XmlParser ByteString.ByteString
 attribute needle =
     With $ \case
         Attribute name value
@@ -93,7 +66,7 @@ attribute needle =
         _                    -> Fail
 
 -- | Gather all attributes.
-attributes :: XmlTraversal [(ByteString.ByteString, ByteString.ByteString)]
+attributes :: XmlParser [(ByteString.ByteString, ByteString.ByteString)]
 attributes =
     step []
     where
@@ -103,7 +76,7 @@ attributes =
                 _                    -> Pure state
 
 -- | Gather all text.
-text :: XmlTraversal ByteString.ByteString
+text :: XmlParser ByteString.ByteString
 text =
     ByteString.concat <$> step
     where
@@ -114,7 +87,7 @@ text =
                 _         -> step
 
 -- | Traverse all child nodes with the given name.
-children :: ByteString.ByteString -> XmlTraversal a -> XmlTraversal [a]
+children :: ByteString.ByteString -> XmlParser a -> XmlParser [a]
 children tagName baseAction =
     withRoot
     where
@@ -153,7 +126,7 @@ children tagName baseAction =
                 message -> withInside (delegate message action) depth
 
 -- | Traverse a child node with the given name.
-child :: ByteString.ByteString -> XmlTraversal a -> XmlTraversal a
+child :: ByteString.ByteString -> XmlParser a -> XmlParser a
 child tagName baseAction =
     withRoot
     where

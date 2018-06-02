@@ -16,10 +16,14 @@ executable hrel
   default-language: Haskell2010
   build-depends:    base,
                     mtl,
+                    http-conduit,
                     http-client,
                     http-client-tls,
                     http-types,
                     bytestring,
+                    conduit,
+                    resourcet,
+                    exceptions,
                     xeno
   other-modules:    HRel.Network
                     HRel.Data.XML

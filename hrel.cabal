@@ -21,10 +21,13 @@ executable hrel
                     http-client-tls,
                     http-types,
                     bytestring,
+                    attoparsec,
                     conduit,
                     resourcet,
                     exceptions,
                     xeno
   other-modules:    HRel.Network
                     HRel.Data.XML
+                    HRel.Data.XML.Lexer
+                    HRel.Data.XML.Parser
                     HRel.Data.Parser

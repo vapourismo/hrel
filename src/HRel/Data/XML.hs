@@ -20,19 +20,10 @@ import qualified Xeno.SAX   as XML
 import qualified Xeno.Types as XML
 
 import HRel.Data.Parser
-
--- | Fold message
-data Message
-    = Open ByteString.ByteString
-    | Attribute ByteString.ByteString ByteString.ByteString
-    | OpenEnd ByteString.ByteString
-    | Close ByteString.ByteString
-    | Text ByteString.ByteString
-    | Terminate
-    deriving (Show, Eq)
+import HRel.Data.XML.Parser (XmlMessage (..))
 
 -- | XML parser
-type XmlParser = Parser Message
+type XmlParser = Parser XmlMessage
 
 -- | Run the 'XmlParser' against an XML document.
 runXmlTraversal :: XmlParser a -> ByteString.ByteString -> Either XML.XenoException a

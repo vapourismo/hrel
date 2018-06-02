@@ -3,52 +3,46 @@
 
 module Main (main) where
 
-import Control.Monad.Except
+import Prelude hiding (mapM_)
 
-import           Data.Bifoldable
-import qualified Data.ByteString as ByteString
-import           Data.Foldable
+import Control.Monad.Except         hiding (mapM_)
+import Control.Monad.Trans.Resource
+
+import Data.Conduit
+import Data.Conduit.List
 
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 
-import Xeno.Types
-
-import HRel.Data.XML
+import HRel.Data.XML.Parser (XmlError, subscribeToXml)
 import HRel.Network
 
 withMonadError
-    :: MonadError e' m
+    :: Monad m
     => (e -> e')
-    -> ExceptT e m a
-    -> m a
-withMonadError transformError action =
-    runExceptT (withExceptT transformError action) >>= liftEither
+    -> ConduitT i o (ExceptT e m) a
+    -> ConduitT i o (ExceptT e' m) a
+withMonadError transformError =
+    transPipe (withExceptT transformError)
 
 exampleRequest :: Request
 exampleRequest =
     parseRequest_
-        "https://www.xrel.to/releases-usrss.html?u=20470&s=ee663473a8da8a161902c908326ebe1c&favs=1"
-
-exampleTraversal :: XmlParser [(ByteString.ByteString, ByteString.ByteString)]
-exampleTraversal =
-    child "feed" $
-        children "entry" $
-            (,) <$> child "title" text
-                <*> child "link" (attribute "href")
+        "https://thepiratebay.org/rss/top100/200"
 
 data Error
     = RequestError RequestError
-    | XmlError XenoException
+    | XmlError XmlError
     deriving Show
 
 main :: IO ()
 main = do
     manager <- newManager tlsManagerSettings
-    result <- runExceptT $ do
-        contents <- withMonadError RequestError (requestResponseBody manager exampleRequest)
-        withMonadError XmlError (liftEither (runXmlTraversal exampleTraversal contents))
+    result <- runResourceT $ runExceptT $ runConduit $
+        withMonadError RequestError (requestConduit manager exampleRequest)
+        .| withMonadError XmlError subscribeToXml
+        .| mapM_ (liftIO . print)
 
     case result of
-        Left error   -> print error
-        Right result -> traverse_ (bitraverse_ print print) result
+        Left error     -> print error
+        Right messages -> print messages

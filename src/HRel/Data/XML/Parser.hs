@@ -14,6 +14,7 @@ import Control.Monad.State
 import           Data.Attoparsec.ByteString
 import qualified Data.ByteString            as ByteString
 import           Data.Conduit
+import           Data.Foldable
 
 import HRel.Data.XML.Lexer
 
@@ -160,7 +161,7 @@ subscribeToXml = do
 
         step = \case
             Done leftOver (messages, state) -> do
-                traverse yield messages
+                traverse_ yield messages
                 step (parseMessages state leftOver)
 
             Partial cont -> do

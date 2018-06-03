@@ -99,7 +99,7 @@ seal = \case
 await :: TraversalT i f (Maybe i)
 await = With Pure
 
--- | Pull aa new input. Fails if there are no more inputs.
+-- | Pull a new input. Fails if there are no more inputs.
 pull :: TraversalT i f i
 pull = With (maybe Fail Pure)
 

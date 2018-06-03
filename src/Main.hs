@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 
 module Main (main) where
 
@@ -12,7 +13,7 @@ import Control.Monad.Trans.Resource
 import Data.ByteString   (ByteString)
 import Data.Conduit
 import Data.Conduit.List (mapM_)
-import Data.Foldable     (for_)
+import Data.Foldable     (traverse_)
 
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
@@ -22,6 +23,12 @@ import HRel.Data.XML
 import HRel.Data.XML.Parser (XmlError, XmlMessage, subscribeToXml)
 import HRel.Network
 
+data Error
+    = RequestError RequestError
+    | XmlError XmlError
+    | TraversalError
+    deriving Show
+
 withMonadError
     :: (Monad m, MonadError e' m)
     => (e -> e')
@@ -29,6 +36,35 @@ withMonadError
     -> ConduitT i o m a
 withMonadError transformError =
     transPipe (runExceptT >=> either (throwError . transformError) pure)
+
+makeRequest
+    :: ( MonadResource m
+       , MonadError Error m )
+    => Manager
+    -> Request
+    -> ConduitT i ByteString m ()
+makeRequest manager request =
+    withMonadError RequestError (requestConduit manager request)
+
+traverseXml
+    :: MonadError Error m
+    => XmlTraversal (ConduitT XmlMessage o m) ()
+    -> ConduitT ByteString o m ()
+traverseXml traversal =
+    withMonadError XmlError subscribeToXml
+    .| (traverseConduit traversal >>= maybe (throwError TraversalError) pure)
+
+makeXmlRequest
+    :: ( MonadResource m
+       , MonadError Error m )
+    => XmlTraversal (ConduitT XmlMessage o m) ()
+    -> Manager
+    -> Request
+    -> ConduitT i o m ()
+makeXmlRequest traversal manager request =
+    flip catchError (liftIO . print) $
+        makeRequest manager request
+        .| traverseXml traversal
 
 exampleRequests :: [Request]
 exampleRequests =
@@ -130,54 +166,19 @@ exampleRequests =
         , "https://thepiratebay.org/rss/new/699"
         , "https://thepiratebay.org/rss/top100/0" ]
 
-makeRequest
-    :: ( MonadResource m
-       , MonadError Error m )
-    => Manager
-    -> Request
-    -> ConduitT ByteString o m ()
-    -> ConduitT i o m ()
-makeRequest manager request handler =
-    withMonadError RequestError (requestConduit manager request)
-    .| handler
-
-handleXml
-    :: MonadError Error m
-    => XmlTraversal (ConduitT XmlMessage o m) ()
-    -> ConduitT ByteString o m ()
-handleXml traversal =
-    withMonadError XmlError subscribeToXml
-    .| (traverseConduit traversal >>= maybe (throwError TraversalError) pure)
-
-data Error
-    = RequestError RequestError
-    | XmlError XmlError
-    | TraversalError
-    deriving Show
-
 tpbTraversal :: Monad m => XmlTraversal (ConduitT XmlMessage (ByteString, ByteString) m) ()
 tpbTraversal =
     void $ child "rss" $ child "channel" $ many $ child "item" $ do
-        title <- child "title" text
-        magnetUri <- child "torrent" (child "magnetURI" text)
-        lift (yield (title, magnetUri))
-
-withRequest
-    :: ( MonadResource m
-       , MonadError Error m )
-    => Manager
-    -> Request
-    -> ConduitT i (ByteString, ByteString) m ()
-withRequest manager request =
-    catchError (makeRequest manager request (handleXml tpbTraversal)) (liftIO . print)
+        result <-
+            (,) <$> child "title" text
+                <*> child "torrent" (child "magnetURI" text)
+        lift (yield result)
 
 main :: IO ()
 main = do
     manager <- newManager tlsManagerSettings
-    result <- runResourceT $ runExceptT $ runConduit $
-        for_ exampleRequests (withRequest manager)
+    _ <- runResourceT $ runExceptT $ runConduit $
+        traverse_ (makeXmlRequest tpbTraversal manager) exampleRequests
         .| mapM_ (liftIO . print)
 
-    case result of
-        Left error -> print error
-        Right _    -> pure ()
+    pure ()

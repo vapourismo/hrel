@@ -27,22 +27,28 @@ instance Functor f => Functor (TraversalT i f) where
     fmap _ Fail          = Fail
     fmap f (Pure x)      = Pure (f x)
     fmap f (Free action) = Free (fmap f <$> action)
-    fmap f (With handle) = With (\ input -> f <$> handle input)
+    fmap f (With handle) = With (fmap f . handle)
+
+    {-# INLINE fmap #-}
 
 instance Functor f => Applicative (TraversalT i f) where
     pure = Pure
 
+    {-# INLINE pure #-}
+
     Fail     <*> _        = Fail
     _        <*> Fail     = Fail
-    Pure lhs <*> Pure rhs = Pure (lhs rhs)
-    Pure lhs <*> Free rhs = Free (fmap lhs <$> rhs)
-    Pure lhs <*> With rhs = With (\ input -> lhs <$> rhs input)
+    Pure lhs <*> rhs      = lhs <$> rhs
     Free lhs <*> rhs      = Free ((<*> rhs) <$> lhs)
     With lhs <*> With rhs = With (\ input -> lhs input <*> rhs input)
     With lhs <*> rhs      = With (\ input -> lhs input <*> rhs)
 
+    {-# INLINE (<*>) #-}
+
 instance Functor f => Alternative (TraversalT i f) where
     empty = Fail
+
+    {-# INLINE empty #-}
 
     Fail     <|> rhs      = rhs
     lhs      <|> Fail     = lhs
@@ -50,6 +56,8 @@ instance Functor f => Alternative (TraversalT i f) where
     Free lhs <|> rhs      = Free ((<|> rhs) <$> lhs)
     With lhs <|> With rhs = With (\ input -> lhs input <|> rhs input)
     With lhs <|> rhs      = With (\ input -> lhs input <|> rhs)
+
+    {-# INLINE (<|>) #-}
 
     many parser =
         await >>= \case
@@ -61,18 +69,22 @@ instance Functor f => Alternative (TraversalT i f) where
         (value :) <$> many parser
 
 instance Functor f => Monad (TraversalT i f) where
-    Fail   >>= _       = Fail
-    Pure x >>= f       = f x
-    Free action >>= f  = Free ((>>= f) <$> action)
-    With handler >>= f = With (\ input -> handler input >>= f)
+    Fail        >>= _ = Fail
+    Pure x      >>= f = f x
+    Free action >>= f = Free ((>>= f) <$> action)
+    With handle >>= f = With (handle >=> f)
+
+    {-# INLINE (>>=) #-}
 
 instance Functor f => MonadPlus (TraversalT i f)
 
 instance MonadTrans (TraversalT i) where
-    lift action = Free (Pure <$> action)
+    lift = Free . fmap Pure
+
+    {-# INLINE lift #-}
 
 -- | Execute the 'TraversalT'.
-runTraversalT :: Monad f => f (Maybe i) -> TraversalT i f a -> f (Maybe a)
+runTraversalT :: Monad m => m (Maybe i) -> TraversalT i m a -> m (Maybe a)
 runTraversalT await =
     evaluate
     where
@@ -88,6 +100,8 @@ traverseConduit
     -> Conduit.ConduitT i o m (Maybe a)
 traverseConduit = runTraversalT Conduit.await
 
+{-# INLINE traverseConduit #-}
+
 -- | Prevent the 'TraversalT' from receiving more inputs.
 seal :: Functor f => TraversalT i f a -> TraversalT i f a
 seal = \case
@@ -99,9 +113,13 @@ seal = \case
 await :: TraversalT i f (Maybe i)
 await = With Pure
 
+{-# INLINE await #-}
+
 -- | Pull a new input. Fails if there are no more inputs.
 pull :: TraversalT i f i
 pull = With (maybe Fail Pure)
+
+{-# INLINE pull #-}
 
 -- | Feed a 'TraversalT' a custom input.
 feed :: Functor f => i -> TraversalT i f a -> TraversalT i f a

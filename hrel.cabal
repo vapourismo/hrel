@@ -25,7 +25,7 @@ executable hrel
                     conduit,
                     resourcet,
                     exceptions,
-                    xeno
+                    aeson
   other-modules:    HRel.Network
                     HRel.Data.XML
                     HRel.Data.XML.Lexer

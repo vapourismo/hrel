@@ -30,4 +30,4 @@ executable hrel
                     HRel.Data.XML
                     HRel.Data.XML.Lexer
                     HRel.Data.XML.Parser
-                    HRel.Data.Parser
+                    HRel.Data.Traversal

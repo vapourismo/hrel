@@ -1,10 +1,7 @@
-{-# LANGUAGE KindSignatures    #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 
 module HRel.Data.XML
-    ( XmlParser
-    , runXmlTraversal
+    ( XmlTraversal
     , attribute
     , attributes
     , text
@@ -16,35 +13,14 @@ import Control.Applicative
 
 import qualified Data.ByteString as ByteString
 
-import qualified Xeno.SAX   as XML
-import qualified Xeno.Types as XML
-
-import HRel.Data.Parser
+import HRel.Data.Traversal
 import HRel.Data.XML.Parser (XmlMessage (..))
 
--- | XML parser
-type XmlParser = Parser XmlMessage
-
--- | Run the 'XmlParser' against an XML document.
-runXmlTraversal :: XmlParser a -> ByteString.ByteString -> Either XML.XenoException a
-runXmlTraversal baseAction contents = do
-    result <-
-        XML.fold
-            (\ action name -> feed (Open name) action)
-            (\ action name value -> feed (Attribute name value) action)
-            (\ action name -> feed (OpenEnd name) action)
-            (\ action value -> feed (Text value) action)
-            (\ action name -> feed (Close name) action)
-            (\ action value -> feed (Text value) action)
-            baseAction
-            contents
-
-    case terminate result of
-        Nothing -> Left (XML.XenoParseError "Fail")
-        Just x  -> Right x
+-- | XML traversal
+type XmlTraversal = TraversalT XmlMessage
 
 -- | Value for an attribute.
-attribute :: ByteString.ByteString -> XmlParser ByteString.ByteString
+attribute :: Functor f => ByteString.ByteString -> XmlTraversal f ByteString.ByteString
 attribute needle =
     pull >>= \case
         Attribute name value
@@ -53,7 +29,7 @@ attribute needle =
         _                    -> empty
 
 -- | Gather all attributes.
-attributes :: XmlParser [(ByteString.ByteString, ByteString.ByteString)]
+attributes :: Functor f => XmlTraversal f [(ByteString.ByteString, ByteString.ByteString)]
 attributes =
     many anAttribute
     where
@@ -63,7 +39,7 @@ attributes =
                 _                    -> empty
 
 -- | Gather all text.
-text :: XmlParser ByteString.ByteString
+text :: Functor f => XmlTraversal f ByteString.ByteString
 text =
     ByteString.concat <$> many step
     where
@@ -73,7 +49,7 @@ text =
                 _         -> step
 
 -- | Skip everything until exiting the current node.
-skipNode :: ByteString.ByteString -> XmlParser a -> XmlParser a
+skipNode :: Functor f => ByteString.ByteString -> XmlTraversal f a -> XmlTraversal f a
 skipNode name cont =
     pull >>= \case
         Open openName                       -> skipNode openName (skipNode name cont)
@@ -81,11 +57,11 @@ skipNode name cont =
         _                                   -> skipNode name cont
 
 -- | Traverse all child nodes with the given name.
-children :: ByteString.ByteString -> XmlParser a -> XmlParser [a]
+children :: Functor f => ByteString.ByteString -> XmlTraversal f a -> XmlTraversal f [a]
 children name action = many (child name action)
 
 -- | Traverse a child node with the given name.
-child :: ByteString.ByteString -> XmlParser a -> XmlParser a
+child :: Functor f => ByteString.ByteString -> XmlTraversal f a -> XmlTraversal f a
 child tagName baseAction =
     withRoot
     where

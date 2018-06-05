@@ -25,9 +25,15 @@ executable hrel
                     conduit,
                     resourcet,
                     exceptions,
-                    aeson
+                    aeson,
+                    postgresql-libpq,
+                    containers,
+                    profunctors,
+                    tagged,
+                    contravariant
   other-modules:    HRel.Network
+                    HRel.Data.Traversal
                     HRel.Data.XML
                     HRel.Data.XML.Lexer
                     HRel.Data.XML.Parser
-                    HRel.Data.Traversal
+                    HRel.Database

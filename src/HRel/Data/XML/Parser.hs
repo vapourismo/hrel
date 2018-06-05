@@ -153,7 +153,7 @@ data XmlError =
     deriving (Show, Eq)
 
 subscribeToXml :: MonadError XmlError m => ConduitT ByteString.ByteString XmlMessage m ()
-subscribeToXml = do
+subscribeToXml =
     step (parseMessages Nothing ByteString.empty)
     where
         parseMessages =

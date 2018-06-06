@@ -37,3 +37,6 @@ executable hrel
                     HRel.Data.XML.Lexer
                     HRel.Data.XML.Parser
                     HRel.Database
+                    HRel.Database.Types
+                    HRel.Database.Marshal
+                    HRel.Database.Query

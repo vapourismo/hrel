@@ -4,7 +4,7 @@ module Main (main) where
 
 import HRel.Database
 
-query :: Query Value Value
+query :: QueryRecipe Value Value
 query =
     mconcat
         [ "SELECT "

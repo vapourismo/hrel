@@ -20,7 +20,6 @@ where
 
 import Prelude hiding (id, (.))
 
-
 import Control.Applicative  ((<|>))
 import Control.Monad.Except
 
@@ -49,6 +48,7 @@ data QueryError
     = NoResult
     | BadResponse ByteString
     | FatalError ByteString
+    deriving (Show, Eq)
 
 -- | Execute a query.
 runQuery

@@ -4,12 +4,10 @@ module Main (main) where
 
 import HRel.Database
 
-query :: QueryRecipe Value Value
+query :: QueryRecipe Int Value
 query =
     mconcat
-        [ "SELECT "
-        , marshal
-        , ", * FROM my_table WHERE value > "
+        [ "SELECT * FROM test_table WHERE x = "
         , marshal ]
 
 main :: IO ()

@@ -8,7 +8,7 @@ module HRel.Database.Query
     , toQuery
 
     , PrepQuery (..)
-    , toPreparedQuery )
+    , toPrepQuery )
 where
 
 import Prelude hiding (id, (.))
@@ -117,6 +117,6 @@ instance Contravariant PrepQuery where
     contramap f query = query {preparedQuery = contramap f (preparedQuery query)}
 
 -- | Turn a recipe into a 'PrepQuery'.
-toPreparedQuery :: ByteString -> QueryRecipe i Value -> PrepQuery i
-toPreparedQuery name query =
+toPrepQuery :: ByteString -> QueryRecipe i Value -> PrepQuery i
+toPrepQuery name query =
     PrepQuery name (toQuery query)

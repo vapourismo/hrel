@@ -12,7 +12,9 @@ module HRel.Database
 
     , QueryRecipe (..)
     , Query (..)
+    , toQuery
     , PrepQuery (..)
+    , toPrepQuery
 
     , Value
     , Marshal (..) )

@@ -13,14 +13,14 @@ import Control.Applicative
 
 import qualified Data.ByteString as ByteString
 
-import HRel.Data.Traversal
+import HRel.Data.Scanner
 import HRel.Data.XML.Parser (XmlMessage (..))
 
 -- | XML traversal
-type XmlTraversal = TraversalT XmlMessage
+type XmlTraversal = Scanner XmlMessage
 
 -- | Value for an attribute.
-attribute :: Functor f => ByteString.ByteString -> XmlTraversal f ByteString.ByteString
+attribute :: ByteString.ByteString -> XmlTraversal ByteString.ByteString
 attribute needle =
     pull >>= \case
         Attribute name value
@@ -29,7 +29,7 @@ attribute needle =
         _                    -> empty
 
 -- | Gather all attributes.
-attributes :: Functor f => XmlTraversal f [(ByteString.ByteString, ByteString.ByteString)]
+attributes :: XmlTraversal [(ByteString.ByteString, ByteString.ByteString)]
 attributes =
     many anAttribute
     where
@@ -39,7 +39,7 @@ attributes =
                 _                    -> empty
 
 -- | Gather all text.
-text :: Functor f => XmlTraversal f ByteString.ByteString
+text :: XmlTraversal ByteString.ByteString
 text =
     ByteString.concat <$> many step
     where
@@ -49,7 +49,7 @@ text =
                 _         -> step
 
 -- | Skip everything until exiting the current node.
-skipNode :: Functor f => ByteString.ByteString -> XmlTraversal f a -> XmlTraversal f a
+skipNode :: ByteString.ByteString -> XmlTraversal a -> XmlTraversal a
 skipNode name cont =
     pull >>= \case
         Open openName                       -> skipNode openName (skipNode name cont)
@@ -57,11 +57,11 @@ skipNode name cont =
         _                                   -> skipNode name cont
 
 -- | Traverse all child nodes with the given name.
-children :: Functor f => ByteString.ByteString -> XmlTraversal f a -> XmlTraversal f [a]
+children :: ByteString.ByteString -> XmlTraversal a -> XmlTraversal [a]
 children name action = many (child name action)
 
 -- | Traverse a child node with the given name.
-child :: Functor f => ByteString.ByteString -> XmlTraversal f a -> XmlTraversal f a
+child :: ByteString.ByteString -> XmlTraversal a -> XmlTraversal a
 child tagName baseAction =
     withRoot
     where

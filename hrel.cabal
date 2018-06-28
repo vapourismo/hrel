@@ -32,7 +32,7 @@ executable hrel
                     tagged,
                     contravariant
   other-modules:    HRel.Network
-                    HRel.Data.Traversal
+                    HRel.Data.Scanner
                     HRel.Data.XML
                     HRel.Data.XML.Lexer
                     HRel.Data.XML.Parser

@@ -1,9 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 
-module HRel.Data.Traversal
-    ( TraversalT
-    , runTraversalT
-    , traverseConduit
+module HRel.Data.Scanner
+    ( Scanner
+    , runScanner
+    , scannerConduit
     , await
     , pull
     , feed
@@ -12,26 +12,32 @@ where
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Trans
 
-import qualified Data.Conduit as Conduit
+import qualified Data.Conduit    as Conduit
+import           Data.Profunctor
 
--- | Traversal over @i@ in @f@.
-data TraversalT i f a
+-- | Scanner
+data Scanner i a
     = Fail
     | Pure a
-    | Free (f (TraversalT i f a))
-    | With (Maybe i -> TraversalT i f a)
+    | With (Maybe i -> Scanner i a)
 
-instance Functor f => Functor (TraversalT i f) where
+instance Functor (Scanner i) where
     fmap _ Fail          = Fail
     fmap f (Pure x)      = Pure (f x)
-    fmap f (Free action) = Free (fmap f <$> action)
     fmap f (With handle) = With (fmap f . handle)
 
-    {-# INLINE fmap #-}
+    {-# INLINEABLE fmap #-}
 
-instance Functor f => Applicative (TraversalT i f) where
+instance Profunctor Scanner where
+    dimap left right = \case
+        Fail         -> Fail
+        Pure value   -> Pure (right value)
+        With handler -> With (dimap left right . handler . fmap left)
+
+    {-# INLINEABLE dimap #-}
+
+instance Applicative (Scanner i) where
     pure = Pure
 
     {-# INLINE pure #-}
@@ -39,13 +45,12 @@ instance Functor f => Applicative (TraversalT i f) where
     Fail     <*> _        = Fail
     _        <*> Fail     = Fail
     Pure lhs <*> rhs      = lhs <$> rhs
-    Free lhs <*> rhs      = Free ((<*> rhs) <$> lhs)
     With lhs <*> With rhs = With (\ input -> lhs input <*> rhs input)
     With lhs <*> rhs      = With (\ input -> lhs input <*> rhs)
 
-    {-# INLINE (<*>) #-}
+    {-# INLINEABLE (<*>) #-}
 
-instance Functor f => Alternative (TraversalT i f) where
+instance Alternative (Scanner i) where
     empty = Fail
 
     {-# INLINE empty #-}
@@ -53,11 +58,10 @@ instance Functor f => Alternative (TraversalT i f) where
     Fail     <|> rhs      = rhs
     lhs      <|> Fail     = lhs
     Pure lhs <|> _        = Pure lhs
-    Free lhs <|> rhs      = Free ((<|> rhs) <$> lhs)
     With lhs <|> With rhs = With (\ input -> lhs input <|> rhs input)
     With lhs <|> rhs      = With (\ input -> lhs input <|> rhs)
 
-    {-# INLINE (<|>) #-}
+    {-# INLINEABLE (<|>) #-}
 
     many parser =
         await >>= \case
@@ -68,62 +72,53 @@ instance Functor f => Alternative (TraversalT i f) where
         value <- parser
         (value :) <$> many parser
 
-instance Functor f => Monad (TraversalT i f) where
+instance Monad (Scanner i) where
     Fail        >>= _ = Fail
     Pure x      >>= f = f x
-    Free action >>= f = Free ((>>= f) <$> action)
     With handle >>= f = With (handle >=> f)
 
     {-# INLINE (>>=) #-}
 
-instance Functor f => MonadPlus (TraversalT i f)
+instance MonadPlus (Scanner i)
 
-instance MonadTrans (TraversalT i) where
-    lift = Free . fmap Pure
-
-    {-# INLINE lift #-}
-
--- | Execute the 'TraversalT'.
-runTraversalT :: Monad m => m (Maybe i) -> TraversalT i m a -> m (Maybe a)
-runTraversalT await =
+-- | Execute the 'Scanner'.
+runScanner :: Monad m => m (Maybe i) -> Scanner i a -> m (Maybe a)
+runScanner await =
     evaluate
     where
         evaluate Fail            = pure Nothing
         evaluate (Pure x)        = pure (Just x)
-        evaluate (Free continue) = continue >>= evaluate
         evaluate (With handler)  = await >>= evaluate . handler
 
--- | Execute the 'TraversalT' as a 'Conduit.ConduitT'.
-traverseConduit
+-- | Execute the 'Scanner' as a 'Conduit.ConduitT'.
+scannerConduit
     :: Monad m
-    => TraversalT i (Conduit.ConduitT i o m) a
+    => Scanner i a
     -> Conduit.ConduitT i o m (Maybe a)
-traverseConduit = runTraversalT Conduit.await
+scannerConduit = runScanner Conduit.await
 
-{-# INLINE traverseConduit #-}
+{-# INLINE scannerConduit #-}
 
--- | Prevent the 'TraversalT' from receiving more inputs.
-seal :: Functor f => TraversalT i f a -> TraversalT i f a
+-- | Prevent the 'Scanner' from receiving more inputs.
+seal :: Scanner i a -> Scanner i a
 seal = \case
-    Free action  -> Free (seal <$> action)
     With handler -> seal (handler Nothing)
     other        -> other
 
 -- | Await a new input.
-await :: TraversalT i f (Maybe i)
+await :: Scanner i (Maybe i)
 await = With Pure
 
 {-# INLINE await #-}
 
 -- | Pull a new input. Fails if there are no more inputs.
-pull :: TraversalT i f i
+pull :: Scanner i i
 pull = With (maybe Fail Pure)
 
 {-# INLINE pull #-}
 
--- | Feed a 'TraversalT' a custom input.
-feed :: Functor f => i -> TraversalT i f a -> TraversalT i f a
+-- | Feed a 'Scanner' a custom input.
+feed :: i -> Scanner i a -> Scanner i a
 feed input = \case
-    Free action  -> Free (feed input <$> action)
     With handler -> handler (Just input)
     other        -> other

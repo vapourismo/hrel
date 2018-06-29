@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -19,8 +18,6 @@ module HRel.Database
     , Value
     , Marshal (..) )
 where
-
-import Prelude hiding (id, (.))
 
 import Control.Applicative  ((<|>))
 import Control.Monad.Except

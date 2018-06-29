@@ -86,9 +86,9 @@ runScanner :: Monad m => m (Maybe i) -> Scanner i a -> m (Maybe a)
 runScanner await =
     evaluate
     where
-        evaluate Fail            = pure Nothing
-        evaluate (Pure x)        = pure (Just x)
-        evaluate (With handler)  = await >>= evaluate . handler
+        evaluate Fail           = pure Nothing
+        evaluate (Pure x)       = pure (Just x)
+        evaluate (With handler) = await >>= evaluate . handler
 
 -- | Execute the 'Scanner' as a 'Conduit.ConduitT'.
 scannerConduit

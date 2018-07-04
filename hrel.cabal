@@ -13,14 +13,18 @@ executable hrel
 
   hs-source-dirs:   src
   main-is:          Main.hs
+
   default-language: Haskell2010
+
   build-depends:    base,
+                    ghc-prim,
                     mtl,
                     http-conduit,
                     http-client,
                     http-client-tls,
                     http-types,
                     bytestring,
+                    text,
                     attoparsec,
                     conduit,
                     resourcet,
@@ -31,6 +35,7 @@ executable hrel
                     profunctors,
                     tagged,
                     contravariant
+
   other-modules:    HRel.Network
                     HRel.Data.Scanner
                     HRel.Data.XML
@@ -40,3 +45,4 @@ executable hrel
                     HRel.Database.Types
                     HRel.Database.Marshal
                     HRel.Database.Query
+                    HRel.Database.SQL.Expression

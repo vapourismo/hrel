@@ -1,33 +1,23 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE KindSignatures      #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE GADTs             #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
-import GHC.Records
-import GHC.TypeLits
+import Prelude (IO, ($))
 
-import Control.Arrow
+import qualified Data.Text    as Text
+import qualified Data.Text.IO as Text
 
-import HRel.Database
+import HRel.Database.SQL.Expression
 
-field
-    :: forall (name :: Symbol) typ rec
-    .  (HasField name rec typ, Marshal typ)
-    => QueryRecipe rec Value
-field = arr (getField @name @rec @typ) >>> marshal
+data Select a where
+    Select :: Expression a -> Select a
 
-query :: HasField "x" a Int => QueryRecipe a Value
-query =
-    mconcat
-        [ "SELECT * FROM test_table WHERE x = "
-        , field @"x" @Int ]
-
-data A = A {x :: Int, y :: String}
+selectToSql :: Select a -> Text.Text
+selectToSql = \case
+    Select expr -> Text.append "SELECT " (expressionToSql expr)
 
 main :: IO ()
-main = print (query @A)
+main = Text.putStrLn $ selectToSql $
+    Select (abs (negate (Literal "1" :: Expression PgNumber)))

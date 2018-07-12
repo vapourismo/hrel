@@ -34,9 +34,14 @@ executable hrel
                     profunctors,
                     tagged,
                     contravariant,
-                    optparse-applicative
+                    optparse-applicative,
+                    zeromq4-haskell,
+                    binary,
+                    resourcet
 
   other-modules:    HRel.Network
+                    HRel.Network.ZMQ
+                    HRel.Network.Types
                     HRel.Data.Scanner
                     HRel.Data.XML
                     HRel.Data.XML.Lexer
@@ -47,4 +52,5 @@ executable hrel
                     HRel.Database.Query
                     HRel.Database.SQL.Types
                     HRel.Database.SQL.Expression
+                    HRel.Application.Hub
                     HRel.Application.FeedProcessor

@@ -45,4 +45,5 @@ executable hrel
                     HRel.Database.Types
                     HRel.Database.Marshal
                     HRel.Database.Query
+                    HRel.Database.SQL.Types
                     HRel.Database.SQL.Expression

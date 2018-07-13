@@ -1,38 +1,71 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE LambdaCase         #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE RecordWildCards    #-}
 
 module HRel.Application.Hub
-    ( Input
+    ( Request (..)
+    , Response (..)
+
+      -- * Application
+    , Input
     , inputInfo
     , main )
 where
 
-import Control.Monad.Trans          (MonadIO (liftIO))
-import Control.Monad.Trans.Resource
+import GHC.Generics (Generic)
 
-import Control.Concurrent
-import Control.Monad
+import Control.Monad.Trans          (liftIO)
+import Control.Monad.Trans.Resource (ResourceT, runResourceT)
+
+import Data.Aeson    (FromJSON, ToJSON)
+import Data.Monoid   (mconcat)
+import Data.Typeable (Typeable)
 
 import Options.Applicative
 
-import HRel.Network.Types
-import HRel.Network.ZMQ   as ZMQ
+import           HRel.Network.Service
+import qualified HRel.Network.ZMQ     as ZMQ
+
+newtype Request
+    = DistributeFeed
+        { url :: String }
+    deriving (Show, Typeable, Generic)
+
+instance FromJSON Request
+
+instance ToJSON Request
+
+data Response
+    = Ok
+    deriving (Show, Typeable, Generic)
+
+instance FromJSON Response
+
+instance ToJSON Response
 
 newtype Input =
     Input
-        { inputWithPushSocket :: ZMQ.Context -> ResourceT IO (ZMQ.Socket ZMQ.Push) }
+        { inputMakeCommandSocket :: ZMQ.Context -> ResourceT IO (ZMQ.Socket ZMQ.Rep) }
 
 inputInfo :: ParserInfo Input
 inputInfo =
     info inputP (progDesc "Hub")
     where
-        inputP = Input <$> argument (boundSocketReadM ZMQ.Push) (metavar "BINDINFO")
+        inputP = Input <$> commandSocketP
+
+        commandSocketP =
+            option (ZMQ.boundSocketReadM ZMQ.Rep) $ mconcat
+                [ long "command-socket"
+                , metavar "BINDINFO" ]
 
 main :: Input -> IO ()
 main Input{..} = runResourceT $ do
     context <- ZMQ.makeContext
-    socket <-  inputWithPushSocket context
+    commandSocket <- inputMakeCommandSocket context
 
-    forever $ do
-        liftIO (threadDelay 1000000)
-        sendJson socket (FeedProcessRequest "Hello World")
-
+    serveRequests commandSocket $ \case
+        DistributeFeed url -> do
+            liftIO (print url)
+            pure Ok

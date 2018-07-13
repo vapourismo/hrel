@@ -1,6 +1,8 @@
 module HRel.Network.ZMQ
     ( ZMQ.Pull (..)
     , ZMQ.Push (..)
+    , ZMQ.Req (..)
+    , ZMQ.Rep (..)
 
     , ZMQ.Context
     , makeContext
@@ -9,10 +11,12 @@ module HRel.Network.ZMQ
     , connect
     , bind
 
+    , send
     , sendBinary
-    , receiveBinary
-
     , sendJson
+
+    , receive
+    , receiveBinary
     , receiveJson
 
     , connectedSocketReadM
@@ -27,7 +31,8 @@ import Options.Applicative
 
 import qualified Data.Aeson           as Aeson
 import qualified Data.Binary          as Binary
-import           Data.ByteString.Lazy as LazyByteString
+import           Data.ByteString      (ByteString)
+import qualified Data.ByteString.Lazy as LazyByteString
 
 import qualified System.ZMQ4 as ZMQ
 
@@ -47,10 +52,23 @@ bind context typ info = do
     (_, socket) <- allocate (ZMQ.socket context typ) ZMQ.close
     socket <$ liftIO (ZMQ.bind socket info)
 
+-- | Send a message through the 'ZMQ.Socket'.
+send :: (ZMQ.Sender t, MonadIO m) => ZMQ.Socket t -> ByteString -> m ()
+send socket message = liftIO (ZMQ.send socket [] message)
+
 -- | Send a 'Binary'-encoded value through the 'ZMQ.Socket'.
 sendBinary :: (ZMQ.Sender t, Binary.Binary a, MonadIO m) => ZMQ.Socket t -> a -> m ()
 sendBinary socket message =
     liftIO (ZMQ.send socket [] (LazyByteString.toStrict (Binary.encode message)))
+
+-- | Send a JSON-encoded value.
+sendJson :: (ZMQ.Sender t, Aeson.ToJSON a, MonadIO m) => ZMQ.Socket t -> a -> m ()
+sendJson socket message =
+    liftIO (ZMQ.send socket [] (LazyByteString.toStrict (Aeson.encode message)))
+
+-- | Receive a message from the 'ZMQ.Socket'.
+receive :: (ZMQ.Receiver t, MonadIO m) => ZMQ.Socket t -> m ByteString
+receive socket = liftIO (ZMQ.receive socket)
 
 -- | Receive a 'Binary'-encoded value from the 'ZMQ.Socket'.
 receiveBinary
@@ -62,11 +80,6 @@ receiveBinary socket = do
     pure $ case Binary.decodeOrFail (LazyByteString.fromStrict message) of
         Left (_, _, errorMessage) -> Left errorMessage
         Right (_, _, result)      -> Right result
-
--- | Send a JSON-encoded value.
-sendJson :: (ZMQ.Sender t, Aeson.ToJSON a, MonadIO m) => ZMQ.Socket t -> a -> m ()
-sendJson socket message =
-    liftIO (ZMQ.send socket [] (LazyByteString.toStrict (Aeson.encode message)))
 
 -- | Receive a JSON-encoded value.
 receiveJson :: (ZMQ.Receiver t, Aeson.FromJSON a, MonadIO m) => ZMQ.Socket t -> m (Either String a)

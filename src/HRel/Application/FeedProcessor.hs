@@ -1,4 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module HRel.Application.FeedProcessor
     ( Input
@@ -6,31 +7,34 @@ module HRel.Application.FeedProcessor
     , main )
 where
 
-import Control.Monad                (forever)
 import Control.Monad.Trans          (MonadIO (liftIO))
 import Control.Monad.Trans.Resource
 
 import Options.Applicative
 
-import HRel.Network.Types
-import HRel.Network.ZMQ   as ZMQ
+import           HRel.Application.Hub   (Request (..), Response (..))
+import           HRel.Control.Exception
+import           HRel.Network.Service
+import qualified HRel.Network.ZMQ       as ZMQ
 
 newtype Input =
     Input
-        { inputWithPullSocket :: ZMQ.Context -> ResourceT IO (ZMQ.Socket ZMQ.Pull) }
+        { inputWithReqSocket :: ZMQ.Context -> ResourceT IO (ZMQ.Socket ZMQ.Req) }
 
 inputInfo :: ParserInfo Input
 inputInfo =
     info inputP (progDesc "Feed processor")
     where
-        inputP =
-            Input <$> argument (connectedSocketReadM ZMQ.Pull) (metavar "CONNECTINFO")
+        inputP = Input <$> argument (ZMQ.connectedSocketReadM ZMQ.Req) (metavar "CONNECTINFO")
 
 main :: Input -> IO ()
 main Input{..} = runResourceT $ do
     context <- ZMQ.makeContext
-    socket <- inputWithPullSocket context
+    socket  <- inputWithReqSocket context
 
-    forever $ do
-        message <- ZMQ.receiveJson socket
-        liftIO (print (message :: Either String FeedProcessRequest))
+    Right service <-
+        try (introduce socket)
+        :: ResourceT IO (Either IntroException (Service Request Response))
+
+    res <- try (request service (DistributeFeed "http://example.com/feed.xml"))
+    liftIO (print (res :: Either RequestException Response))

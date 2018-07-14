@@ -28,7 +28,6 @@ executable hrel
                     conduit,
                     resourcet,
                     exceptions,
-                    aeson,
                     postgresql-libpq,
                     containers,
                     profunctors,

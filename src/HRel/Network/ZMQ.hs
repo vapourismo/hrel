@@ -105,15 +105,6 @@ receiveBinary socket = do
         Left (_, _, errorMessage) -> Left errorMessage
         Right (_, _, result)      -> Right result
 
--- | Send a JSON-encoded value.
-sendJson :: (ZMQ.Sender t, Aeson.ToJSON a, MonadIO m) => ZMQ.Socket t -> a -> m ()
-sendJson socket message =
-    liftIO (ZMQ.send socket [] (LazyByteString.toStrict (Aeson.encode message)))
-
--- | Receive a JSON-encoded value.
-receiveJson :: (ZMQ.Receiver t, Aeson.FromJSON a, MonadIO m) => ZMQ.Socket t -> m (Either String a)
-receiveJson socket =
-    Aeson.eitherDecode . LazyByteString.fromStrict <$> liftIO (ZMQ.receive socket)
 
 connectedSocketReadM
     :: (ZMQ.SocketType a, MonadZMQ m)

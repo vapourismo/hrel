@@ -1,11 +1,17 @@
 {-# OPTIONS -Wno-unused-top-binds #-}
 
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds     #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE DeriveFunctor       #-}
 {-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE MagicHash           #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE RoleAnnotations     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module HRel.Control.Exception
     ( Throws
@@ -13,7 +19,10 @@ module HRel.Control.Exception
     , catch
     , handle
     , try
-    , ignoreException
+    , failOnException
+
+    , Bomb (..)
+    , SmallBomb
 
       -- * Re-exports
     , Exception (..)
@@ -24,10 +33,15 @@ where
 
 import GHC.Exts (Proxy#, proxy#)
 
-import Data.Coerce (coerce)
+import Prelude hiding (fail)
 
 import           Control.Exception   (Exception)
 import qualified Control.Monad.Catch as Catch
+import           Control.Monad.Fail  (MonadFail (fail))
+import           Control.Monad.Trans (MonadTrans (lift))
+
+import Data.Coerce (coerce)
+import Data.Kind   (Constraint)
 
 -- | Prevents implementation of 'Throws'
 class ThrowsBrother e
@@ -54,9 +68,14 @@ removeAnnotation :: forall e a. Proxy# e -> (Throws e => a) -> a
 removeAnnotation _ action =
     unWrap (coerce (Wrap action :: Wrap e a) :: Wrap (Tau e) a)
 
--- | Hide the attached exception.
-ignoreException :: forall e a. (Throws e => a) -> a
-ignoreException = removeAnnotation (proxy# :: Proxy# e)
+-- | Redirect 'Exception' to 'MonadFail' interface.
+failOnException
+    :: forall e a m
+    .  (Exception e, Catch.MonadCatch m, MonadFail m)
+    => (Throws e => m a)
+    -> m a
+failOnException action =
+    catch @e action (fail . show)
 
 -- | Throw an 'Exception'.
 throw
@@ -90,3 +109,24 @@ handle recover action =
 try :: forall e a m. (Catch.MonadCatch m, Exception e) => (Throws e => m a) -> m (Either e a)
 try action =
     Catch.try (removeAnnotation (proxy# :: Proxy# e) action)
+
+type family ThrowsMany (es :: [*]) :: Constraint where
+    ThrowsMany '[]      = ()
+    ThrowsMany '[e]     = Throws e
+    ThrowsMany (e : es) = (Throws e, ThrowsMany es)
+
+newtype Bomb es f a = Bomb {defuse :: ThrowsMany es => f a}
+    deriving (Functor)
+
+instance Applicative f => Applicative (Bomb es f) where
+    pure x = Bomb (pure x)
+
+    Bomb f <*> Bomb x = Bomb (f <*> x)
+
+instance Monad f => Monad (Bomb es f) where
+    Bomb m >>= f = Bomb (m >>= defuse . f)
+
+instance MonadTrans (Bomb es) where
+    lift = Bomb
+
+type SmallBomb e = Bomb '[e]

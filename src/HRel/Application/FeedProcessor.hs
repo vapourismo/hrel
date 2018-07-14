@@ -23,7 +23,7 @@ import qualified HRel.Network.ZMQ       as ZMQ
 
 newtype Input =
     Input
-        { inputWithReqSocket :: ZMQ.ZMQ (ZMQ.Socket ZMQ.Req) }
+        { inputWithReqSocket :: SmallBomb ZMQ.ZMQError ZMQ.ZMQ (ZMQ.Socket ZMQ.Req) }
 
 inputInfo :: ParserInfo Input
 inputInfo =
@@ -33,9 +33,9 @@ inputInfo =
 
 main :: Input -> IO ()
 main Input{..} =
-    ZMQ.withContext $ \ context ->
+    failOnException @ZMQ.ZMQError $ ZMQ.withContext $ \ context ->
         runResourceT $ flip runReaderT context $ do
-            socket <- ZMQ.liftZMQ inputWithReqSocket
+            socket <- ZMQ.liftZMQ (defuse inputWithReqSocket)
 
             Right service <- try @IntroException (introduce @Request @Response socket)
 

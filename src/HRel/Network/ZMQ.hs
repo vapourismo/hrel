@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -48,6 +49,8 @@ import           Data.ByteString      (ByteString)
 import qualified Data.ByteString.Lazy as LazyByteString
 
 import qualified System.ZMQ4 as ZMQ
+
+import HRel.Control.Exception (Bomb (..), SmallBomb)
 
 withContext :: (MonadIO m, MonadMask m) => (ZMQ.Context -> m a) -> m a
 withContext = bracket (liftIO ZMQ.context) (liftIO . ZMQ.term)
@@ -113,23 +116,19 @@ receiveJson socket =
     Aeson.eitherDecode . LazyByteString.fromStrict <$> liftIO (ZMQ.receive socket)
 
 connectedSocketReadM
-    :: ( ZMQ.SocketType a
-       , MonadZMQ m
-       )
+    :: (ZMQ.SocketType a, MonadZMQ m)
     => a
-    -> ReadM (m (ZMQ.Socket a))
+    -> ReadM (SmallBomb ZMQ.ZMQError m (ZMQ.Socket a))
 connectedSocketReadM typ =
-    flip fmap str $ \ info -> liftZMQ $ do
+    flip fmap str $ \ info -> Bomb $ liftZMQ $ do
         socket <- makeSocket typ
         socket <$ connect socket info
 
 boundSocketReadM
-    :: ( ZMQ.SocketType a
-       , MonadZMQ m
-       )
+    :: (ZMQ.SocketType a, MonadZMQ m)
     => a
-    -> ReadM (m (ZMQ.Socket a))
+    -> ReadM (SmallBomb ZMQ.ZMQError m (ZMQ.Socket a))
 boundSocketReadM typ =
-    flip fmap str $ \ info -> liftZMQ $ do
+    flip fmap str $ \ info -> Bomb $ liftZMQ $ do
         socket <- makeSocket typ
         socket <$ bind socket info

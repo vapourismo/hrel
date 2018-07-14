@@ -1,8 +1,10 @@
+{-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE LambdaCase         #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE RecordWildCards    #-}
+{-# LANGUAGE TypeApplications   #-}
 
 module HRel.Application.Hub
     ( Request (..)
@@ -26,8 +28,9 @@ import Data.Typeable (Typeable)
 
 import Options.Applicative
 
+import           HRel.Control.Exception
 import           HRel.Network.Service
-import qualified HRel.Network.ZMQ     as ZMQ
+import qualified HRel.Network.ZMQ       as ZMQ
 
 newtype Request
     = DistributeFeed
@@ -44,7 +47,7 @@ instance Binary Response
 
 newtype Input =
     Input
-        { inputMakeCommandSocket :: ZMQ.ZMQ (ZMQ.Socket ZMQ.Rep) }
+        { inputMakeCommandSocket :: SmallBomb ZMQ.ZMQError ZMQ.ZMQ (ZMQ.Socket ZMQ.Rep) }
 
 inputInfo :: ParserInfo Input
 inputInfo =
@@ -59,9 +62,9 @@ inputInfo =
 
 main :: Input -> IO ()
 main Input{..} =
-    ZMQ.withContext $ \ context ->
+    failOnException @ZMQ.ZMQError $ ZMQ.withContext $ \ context ->
         runResourceT $ flip runReaderT context $ do
-            commandSocket <- ZMQ.liftZMQ inputMakeCommandSocket
+            commandSocket <- ZMQ.liftZMQ (defuse inputMakeCommandSocket)
 
             serveRequests commandSocket $ \case
                 DistributeFeed url -> do

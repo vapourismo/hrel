@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TypeApplications  #-}
 
@@ -8,8 +10,9 @@ module HRel.Application.FeedProcessor
     , main )
 where
 
+import Control.Monad.Reader         (runReaderT)
 import Control.Monad.Trans          (MonadIO (liftIO))
-import Control.Monad.Trans.Resource
+import Control.Monad.Trans.Resource (runResourceT)
 
 import Options.Applicative
 
@@ -20,7 +23,7 @@ import qualified HRel.Network.ZMQ       as ZMQ
 
 newtype Input =
     Input
-        { inputWithReqSocket :: ZMQ.Context -> ResourceT IO (ZMQ.Socket ZMQ.Req) }
+        { inputWithReqSocket :: ZMQ.ZMQ (ZMQ.Socket ZMQ.Req) }
 
 inputInfo :: ParserInfo Input
 inputInfo =
@@ -29,11 +32,14 @@ inputInfo =
         inputP = Input <$> argument (ZMQ.connectedSocketReadM ZMQ.Req) (metavar "CONNECTINFO")
 
 main :: Input -> IO ()
-main Input{..} = runResourceT $ do
-    context <- ZMQ.makeContext
-    socket  <- inputWithReqSocket context
+main Input{..} =
+    ZMQ.withContext $ \ context ->
+        runResourceT $ flip runReaderT context $ do
+            socket <- ZMQ.liftZMQ inputWithReqSocket
 
-    Right service <- try @IntroException (introduce @Request @Response socket)
+            Right service <- try @IntroException (introduce @Request @Response socket)
 
-    res <- try @RequestException (request service (DistributeFeed "http://example.com/feed.xml"))
-    liftIO (print res)
+            res <-
+                try @RequestException
+                    (request service (DistributeFeed "http://example.com/feed.xml"))
+            liftIO (print res)

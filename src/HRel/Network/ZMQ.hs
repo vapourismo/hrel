@@ -1,13 +1,24 @@
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module HRel.Network.ZMQ
     ( ZMQ.Pull (..)
     , ZMQ.Push (..)
     , ZMQ.Req (..)
     , ZMQ.Rep (..)
 
+    , ZMQ.ZMQError
+
+    , ZMQ
+    , runZMQ
+    , MonadZMQ (..)
+
     , ZMQ.Context
-    , makeContext
+    , withContext
 
     , ZMQ.Socket
+    , makeSocket
     , connect
     , bind
 
@@ -24,8 +35,10 @@ module HRel.Network.ZMQ
     )
 where
 
-import Control.Monad.Trans          (MonadIO (liftIO))
-import Control.Monad.Trans.Resource
+import Control.Monad.Catch          (MonadMask, bracket)
+import Control.Monad.Reader         (ReaderT (..), mapReaderT)
+import Control.Monad.Trans          (MonadIO (liftIO), lift)
+import Control.Monad.Trans.Resource (ResourceT)
 
 import Options.Applicative
 
@@ -36,39 +49,47 @@ import qualified Data.ByteString.Lazy as LazyByteString
 
 import qualified System.ZMQ4 as ZMQ
 
--- | Create a new 'ZMQ.Context'.
-makeContext :: MonadResource m => m ZMQ.Context
-makeContext = snd <$> allocate ZMQ.context ZMQ.term
+withContext :: (MonadIO m, MonadMask m) => (ZMQ.Context -> m a) -> m a
+withContext = bracket (liftIO ZMQ.context) (liftIO . ZMQ.term)
 
--- | Connect to a remote 'ZMQ.Socket'.
-connect :: (ZMQ.SocketType a, MonadResource m) => ZMQ.Context -> a -> String -> m (ZMQ.Socket a)
-connect context typ info = do
-    (_, socket) <- allocate (ZMQ.socket context typ) ZMQ.close
-    socket <$ liftIO (ZMQ.connect socket info)
+newtype ZMQ a = ZMQ (ReaderT ZMQ.Context IO a)
+    deriving (Functor, Applicative, Monad)
 
--- | Bind a local 'ZMQ.Socket'.
-bind :: (ZMQ.SocketType a, MonadResource m) => ZMQ.Context -> a -> String -> m (ZMQ.Socket a)
-bind context typ info = do
-    (_, socket) <- allocate (ZMQ.socket context typ) ZMQ.close
-    socket <$ liftIO (ZMQ.bind socket info)
+runZMQ :: ZMQ.Context -> ZMQ a -> IO a
+runZMQ context (ZMQ (ReaderT reader)) = reader context
 
--- | Send a message through the 'ZMQ.Socket'.
-send :: (ZMQ.Sender t, MonadIO m) => ZMQ.Socket t -> ByteString -> m ()
-send socket message = liftIO (ZMQ.send socket [] message)
+class MonadZMQ m where
+    liftZMQ :: ZMQ a -> m a
+
+instance MonadZMQ ZMQ where
+    liftZMQ = id
+
+instance MonadIO m => MonadZMQ (ReaderT ZMQ.Context m) where
+    liftZMQ (ZMQ reader) = mapReaderT liftIO reader
+
+instance (Monad m, MonadZMQ m) => MonadZMQ (ResourceT m) where
+    liftZMQ = lift . liftZMQ
+
+makeSocket :: (ZMQ.SocketType t, MonadZMQ m) => t -> m (ZMQ.Socket t)
+makeSocket typ = liftZMQ (ZMQ (ReaderT (`ZMQ.socket` typ)))
+
+connect :: (ZMQ.SocketType t, MonadZMQ m) => ZMQ.Socket t -> String -> m ()
+connect sock info = liftZMQ (ZMQ (lift (ZMQ.connect sock info)))
+
+bind :: (ZMQ.SocketType t, MonadZMQ m) => ZMQ.Socket t -> String -> m ()
+bind sock info = liftZMQ (ZMQ (lift (ZMQ.bind sock info)))
+
+send :: (ZMQ.Sender t, MonadZMQ m) => ZMQ.Socket t -> ByteString -> m ()
+send sock message = liftZMQ (ZMQ (lift (ZMQ.send sock [] message)))
+
+receive :: (ZMQ.Receiver t, MonadZMQ m) => ZMQ.Socket t -> m ByteString
+receive sock = liftZMQ (ZMQ (lift (ZMQ.receive sock)))
 
 -- | Send a 'Binary'-encoded value through the 'ZMQ.Socket'.
-sendBinary :: (ZMQ.Sender t, Binary.Binary a, MonadIO m) => ZMQ.Socket t -> a -> m ()
+sendBinary
+    :: (ZMQ.Sender t, Binary.Binary a, MonadIO m) => ZMQ.Socket t -> a -> m ()
 sendBinary socket message =
     liftIO (ZMQ.send socket [] (LazyByteString.toStrict (Binary.encode message)))
-
--- | Send a JSON-encoded value.
-sendJson :: (ZMQ.Sender t, Aeson.ToJSON a, MonadIO m) => ZMQ.Socket t -> a -> m ()
-sendJson socket message =
-    liftIO (ZMQ.send socket [] (LazyByteString.toStrict (Aeson.encode message)))
-
--- | Receive a message from the 'ZMQ.Socket'.
-receive :: (ZMQ.Receiver t, MonadIO m) => ZMQ.Socket t -> m ByteString
-receive socket = liftIO (ZMQ.receive socket)
 
 -- | Receive a 'Binary'-encoded value from the 'ZMQ.Socket'.
 receiveBinary
@@ -81,23 +102,34 @@ receiveBinary socket = do
         Left (_, _, errorMessage) -> Left errorMessage
         Right (_, _, result)      -> Right result
 
+-- | Send a JSON-encoded value.
+sendJson :: (ZMQ.Sender t, Aeson.ToJSON a, MonadIO m) => ZMQ.Socket t -> a -> m ()
+sendJson socket message =
+    liftIO (ZMQ.send socket [] (LazyByteString.toStrict (Aeson.encode message)))
+
 -- | Receive a JSON-encoded value.
 receiveJson :: (ZMQ.Receiver t, Aeson.FromJSON a, MonadIO m) => ZMQ.Socket t -> m (Either String a)
 receiveJson socket =
     Aeson.eitherDecode . LazyByteString.fromStrict <$> liftIO (ZMQ.receive socket)
 
--- |
 connectedSocketReadM
-    :: (ZMQ.SocketType a, MonadResource m)
+    :: ( ZMQ.SocketType a
+       , MonadZMQ m
+       )
     => a
-    -> ReadM (ZMQ.Context -> m (ZMQ.Socket a))
+    -> ReadM (m (ZMQ.Socket a))
 connectedSocketReadM typ =
-    (\ info context -> connect context typ info) <$> str
+    flip fmap str $ \ info -> liftZMQ $ do
+        socket <- makeSocket typ
+        socket <$ connect socket info
 
--- |
 boundSocketReadM
-    :: (ZMQ.SocketType a, MonadResource m)
+    :: ( ZMQ.SocketType a
+       , MonadZMQ m
+       )
     => a
-    -> ReadM (ZMQ.Context -> m (ZMQ.Socket a))
+    -> ReadM (m (ZMQ.Socket a))
 boundSocketReadM typ =
-    (\ info context -> bind context typ info) <$> str
+    flip fmap str $ \ info -> liftZMQ $ do
+        socket <- makeSocket typ
+        socket <$ bind socket info

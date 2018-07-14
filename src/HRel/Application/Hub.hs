@@ -16,8 +16,9 @@ where
 
 import GHC.Generics (Generic)
 
+import Control.Monad.Reader         (runReaderT)
 import Control.Monad.Trans          (liftIO)
-import Control.Monad.Trans.Resource (ResourceT, runResourceT)
+import Control.Monad.Trans.Resource (runResourceT)
 
 import Data.Binary   (Binary)
 import Data.Monoid   (mconcat)
@@ -43,7 +44,7 @@ instance Binary Response
 
 newtype Input =
     Input
-        { inputMakeCommandSocket :: ZMQ.Context -> ResourceT IO (ZMQ.Socket ZMQ.Rep) }
+        { inputMakeCommandSocket :: ZMQ.ZMQ (ZMQ.Socket ZMQ.Rep) }
 
 inputInfo :: ParserInfo Input
 inputInfo =
@@ -57,11 +58,12 @@ inputInfo =
                 , metavar "BINDINFO" ]
 
 main :: Input -> IO ()
-main Input{..} = runResourceT $ do
-    context <- ZMQ.makeContext
-    commandSocket <- inputMakeCommandSocket context
+main Input{..} =
+    ZMQ.withContext $ \ context ->
+        runResourceT $ flip runReaderT context $ do
+            commandSocket <- ZMQ.liftZMQ inputMakeCommandSocket
 
-    serveRequests commandSocket $ \case
-        DistributeFeed url -> do
-            liftIO (print url)
-            pure Ok
+            serveRequests commandSocket $ \case
+                DistributeFeed url -> do
+                    liftIO (print url)
+                    pure Ok

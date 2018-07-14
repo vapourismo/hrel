@@ -1,5 +1,6 @@
 {-# OPTIONS -Wno-unused-top-binds #-}
 
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE MagicHash           #-}
 {-# LANGUAGE RankNTypes          #-}
@@ -12,6 +13,7 @@ module HRel.Control.Exception
     , catch
     , handle
     , try
+    , ignoreException
 
       -- * Re-exports
     , Exception (..)
@@ -51,6 +53,10 @@ instance Throws (Tau e)
 removeAnnotation :: forall e a. Proxy# e -> (Throws e => a) -> a
 removeAnnotation _ action =
     unWrap (coerce (Wrap action :: Wrap e a) :: Wrap (Tau e) a)
+
+-- | Hide the attached exception.
+ignoreException :: forall e a. (Throws e => a) -> a
+ignoreException = removeAnnotation (proxy# :: Proxy# e)
 
 -- | Throw an 'Exception'.
 throw

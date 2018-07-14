@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TypeApplications  #-}
 
 module HRel.Application.FeedProcessor
     ( Input
@@ -32,9 +33,7 @@ main Input{..} = runResourceT $ do
     context <- ZMQ.makeContext
     socket  <- inputWithReqSocket context
 
-    Right service <-
-        try (introduce socket)
-        :: ResourceT IO (Either IntroException (Service Request Response))
+    Right service <- try @IntroException (introduce @Request @Response socket)
 
-    res <- try (request service (DistributeFeed "http://example.com/feed.xml"))
-    liftIO (print (res :: Either RequestException Response))
+    res <- try @RequestException (request service (DistributeFeed "http://example.com/feed.xml"))
+    liftIO (print res)

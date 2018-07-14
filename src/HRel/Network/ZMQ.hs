@@ -21,11 +21,14 @@ module HRel.Network.ZMQ
     , withContext
 
     , ZMQ.Socket
+    , withSocket
     , makeSocket
+    , closeSocket
     , connect
     , bind
 
     , send
+    , send'
     , sendBinary
 
     , receive
@@ -54,15 +57,28 @@ import qualified System.ZMQ4 as ZMQ
 
 import HRel.Control.Exception
 
-withContext :: (MonadIO m, MonadMask m) => (ZMQ.Context -> m a) -> m a
-withContext = bracket (liftIO ZMQ.context) (liftIO . ZMQ.term)
+-- | Do something with a 'ZMQ.Context'. The context will terminate after the handler returns.
+withContext
+    :: ( MonadIO m
+       , MonadMask m
+       , Throws ZMQ.ZMQError
+       )
+    => (ZMQ.Context -> m a)
+    -> m a
+withContext =
+    bracket (liftIO ZMQ.context) (liftIO . ZMQ.term)
 
-newtype ZMQ a = ZMQ (ReaderT ZMQ.Context IO a)
+-- | ZMQ monad
+newtype ZMQ a =
+    ZMQ (ReaderT ZMQ.Context IO a)
     deriving (Functor, Applicative, Monad)
 
+-- | Execute the ZMQ operations within a given 'ZMQ.Context'.
 runZMQ :: MonadIO m => ZMQ.Context -> ZMQ a -> m a
-runZMQ context (ZMQ (ReaderT reader)) = liftIO (reader context)
+runZMQ context (ZMQ (ReaderT reader)) =
+    liftIO (reader context)
 
+-- | Monad that supports ZMQ operations
 class MonadZMQ m where
     liftZMQ :: ZMQ a -> m a
 
@@ -75,25 +91,106 @@ instance MonadIO m => MonadZMQ (ReaderT ZMQ.Context m) where
 instance (Monad m, MonadZMQ m) => MonadZMQ (ResourceT m) where
     liftZMQ = lift . liftZMQ
 
-makeSocket :: (ZMQ.SocketType t, MonadZMQ m) => t -> m (ZMQ.Socket t)
-makeSocket typ = liftZMQ (ZMQ (ReaderT (`ZMQ.socket` typ)))
+-- | Do something with a 'ZMQ.Socket'. The socket will close after the handler returns.
+withSocket
+    :: ( ZMQ.SocketType t
+       , MonadMask m
+       , MonadZMQ m
+       , Throws ZMQ.ZMQError
+       )
+    => t
+    -> (ZMQ.Socket t -> m a)
+    -> m a
+withSocket typ =
+    bracket (makeSocket typ) closeSocket
 
-connect :: (ZMQ.SocketType t, MonadZMQ m) => ZMQ.Socket t -> String -> m ()
-connect sock info = liftZMQ (ZMQ (lift (ZMQ.connect sock info)))
+-- | Create a new 'ZMQ.Socket'.
+makeSocket
+    :: ( ZMQ.SocketType t
+       , MonadZMQ m
+       , Throws ZMQ.ZMQError
+       )
+    => t
+    -> m (ZMQ.Socket t)
+makeSocket typ =
+    liftZMQ (ZMQ (ReaderT (`ZMQ.socket` typ)))
 
-bind :: (ZMQ.SocketType t, MonadZMQ m) => ZMQ.Socket t -> String -> m ()
-bind sock info = liftZMQ (ZMQ (lift (ZMQ.bind sock info)))
+-- | Close a 'ZMQ.Socket'.
+closeSocket :: (MonadZMQ m, Throws ZMQ.ZMQError) => ZMQ.Socket t -> m ()
+closeSocket =
+    liftZMQ . ZMQ . lift . ZMQ.close
 
-send :: (ZMQ.Sender t, MonadZMQ m) => ZMQ.Socket t -> ByteString -> m ()
-send sock message = liftZMQ (ZMQ (lift (ZMQ.send sock [] message)))
+-- | Connect a 'ZMQ.Socket' to a remote address.
+connect
+    :: ( ZMQ.SocketType t
+       , MonadZMQ m
+       , Throws ZMQ.ZMQError
+       )
+    => ZMQ.Socket t
+    -> String
+    -> m ()
+connect sock info =
+    liftZMQ (ZMQ (lift (ZMQ.connect sock info)))
 
-receive :: (ZMQ.Receiver t, MonadZMQ m) => ZMQ.Socket t -> m ByteString
-receive sock = liftZMQ (ZMQ (lift (ZMQ.receive sock)))
+-- | Bind a 'ZMQ.Socket' to an address.
+bind
+    :: ( ZMQ.SocketType t
+       , MonadZMQ m
+       , Throws ZMQ.ZMQError
+       )
+    => ZMQ.Socket t
+    -> String
+    -> m ()
+bind sock info =
+    liftZMQ (ZMQ (lift (ZMQ.bind sock info)))
+
+-- | Send a message through the 'ZMQ.Socket'.
+send
+    :: ( ZMQ.Sender t
+       , MonadZMQ m
+       , Throws ZMQ.ZMQError
+       )
+    => ZMQ.Socket t
+    -> ByteString
+    -> m ()
+send sock message =
+    liftZMQ (ZMQ (lift (ZMQ.send sock [] message)))
+
+-- | Send a message through the 'ZMQ.Socket'.
+send'
+    :: ( ZMQ.Sender t
+       , MonadZMQ m
+       , Throws ZMQ.ZMQError
+       )
+    => ZMQ.Socket t
+    -> LazyByteString.ByteString
+    -> m ()
+send' sock message =
+    liftZMQ (ZMQ (lift (ZMQ.send' sock [] message)))
+
+-- | Receive a message through the 'ZMQ.Socket'.
+receive
+    :: ( ZMQ.Receiver t
+       , MonadZMQ m
+       , Throws ZMQ.ZMQError
+       )
+    => ZMQ.Socket t
+    -> m ByteString
+receive =
+    liftZMQ . ZMQ . lift . ZMQ.receive
 
 -- | Send a 'Binary'-encoded value through the 'ZMQ.Socket'.
-sendBinary :: (ZMQ.Sender t, Binary.Binary a, MonadZMQ m) => ZMQ.Socket t -> a -> m ()
+sendBinary
+    :: ( ZMQ.Sender t
+       , Binary.Binary a
+       , MonadZMQ m
+       , Throws ZMQ.ZMQError
+       )
+    => ZMQ.Socket t
+    -> a
+    -> m ()
 sendBinary socket message =
-    send socket (LazyByteString.toStrict (Binary.encode message))
+    send' socket (Binary.encode message)
 
 data DecodeException =
     DecodeException
@@ -113,7 +210,9 @@ receiveBinary
        , Binary.Binary a
        , MonadThrow m
        , MonadZMQ m
-       , Throws DecodeException )
+       , Throws ZMQ.ZMQError
+       , Throws DecodeException
+       )
     => ZMQ.Socket t
     -> m a
 receiveBinary socket = do

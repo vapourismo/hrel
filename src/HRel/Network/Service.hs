@@ -55,6 +55,7 @@ serveRequests
        , Binary o
        , MonadCatch m
        , MonadZMQ m
+       , Throws ZMQError
        )
     => Socket Rep
     -> (i -> m o)
@@ -88,6 +89,7 @@ newtype Service i o = Service (Socket Req)
 data IntroException
     = IntroDecodeException DecodeException
     | IntroUnexpectedResponse (Response ())
+    | IntroZmqError ZMQError
     deriving (Show, Eq)
 
 instance Exception IntroException
@@ -103,7 +105,7 @@ introduce
        )
     => Socket Req
     -> m (Service i o)
-introduce socket = do
+introduce socket = mapException IntroZmqError $ do
     sendBinary socket $
         TypeCheck @()
             (typeRep (id @i))
@@ -120,6 +122,7 @@ data RequestException
     | RequestUnexpectedResponse (Response ())
     | RequestRemoteException String
     | RequestInvalid DecodeException
+    | RequestZmqError ZMQError
     deriving (Show, Eq)
 
 instance Exception RequestException
@@ -135,7 +138,7 @@ request
     => Service i o
     -> i
     -> m o
-request (Service socket) request = do
+request (Service socket) request = mapException RequestZmqError $ do
     sendBinary socket (Request request)
     mapException RequestDecodeException $
         receiveBinary socket >>= \case

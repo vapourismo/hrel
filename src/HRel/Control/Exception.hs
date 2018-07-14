@@ -9,7 +9,6 @@
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE RoleAnnotations     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -75,7 +74,7 @@ failOnException
     => (Throws e => m a)
     -> m a
 failOnException action =
-    catch @e action (fail . show)
+    catch action (fail . show :: e -> m a)
 
 -- | Throw an 'Exception'.
 throw

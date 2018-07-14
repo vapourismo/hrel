@@ -1,6 +1,5 @@
 {-# OPTIONS -Wno-unused-top-binds #-}
 
-{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE RoleAnnotations     #-}

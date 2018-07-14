@@ -20,6 +20,7 @@ import Control.Monad.Trans          (liftIO)
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 
 import Data.Aeson    (FromJSON, ToJSON)
+import Data.Binary   (Binary)
 import Data.Monoid   (mconcat)
 import Data.Typeable (Typeable)
 
@@ -33,6 +34,8 @@ newtype Request
         { url :: String }
     deriving (Show, Typeable, Generic)
 
+instance Binary Request
+
 instance FromJSON Request
 
 instance ToJSON Request
@@ -40,6 +43,8 @@ instance ToJSON Request
 data Response
     = Ok
     deriving (Show, Typeable, Generic)
+
+instance Binary Response
 
 instance FromJSON Response
 

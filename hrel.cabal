@@ -41,7 +41,6 @@ executable hrel
                     base64-bytestring
 
   other-modules:    HRel.Network
-                    HRel.Network.Types
                     HRel.Network.ZMQ
                     HRel.Network.Service
                     HRel.Control.Exception

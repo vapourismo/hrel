@@ -18,6 +18,7 @@ module HRel.Control.Exception
     , catch
     , handle
     , try
+    , mapException
     , failOnException
 
     , Bomb (..)
@@ -105,16 +106,30 @@ handle recover action =
     Catch.handle recover (removeAnnotation (proxy# :: Proxy# e) action)
 
 -- | Try and capture.
-try :: forall e a m. (Catch.MonadCatch m, Exception e) => (Throws e => m a) -> m (Either e a)
+try :: forall e a m
+    .  (Catch.MonadCatch m, Exception e)
+    => (Throws e => m a)
+    -> m (Either e a)
 try action =
     Catch.try (removeAnnotation (proxy# :: Proxy# e) action)
+
+-- | Transform an 'Exception' when it occurs.
+mapException
+    :: forall e e' a m
+    .  (Exception e, Exception e', Catch.MonadCatch m)
+    => (e -> e')
+    -> (Throws e => m a)
+    -> (Throws e' => m a)
+mapException map =
+    handle (throw . map)
 
 type family ThrowsMany (es :: [*]) :: Constraint where
     ThrowsMany '[]      = ()
     ThrowsMany '[e]     = Throws e
     ThrowsMany (e : es) = (Throws e, ThrowsMany es)
 
-newtype Bomb es f a = Bomb {defuse :: ThrowsMany es => f a}
+newtype Bomb es f a =
+    Bomb {defuse :: ThrowsMany es => f a}
     deriving (Functor)
 
 instance Applicative f => Applicative (Bomb es f) where

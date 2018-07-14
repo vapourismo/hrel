@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -10,6 +11,7 @@ module HRel.Network.ZMQ
     , ZMQ.Rep (..)
 
     , ZMQ.ZMQError
+    , DecodeException (..)
 
     , ZMQ
     , runZMQ
@@ -25,16 +27,16 @@ module HRel.Network.ZMQ
 
     , send
     , sendBinary
-    , sendJson
 
     , receive
     , receiveBinary
-    , receiveJson
 
     , connectedSocketReadM
     , boundSocketReadM
     )
 where
+
+import GHC.Generics (Generic)
 
 import Control.Monad.Catch          (MonadMask, bracket)
 import Control.Monad.Reader         (ReaderT (..), mapReaderT)
@@ -43,14 +45,14 @@ import Control.Monad.Trans.Resource (ResourceT)
 
 import Options.Applicative
 
-import qualified Data.Aeson           as Aeson
 import qualified Data.Binary          as Binary
+import           Data.Binary.Get      (ByteOffset)
 import           Data.ByteString      (ByteString)
 import qualified Data.ByteString.Lazy as LazyByteString
 
 import qualified System.ZMQ4 as ZMQ
 
-import HRel.Control.Exception (Bomb (..), SmallBomb)
+import HRel.Control.Exception
 
 withContext :: (MonadIO m, MonadMask m) => (ZMQ.Context -> m a) -> m a
 withContext = bracket (liftIO ZMQ.context) (liftIO . ZMQ.term)
@@ -58,8 +60,8 @@ withContext = bracket (liftIO ZMQ.context) (liftIO . ZMQ.term)
 newtype ZMQ a = ZMQ (ReaderT ZMQ.Context IO a)
     deriving (Functor, Applicative, Monad)
 
-runZMQ :: ZMQ.Context -> ZMQ a -> IO a
-runZMQ context (ZMQ (ReaderT reader)) = reader context
+runZMQ :: MonadIO m => ZMQ.Context -> ZMQ a -> m a
+runZMQ context (ZMQ (ReaderT reader)) = liftIO (reader context)
 
 class MonadZMQ m where
     liftZMQ :: ZMQ a -> m a
@@ -89,22 +91,36 @@ receive :: (ZMQ.Receiver t, MonadZMQ m) => ZMQ.Socket t -> m ByteString
 receive sock = liftZMQ (ZMQ (lift (ZMQ.receive sock)))
 
 -- | Send a 'Binary'-encoded value through the 'ZMQ.Socket'.
-sendBinary
-    :: (ZMQ.Sender t, Binary.Binary a, MonadIO m) => ZMQ.Socket t -> a -> m ()
+sendBinary :: (ZMQ.Sender t, Binary.Binary a, MonadZMQ m) => ZMQ.Socket t -> a -> m ()
 sendBinary socket message =
-    liftIO (ZMQ.send socket [] (LazyByteString.toStrict (Binary.encode message)))
+    send socket (LazyByteString.toStrict (Binary.encode message))
+
+data DecodeException =
+    DecodeException
+        { decodeExceptionInput   :: ByteString
+        , decodeExceptionOffset  :: ByteOffset
+        , decodeExceptionMessage :: String
+        }
+    deriving (Show, Eq, Generic)
+
+instance Binary.Binary DecodeException
+
+instance Exception DecodeException
 
 -- | Receive a 'Binary'-encoded value from the 'ZMQ.Socket'.
 receiveBinary
-    :: (ZMQ.Receiver t, Binary.Binary a, MonadIO m)
+    :: ( ZMQ.Receiver t
+       , Binary.Binary a
+       , MonadThrow m
+       , MonadZMQ m
+       , Throws DecodeException )
     => ZMQ.Socket t
-    -> m (Either String a)
+    -> m a
 receiveBinary socket = do
-    message <- liftIO (ZMQ.receive socket)
-    pure $ case Binary.decodeOrFail (LazyByteString.fromStrict message) of
-        Left (_, _, errorMessage) -> Left errorMessage
-        Right (_, _, result)      -> Right result
-
+    message <- receive socket
+    case Binary.decodeOrFail (LazyByteString.fromStrict message) of
+        Left (_, offset, errorMessage) -> throw (DecodeException message offset errorMessage)
+        Right (_, _, result)           -> pure result
 
 connectedSocketReadM
     :: (ZMQ.SocketType a, MonadZMQ m)

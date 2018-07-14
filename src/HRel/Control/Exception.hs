@@ -1,10 +1,10 @@
 {-# OPTIONS -Wno-unused-top-binds #-}
 
 {-# LANGUAGE IncoherentInstances #-}
+{-# LANGUAGE MagicHash           #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE RoleAnnotations     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
 
 module HRel.Control.Exception
     ( Throws
@@ -20,7 +20,9 @@ module HRel.Control.Exception
     )
 where
 
-import GHC.Prim (coerce)
+import GHC.Exts (Proxy#, proxy#)
+
+import Data.Coerce (coerce)
 
 import           Control.Exception   (Exception)
 import qualified Control.Monad.Catch as Catch
@@ -46,9 +48,9 @@ instance ThrowsBrother (Tau e)
 instance Throws (Tau e)
 
 -- | Strip the 'Throws' constraint.
-removeAnnotation :: forall e a p. p e -> (Throws e => a) -> a
+removeAnnotation :: forall e a. Proxy# e -> (Throws e => a) -> a
 removeAnnotation _ action =
-    unWrap (coerce @(Wrap e a) @(Wrap (Tau e) a) (Wrap action))
+    unWrap (coerce (Wrap action :: Wrap e a) :: Wrap (Tau e) a)
 
 -- | Throw an 'Exception'.
 throw
@@ -66,7 +68,7 @@ catch
     -> (e -> m a)
     -> m a
 catch action =
-    Catch.catch (removeAnnotation (id @e) action)
+    Catch.catch (removeAnnotation (proxy# :: Proxy# e) action)
 
 -- | Handle an 'Exception'.
 handle
@@ -76,9 +78,9 @@ handle
     -> (Throws e => m a)
     -> m a
 handle recover action =
-    Catch.handle recover (removeAnnotation (id @e) action)
+    Catch.handle recover (removeAnnotation (proxy# :: Proxy# e) action)
 
 -- | Try and capture.
 try :: forall e a m. (Catch.MonadCatch m, Exception e) => (Throws e => m a) -> m (Either e a)
 try action =
-    Catch.try (removeAnnotation (id @e) action)
+    Catch.try (removeAnnotation (proxy# :: Proxy# e) action)

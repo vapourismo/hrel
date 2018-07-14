@@ -35,7 +35,7 @@ class ThrowsBrother e => Throws e
 
 type role Throws representational
 
--- | Exists exclusively to strip the 'Throws' constraint
+-- | Needed to coerce the dictionary for 'Throws' in the contravariant position
 newtype Wrap e a = Wrap {unWrap :: Throws e => a}
 
 -- | Only instance of the 'Throws' class

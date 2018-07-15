@@ -25,7 +25,7 @@ module HRel.Control.Exception
     , SmallBomb
 
       -- * Re-exports
-    , Exception (..)
+    , Exception
     , Catch.MonadCatch
     , Catch.MonadThrow
     )

@@ -48,8 +48,8 @@ attribute :: XmlParser XmlMessage
 attribute = do
     Just _ <- get
 
-    Name name   <- afterSpaces
-    EqualsSign  <- afterSpaces
+    Name name     <- afterSpaces
+    EqualsSign    <- afterSpaces
     Quote _ value <- afterSpaces
 
     pure (Attribute name value)

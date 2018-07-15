@@ -82,7 +82,7 @@ steps:
       #   >     )
       #
       # Default: inline
-      long_list_align: multiline
+      long_list_align: inline
 
       # Align empty list (importing instances)
       #

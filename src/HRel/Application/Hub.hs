@@ -47,7 +47,7 @@ instance Binary Response
 
 newtype Input =
     Input
-        { inputMakeCommandSocket :: SmallBomb ZMQ.ZMQError ZMQ.ZMQ (ZMQ.Socket ZMQ.Rep) }
+        { inputCommandSocketRecipe :: ZMQ.SocketRecipe ZMQ.Rep }
 
 inputInfo :: ParserInfo Input
 inputInfo =
@@ -63,10 +63,9 @@ inputInfo =
 main :: Input -> IO ()
 main Input{..} =
     failOnException @ZMQ.ZMQError $ ZMQ.withContext $ \ context ->
-        runResourceT $ flip runReaderT context $ do
-            commandSocket <- ZMQ.liftZMQ (defuse inputMakeCommandSocket)
-
-            serveRequests commandSocket $ \case
-                DistributeFeed url -> do
-                    liftIO (print url)
-                    pure Ok
+        runResourceT $ flip runReaderT context $
+            ZMQ.withSocket inputCommandSocketRecipe $ \ commandSocket->
+                serveRequests commandSocket $ \case
+                    DistributeFeed url -> do
+                        liftIO (print url)
+                        pure Ok

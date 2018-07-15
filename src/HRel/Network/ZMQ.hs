@@ -20,12 +20,11 @@ module HRel.Network.ZMQ
     , ZMQ.Context
     , withContext
 
+    , SocketRecipe (..)
     , ZMQ.Socket
     , withSocket
     , makeSocket
     , closeSocket
-    , connect
-    , bind
 
     , send
     , send'
@@ -91,6 +90,12 @@ instance MonadIO m => MonadZMQ (ReaderT ZMQ.Context m) where
 instance (Monad m, MonadZMQ m) => MonadZMQ (ResourceT m) where
     liftZMQ = lift . liftZMQ
 
+-- | Socket recipe
+data SocketRecipe a
+    = Bind a String
+    | Connect a String
+    deriving (Show, Eq)
+
 -- | Do something with a 'ZMQ.Socket'. The socket will close after the handler returns.
 withSocket
     :: ( ZMQ.SocketType t
@@ -98,11 +103,11 @@ withSocket
        , MonadZMQ m
        , Throws ZMQ.ZMQError
        )
-    => t
+    => SocketRecipe t
     -> (ZMQ.Socket t -> m a)
     -> m a
-withSocket typ =
-    bracket (makeSocket typ) closeSocket
+withSocket recipe =
+    bracket (makeSocket recipe) closeSocket
 
 -- | Create a new 'ZMQ.Socket'.
 makeSocket
@@ -110,39 +115,23 @@ makeSocket
        , MonadZMQ m
        , Throws ZMQ.ZMQError
        )
-    => t
+    => SocketRecipe t
     -> m (ZMQ.Socket t)
-makeSocket typ =
-    liftZMQ (ZMQ (ReaderT (`ZMQ.socket` typ)))
+makeSocket recipe =
+    liftZMQ $ ZMQ $ ReaderT $ \ context ->
+        case recipe of
+            Bind typ info -> do
+                socket <- ZMQ.socket context typ
+                socket <$ ZMQ.bind socket info
+
+            Connect typ info -> do
+                socket <- ZMQ.socket context typ
+                socket <$ ZMQ.connect socket info
 
 -- | Close a 'ZMQ.Socket'.
 closeSocket :: (MonadZMQ m, Throws ZMQ.ZMQError) => ZMQ.Socket t -> m ()
 closeSocket =
     liftZMQ . ZMQ . lift . ZMQ.close
-
--- | Connect a 'ZMQ.Socket' to a remote address.
-connect
-    :: ( ZMQ.SocketType t
-       , MonadZMQ m
-       , Throws ZMQ.ZMQError
-       )
-    => ZMQ.Socket t
-    -> String
-    -> m ()
-connect sock info =
-    liftZMQ (ZMQ (lift (ZMQ.connect sock info)))
-
--- | Bind a 'ZMQ.Socket' to an address.
-bind
-    :: ( ZMQ.SocketType t
-       , MonadZMQ m
-       , Throws ZMQ.ZMQError
-       )
-    => ZMQ.Socket t
-    -> String
-    -> m ()
-bind sock info =
-    liftZMQ (ZMQ (lift (ZMQ.bind sock info)))
 
 -- | Send a message through the 'ZMQ.Socket'.
 send
@@ -221,20 +210,8 @@ receiveBinary socket = do
         Left (_, offset, errorMessage) -> throw (DecodeException message offset errorMessage)
         Right (_, _, result)           -> pure result
 
-connectedSocketReadM
-    :: (ZMQ.SocketType a, MonadZMQ m)
-    => a
-    -> ReadM (SmallBomb ZMQ.ZMQError m (ZMQ.Socket a))
-connectedSocketReadM typ =
-    flip fmap str $ \ info -> Bomb $ liftZMQ $ do
-        socket <- makeSocket typ
-        socket <$ connect socket info
+connectedSocketReadM :: ZMQ.SocketType a => a -> ReadM (SocketRecipe a)
+connectedSocketReadM typ = Connect typ <$> str
 
-boundSocketReadM
-    :: (ZMQ.SocketType a, MonadZMQ m)
-    => a
-    -> ReadM (SmallBomb ZMQ.ZMQError m (ZMQ.Socket a))
-boundSocketReadM typ =
-    flip fmap str $ \ info -> Bomb $ liftZMQ $ do
-        socket <- makeSocket typ
-        socket <$ bind socket info
+boundSocketReadM :: ZMQ.SocketType a => a -> ReadM (SocketRecipe a)
+boundSocketReadM typ = Bind typ <$> str

@@ -28,6 +28,7 @@ module HRel.Control.Exception
     , Exception
     , Catch.MonadCatch
     , Catch.MonadThrow
+    , Catch.MonadMask
     )
 where
 

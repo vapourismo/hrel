@@ -64,8 +64,7 @@ main :: Input -> IO ()
 main Input{..} =
     failOnException @ZMQ.ZMQError $ ZMQ.withContext $ \ context ->
         runResourceT $ flip runReaderT context $
-            ZMQ.withSocket inputCommandSocketRecipe $ \ commandSocket->
-                serveRequests commandSocket $ \case
-                    DistributeFeed url -> do
-                        liftIO (print url)
-                        pure Ok
+            serveRequests inputCommandSocketRecipe $ \case
+                DistributeFeed url -> do
+                    liftIO (print url)
+                    pure Ok

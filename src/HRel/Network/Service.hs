@@ -54,14 +54,15 @@ serveRequests
        , Binary i
        , Binary o
        , MonadCatch m
+       , MonadMask m
        , MonadZMQ m
        , Throws ZMQError
        )
-    => Socket Rep
+    => SocketRecipe Rep
     -> (i -> m o)
     -> m a
-serveRequests socket handleRequest =
-    forever $ do
+serveRequests recipe handleRequest =
+    withSocket recipe $ \ socket -> forever $ do
         response <- try @DecodeException (receiveBinary socket) >>= \case
             Left decodeError ->
                 pure (InvalidRequest decodeError)

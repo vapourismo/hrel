@@ -56,7 +56,7 @@ inputInfo =
         inputP = Input <$> commandSocketP
 
         commandSocketP =
-            option (ZMQ.boundSocketReadM ZMQ.Rep) $ mconcat
+            option (ZMQ.readBindM ZMQ.Rep) $ mconcat
                 [ long "command-socket"
                 , metavar "BINDINFO" ]
 

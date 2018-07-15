@@ -33,8 +33,8 @@ module HRel.Network.ZMQ
     , receive
     , receiveBinary
 
-    , connectedSocketReadM
-    , boundSocketReadM
+    , readConnectM
+    , readBindM
     )
 where
 
@@ -210,8 +210,8 @@ receiveBinary socket = do
         Left (_, offset, errorMessage) -> throw (DecodeException message offset errorMessage)
         Right (_, _, result)           -> pure result
 
-connectedSocketReadM :: ZMQ.SocketType a => a -> ReadM (SocketRecipe a)
-connectedSocketReadM typ = Connect typ <$> str
+readConnectM :: ZMQ.SocketType a => a -> ReadM (SocketRecipe a)
+readConnectM typ = Connect typ <$> str
 
-boundSocketReadM :: ZMQ.SocketType a => a -> ReadM (SocketRecipe a)
-boundSocketReadM typ = Bind typ <$> str
+readBindM :: ZMQ.SocketType a => a -> ReadM (SocketRecipe a)
+readBindM typ = Bind typ <$> str

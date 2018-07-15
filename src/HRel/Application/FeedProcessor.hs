@@ -29,7 +29,7 @@ inputInfo :: ParserInfo Input
 inputInfo =
     info inputP (progDesc "Feed processor")
     where
-        inputP = Input <$> argument (ZMQ.connectedSocketReadM ZMQ.Req) (metavar "CONNECTINFO")
+        inputP = Input <$> argument (ZMQ.readConnectM ZMQ.Req) (metavar "CONNECTINFO")
 
 main :: Input -> IO ()
 main Input{..} =

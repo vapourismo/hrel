@@ -53,7 +53,6 @@ serveRequests
        , Typeable o
        , Binary i
        , Binary o
-       , MonadCatch m
        , MonadMask m
        , MonadZMQ m
        , Throws ZMQError
@@ -104,9 +103,10 @@ introduce
        , MonadZMQ m
        , Throws IntroException
        )
-    => Socket Req
+    => SocketRecipe Req
     -> m (Service i o)
-introduce socket = mapException IntroZmqError $ do
+introduce recipe = mapException IntroZmqError $ do
+    socket <- makeSocket recipe
     sendBinary socket $
         TypeCheck @()
             (typeRep (id @i))

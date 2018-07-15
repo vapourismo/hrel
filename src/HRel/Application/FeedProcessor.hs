@@ -34,11 +34,12 @@ inputInfo =
 main :: Input -> IO ()
 main Input{..} =
     failOnException @ZMQ.ZMQError $ ZMQ.withContext $ \ context ->
-        runResourceT $ flip runReaderT context $
-            ZMQ.withSocket inputReqSocketRecipe $ \ socket -> do
-                Right service <- try @IntroException (introduce @Request @Response socket)
+        runResourceT $ flip runReaderT context $ do
+            Right service <-
+                try @IntroException
+                    (introduce @Request @Response inputReqSocketRecipe)
 
-                res <-
-                    try @RequestException
-                        (request service (DistributeFeed "http://example.com/feed.xml"))
-                liftIO (print res)
+            res <-
+                try @RequestException
+                    (request service (DistributeFeed "http://example.com/feed.xml"))
+            liftIO (print res)

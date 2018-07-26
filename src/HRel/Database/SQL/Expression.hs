@@ -3,13 +3,13 @@
 {-# LANGUAGE StandaloneDeriving #-}
 
 module HRel.Database.SQL.Expression
-    ( Operator (..)
-    , UnaryOperator (..)
-    , Expression (..)
-
-    , PgBool
+    ( PgBool
     , PgString
     , PgNumber
+
+    , Operator (..)
+    , UnaryOperator (..)
+    , Expression (..)
 
     , true
     , false
@@ -24,7 +24,8 @@ module HRel.Database.SQL.Expression
     , (<=)
     , (>)
     , (>=)
-    , (~~) )
+    , (~~)
+    )
 where
 
 import Prelude (Bool (..), Fractional (..), Integer, Num (..), Show (..), Word)

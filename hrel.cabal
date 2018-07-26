@@ -43,6 +43,7 @@ executable hrel
                     HRel.Network.ZMQ
                     HRel.Network.Service
                     HRel.Control.Exception
+                    HRel.Control.Effect.Environment
                     HRel.Data.Scanner
                     HRel.Data.XML
                     HRel.Data.XML.Lexer
@@ -53,5 +54,25 @@ executable hrel
                     HRel.Database.Query
                     HRel.Database.SQL.Types
                     HRel.Database.SQL.Expression
+                    HRel.Database.SQL.Statement
                     HRel.Application.Hub
                     HRel.Application.FeedProcessor
+
+test-suite spec
+  type:             exitcode-stdio-1.0
+  default-language: Haskell2010
+
+  ghc-options:      -Wall
+
+  if impl(ghc >= 8)
+    ghc-options:    -Wno-name-shadowing
+  else
+    ghc-options:    -fno-warn-name-shadowing
+
+  hs-source-dirs:   test src
+  main-is:          Spec.hs
+
+  build-depends:    base, hspec, QuickCheck, mtl
+
+  other-modules:    HRel.Control.Effect.Environment
+                    HRel.Control.Effect.EnvironmentSpec

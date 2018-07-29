@@ -70,15 +70,14 @@ instance Show (QueryRecipe i p) where
     show (Hole _)         = "?"
     show (Branch lhs rhs) = show lhs ++ show rhs
 
-instance Semigroup (QueryRecipe i p)
+instance Semigroup (QueryRecipe i p) where
+    Text lhs <> Text rhs = Text (lhs <> rhs)
+    lhs      <> rhs      = Branch lhs rhs
 
 instance Monoid (QueryRecipe i p) where
     mempty = Text mempty
 
     {-# INLINE mempty #-}
-
-    mappend (Text lhs) (Text rhs) = Text (mappend lhs rhs)
-    mappend lhs rhs               = Branch lhs rhs
 
 -- | Query
 data Query i =

@@ -13,8 +13,6 @@ module HRel.Database.SQL.Statement where
 
 import Prelude hiding ((>=))
 
-import Data.Monoid
-
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Columns
 import HRel.Database.SQL.Expression

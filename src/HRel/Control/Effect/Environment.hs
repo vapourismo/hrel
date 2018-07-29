@@ -37,7 +37,7 @@ class b ~ (e == s) => Readerer (b :: Bool) e s (f :: * -> *) where
 
     localReaderT :: (e -> e) -> ReaderT s f a -> ReaderT s f a
 
-instance Applicative f => Readerer 'True e e f where
+instance ((e == e) ~ 'True, Applicative f) => Readerer 'True e e f where
     askReaderT = ReaderT pure
 
     localReaderT f (ReaderT cont) = ReaderT (cont . f)

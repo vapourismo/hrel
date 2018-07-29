@@ -24,6 +24,7 @@ executable hrel
                     http-types,
                     bytestring,
                     text,
+                    vector,
                     attoparsec,
                     conduit,
                     resourcet,
@@ -48,6 +49,8 @@ executable hrel
                     HRel.Data.XML
                     HRel.Data.XML.Lexer
                     HRel.Data.XML.Parser
+                    HRel.Data.Product
+                    HRel.Data.Type.Fold
                     HRel.Database
                     HRel.Database.Types
                     HRel.Database.Marshal

@@ -1,2 +1,3 @@
 packages:      hrel.cabal
 jobs:          $ncpus
+documentation: True

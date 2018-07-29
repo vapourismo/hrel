@@ -4,14 +4,18 @@
 
 module HRel.Database.SQL.Builder
     ( Builder
-    , runSqlWriter
-    , mkName )
+    , runBuilder
+    , mkName
+    , quoteString
+    , quoteName
+    )
 where
 
 import Control.Monad.State
 
-import qualified Data.Set  as Set
-import qualified Data.Text as Text
+import qualified Data.Set    as Set
+import           Data.String
+import qualified Data.Text   as Text
 
 import HRel.Database.SQL.Types
 
@@ -19,8 +23,8 @@ newtype Builder a =
     Builder (State (Set.Set Text.Text) a)
     deriving (Functor, Applicative, Monad)
 
-runSqlWriter :: Builder a -> a
-runSqlWriter (Builder action) =
+runBuilder :: Builder a -> a
+runBuilder (Builder action) =
     evalState action Set.empty
 
 mkName :: Text.Text -> Builder Name
@@ -42,3 +46,18 @@ mkName prefix =
         pickName state (name : names)
             | Set.member name state = pickName state names
             | otherwise             = registerName state name
+
+quoteString :: Char -> Text.Text -> Query
+quoteString delim inner =
+    fromString
+        ( delim
+        : Text.unpack (Text.replace single (Text.pack [delim, delim]) inner)
+        ++ [delim]
+        )
+    where
+        single = Text.singleton delim
+
+quoteName :: Name -> Query
+quoteName (Name name)
+    | Text.any (== '"') name = quoteString '"' name
+    | otherwise              = fromString (Text.unpack name)

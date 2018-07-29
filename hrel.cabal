@@ -38,7 +38,8 @@ executable hrel
                     zeromq4-haskell,
                     binary,
                     resourcet,
-                    base64-bytestring
+                    base64-bytestring,
+                    postgresql-simple
 
   other-modules:    HRel.Network
                     HRel.Network.ZMQ
@@ -56,6 +57,8 @@ executable hrel
                     HRel.Database.Marshal
                     HRel.Database.Query
                     HRel.Database.SQL.Types
+                    HRel.Database.SQL.Builder
+                    HRel.Database.SQL.Columns
                     HRel.Database.SQL.Expression
                     HRel.Database.SQL.Statement
                     HRel.Application.Hub
@@ -75,7 +78,8 @@ test-suite spec
   hs-source-dirs:   test src
   main-is:          Spec.hs
 
-  build-depends:    base, hspec, QuickCheck, mtl
+  build-depends:    base, hspec, QuickCheck, mtl, postgresql-simple
 
   other-modules:    HRel.Control.Effect.Environment
                     HRel.Control.Effect.EnvironmentSpec
+                    HRel.Database.SQL.StatementSpec

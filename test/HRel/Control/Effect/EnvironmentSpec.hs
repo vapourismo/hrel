@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module HRel.Control.Effect.EnvironmentSpec where
+module HRel.Control.Effect.EnvironmentSpec (spec) where
 
 import Control.Monad.Reader (runReader, runReaderT)
 

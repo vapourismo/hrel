@@ -1,8 +1,15 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module HRel.Database.SQL.Types
-    ( Name (..) )
+    ( Name (..)
+    , Query
+    )
 where
 
-import Data.Text (Text)
+import Data.String (IsString)
+import Data.Text   (Text)
+
+import Database.PostgreSQL.Simple (Query)
 
 newtype Name = Name {unName :: Text}
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, IsString)

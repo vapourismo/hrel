@@ -39,7 +39,8 @@ executable hrel
                     binary,
                     resourcet,
                     base64-bytestring,
-                    postgresql-simple
+                    postgresql-simple,
+                    scientific
 
   other-modules:    HRel.Network
                     HRel.Network.ZMQ

@@ -29,7 +29,7 @@ module HRel.Database.SQL.Columns
     , toColumns
 
     , HasColumn (..)
-    , (#>)
+    , (!)
 
     , Label
     , mkLabel
@@ -100,10 +100,10 @@ class HasColumn (n :: Symbol) t a | n a -> t where
     accessColumn proxy exp =
         Access exp (Name (Text.pack (symbolVal proxy)))
 
-(#>) :: HasColumn n t a => Expression a -> Label n -> Expression t
-(#>) = flip accessColumn
+(!) :: HasColumn n t a => Expression a -> Label n -> Expression t
+(!) = flip accessColumn
 
-infixl 9 #>
+infixl 9 !
 
 data Label (n :: Symbol)
 

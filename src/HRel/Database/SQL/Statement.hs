@@ -7,11 +7,14 @@
 {-# LANGUAGE OverloadedLabels      #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StrictData            #-}
 {-# LANGUAGE TypeFamilies          #-}
 
 module HRel.Database.SQL.Statement where
 
 import Prelude hiding ((>=))
+
+import qualified Data.ByteString.Char8 as CharString
 
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Columns
@@ -28,6 +31,10 @@ data Statement a where
         -> Statement a
         -> (Expression a -> Expression PgBool)
         -> Statement b
+
+instance Show (Statement a) where
+    show =
+        CharString.unpack . fromQuery . toQuery
 
 buildWhereClause :: Expression PgBool -> Query
 buildWhereClause = \case
@@ -57,6 +64,9 @@ buildStatement = \case
             , buildWhereClause (whereClause (Variable bindName))
             ]
 
+toQuery :: Statement a -> Query
+toQuery = runBuilder . buildStatement
+
 data TestTable
 
 instance HasColumn "x" PgNumber TestTable
@@ -75,16 +85,15 @@ restrict :: Selectable a => (Expression a -> Expression PgBool) -> Statement a -
 restrict restrictor statement =
     Select toColumns statement restrictor
 
-example :: Query
+example :: Statement PgNumber
 example =
-    runBuilder $ buildStatement $
-        project selectClause (restrict whereClause fromClause)
+    project selectClause (restrict whereClause fromClause)
     where
         selectClause row =
-            singleton "y" (row #> #y)
+            singleton "y" (row ! #y)
 
         whereClause row =
-            row #> #x >= 0
+            row ! #x >= 0
 
         fromClause :: Statement TestTable
         fromClause = TableOnly (Name "test_table")

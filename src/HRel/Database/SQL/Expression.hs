@@ -1,8 +1,8 @@
-{-# LANGUAGE FlexibleInstances  #-}
-{-# LANGUAGE GADTs              #-}
-{-# LANGUAGE LambdaCase         #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs             #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StrictData        #-}
 
 module HRel.Database.SQL.Expression
     ( PgBool
@@ -32,13 +32,23 @@ module HRel.Database.SQL.Expression
     )
 where
 
-import Prelude (Bool (..), Fractional (..), Integer, Num (..), Show (..), Word)
+import Prelude
+    ( Bool (..)
+    , Fractional (..)
+    , Integer
+    , Maybe (Nothing)
+    , Num (..)
+    , Show (..)
+    , Word
+    , (.)
+    )
 
-import           Data.Foldable (Foldable (..))
+import qualified Data.ByteString.Char8 as CharString
+import           Data.Foldable         (Foldable (..))
 import           Data.Monoid
-import           Data.Ratio    (denominator, numerator)
+import           Data.Scientific
 import           Data.String
-import qualified Data.Text     as Text
+import qualified Data.Text             as Text
 
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Types
@@ -64,8 +74,6 @@ data Operator operands result where
     Multiply      :: Operator PgNumber PgNumber
     Divide        :: Operator PgNumber PgNumber
 
-deriving instance Show (Operator a b)
-
 buildOperator :: Operator a b -> Query
 buildOperator = \case
     Equals        -> "="
@@ -88,8 +96,6 @@ data UnaryOperator operand result where
     Absolute :: UnaryOperator PgNumber PgNumber
     SignOf   :: UnaryOperator PgNumber PgNumber
 
-deriving instance Show (UnaryOperator a b)
-
 buildUnaryOperator :: UnaryOperator a b -> Expression a -> Query
 buildUnaryOperator Not      exp = mconcat ["(NOT ", buildExpression exp, ")"]
 buildUnaryOperator Negate   exp = mconcat ["(-", buildExpression exp, ")"]
@@ -99,6 +105,7 @@ buildUnaryOperator SignOf   exp = mconcat ["SIGN(", buildExpression exp, ")"]
 data Expression a where
     Variable  :: Name -> Expression a
     IntLit    :: Integer -> Expression PgNumber
+    RealLit   :: Scientific -> Expression PgNumber
     BoolLit   :: Bool -> Expression PgBool
     StringLit :: Text.Text -> Expression PgString
     Parameter :: Word -> Expression a
@@ -106,7 +113,8 @@ data Expression a where
     UnaryOp   :: UnaryOperator a b -> Expression a -> Expression b
     Access    :: Expression a -> Name -> Expression b
 
-deriving instance Show (Expression a)
+instance Show (Expression a) where
+    show = CharString.unpack . fromQuery . buildExpression
 
 instance Num (Expression PgNumber) where
     (+)         = BinaryOp Plus
@@ -122,16 +130,13 @@ instance Fractional (Expression PgNumber) where
 
     recip = BinaryOp Divide (IntLit 1)
 
-    fromRational ratio =
-        BinaryOp
-            Divide
-            (IntLit (numerator ratio))
-            (IntLit (denominator ratio))
+    fromRational = RealLit . fromRational
 
 buildExpression :: Expression a -> Query
 buildExpression = \case
     Variable name        -> quoteName name
     IntLit integer       -> fromString (show integer)
+    RealLit real         -> fromString (formatScientific Fixed Nothing real)
     BoolLit True         -> "true"
     BoolLit False        -> "false"
     StringLit string     -> quoteString '\'' string

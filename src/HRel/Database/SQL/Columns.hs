@@ -44,30 +44,34 @@ import           Data.Kind          (Type)
 import           Data.List          (intersperse)
 import           Data.Semigroup     ((<>))
 import qualified Data.Text          as Text
+import           Data.Traversable   (for)
 import           Data.Type.Equality
 
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Expression
 import HRel.Database.SQL.Types
 
-data ColumnExpression where
-    ColumnExpression :: Name -> Expression a -> ColumnExpression
+data ColumnExpression i where
+    ColumnExpression :: Name -> Expression i a -> ColumnExpression i
 
-type Columns = [ColumnExpression]
+type Columns i = [ColumnExpression i]
 
-buildColumns :: Columns -> Query
-buildColumns cols =
-    mconcat $ intersperse ", " $
-        map (\ (ColumnExpression name exp) -> buildExpression exp <> " AS " <> quoteName name)
-            cols
+buildColumns :: Columns i -> Builder i Query
+buildColumns cols = do
+    segments <-
+        for cols $ \ (ColumnExpression name exp) -> do
+            code <- buildExpression exp
+            pure (code <> " AS " <> quoteName name)
 
-singleton :: Name -> Expression a -> Columns
+    pure (mconcat (intersperse ", " segments))
+
+singleton :: Name -> Expression i a -> Columns i
 singleton name exp = [ColumnExpression name exp]
 
 data Column = Column Symbol Type
 
 class SelectableColumns xs where
-    toSelectColumnExpressions :: Proxy# xs -> Expression a -> [ColumnExpression]
+    toSelectColumnExpressions :: Proxy# xs -> Expression i a -> [ColumnExpression i]
 
 instance SelectableColumns '[] where
     toSelectColumnExpressions _ _ = []
@@ -86,21 +90,21 @@ type Selectable a =
     , SelectableColumns (ColumnsOf a)
     )
 
-toColumns :: forall a. Selectable a => Expression a -> Columns
+toColumns :: forall a i. Selectable a => Expression i a -> Columns i
 toColumns = toSelectColumnExpressions (proxy# :: Proxy# (ColumnsOf a))
 
 class HasColumn (n :: Symbol) t a | n a -> t where
-    accessColumn :: Label n -> Expression a -> Expression t
+    accessColumn :: Label n -> Expression i a -> Expression i t
 
     default accessColumn
         :: KnownSymbol n
         => Label n
-        -> Expression a
-        -> Expression t
+        -> Expression i a
+        -> Expression i t
     accessColumn proxy exp =
         Access exp (Name (Text.pack (symbolVal proxy)))
 
-(!) :: HasColumn n t a => Expression a -> Label n -> Expression t
+(!) :: HasColumn n t a => Expression i a -> Label n -> Expression i t
 (!) = flip accessColumn
 
 infixl 9 !

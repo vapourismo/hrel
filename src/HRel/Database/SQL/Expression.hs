@@ -15,6 +15,8 @@ module HRel.Database.SQL.Expression
 
     , buildExpression
 
+    , param
+
     , true
     , false
     , (&&)
@@ -32,16 +34,9 @@ module HRel.Database.SQL.Expression
     )
 where
 
-import Prelude
-    ( Bool (..)
-    , Fractional (..)
-    , Integer
-    , Maybe (Nothing)
-    , Num (..)
-    , Show (..)
-    , Word
-    , (.)
-    )
+import Prelude (Bool (..), Fractional (..), Integer, Maybe (Nothing), Num (..), Show (..), ($), (.))
+
+import Control.Applicative
 
 import qualified Data.ByteString.Char8 as CharString
 import           Data.Foldable         (Foldable (..))
@@ -96,27 +91,38 @@ data UnaryOperator operand result where
     Absolute :: UnaryOperator PgNumber PgNumber
     SignOf   :: UnaryOperator PgNumber PgNumber
 
-buildUnaryOperator :: UnaryOperator a b -> Expression a -> Query
-buildUnaryOperator Not      exp = mconcat ["(NOT ", buildExpression exp, ")"]
-buildUnaryOperator Negate   exp = mconcat ["(-", buildExpression exp, ")"]
-buildUnaryOperator Absolute exp = mconcat ["ABS(", buildExpression exp, ")"]
-buildUnaryOperator SignOf   exp = mconcat ["SIGN(", buildExpression exp, ")"]
+buildUnaryOperator :: UnaryOperator a b -> Expression i a -> Builder i Query
+buildUnaryOperator Not      exp = do
+    code <- buildExpression exp
+    pure (mconcat ["(NOT ", code, ")"])
 
-data Expression a where
-    Variable  :: Name -> Expression a
-    IntLit    :: Integer -> Expression PgNumber
-    RealLit   :: Scientific -> Expression PgNumber
-    BoolLit   :: Bool -> Expression PgBool
-    StringLit :: Text.Text -> Expression PgString
-    Parameter :: Word -> Expression a
-    BinaryOp  :: Operator a b -> Expression a -> Expression a -> Expression b
-    UnaryOp   :: UnaryOperator a b -> Expression a -> Expression b
-    Access    :: Expression a -> Name -> Expression b
+buildUnaryOperator Negate   exp = do
+    code <- buildExpression exp
+    pure (mconcat ["(-", code, ")"])
 
-instance Show (Expression a) where
-    show = CharString.unpack . fromQuery . buildExpression
+buildUnaryOperator Absolute exp = do
+    code <- buildExpression exp
+    pure (mconcat ["ABS(", code, ")"])
 
-instance Num (Expression PgNumber) where
+buildUnaryOperator SignOf   exp = do
+    code <- buildExpression exp
+    pure (mconcat ["SIGN(", code, ")"])
+
+data Expression i a where
+    Variable  :: Name -> Expression i a
+    IntLit    :: Integer -> Expression i PgNumber
+    RealLit   :: Scientific -> Expression i PgNumber
+    BoolLit   :: Bool -> Expression i PgBool
+    StringLit :: Text.Text -> Expression i PgString
+    Parameter :: (i -> Param) -> Expression i a
+    BinaryOp  :: Operator a b -> Expression i a -> Expression i a -> Expression i b
+    UnaryOp   :: UnaryOperator a b -> Expression i a -> Expression i b
+    Access    :: Expression i a -> Name -> Expression i b
+
+instance Show (Expression i a) where
+    show = CharString.unpack . fromQuery . evalBuilder . buildExpression
+
+instance Num (Expression i PgNumber) where
     (+)         = BinaryOp Plus
     (-)         = BinaryOp Minus
     (*)         = BinaryOp Multiply
@@ -125,96 +131,104 @@ instance Num (Expression PgNumber) where
     signum      = UnaryOp SignOf
     fromInteger = IntLit
 
-instance Fractional (Expression PgNumber) where
+instance Fractional (Expression i PgNumber) where
     (/) = BinaryOp Divide
 
     recip = BinaryOp Divide (IntLit 1)
 
     fromRational = RealLit . fromRational
 
-buildExpression :: Expression a -> Query
+buildExpression :: Expression i a -> Builder i Query
 buildExpression = \case
-    Variable name        -> quoteName name
-    IntLit integer       -> fromString (show integer)
-    RealLit real         -> fromString (formatScientific Fixed Nothing real)
-    BoolLit True         -> "true"
-    BoolLit False        -> "false"
-    StringLit string     -> quoteString '\'' string
-    Parameter index      -> fromString ('$' : show index)
-    BinaryOp op lhs rhs  -> mconcat
-        [ "("
-        , buildExpression lhs
-        , " "
-        , buildOperator op
-        , " "
-        , buildExpression rhs
-        , ")"
-        ]
+    Variable name        -> pure (quoteName name)
+    IntLit integer       -> pure (fromString (show integer))
+    RealLit real         -> pure (fromString (formatScientific Fixed Nothing real))
+    BoolLit True         -> pure "true"
+    BoolLit False        -> pure "false"
+    StringLit string     -> pure (quoteString '\'' string)
+    Parameter accessor   -> fromString . ('$' :) . show <$> mkParam accessor
+    BinaryOp op lhs rhs  -> do
+        lhsCode <- buildExpression lhs
+        rhsCode <- buildExpression rhs
+        pure $ mconcat
+            [ "("
+            , lhsCode
+            , " "
+            , buildOperator op
+            , " "
+            , rhsCode
+            , ")"
+            ]
     UnaryOp op exp       -> buildUnaryOperator op exp
-    Access exp name      -> mconcat
-        [ "("
-        , buildExpression exp
-        , "."
-        , quoteName name
-        , ")"
-        ]
+    Access exp name      -> do
+        code <- buildExpression exp
+        pure $ mconcat
+            [ "("
+            , code
+            , "."
+            , quoteName name
+            , ")"
+            ]
 
-true :: Expression PgBool
+param :: (i -> Param) -> Expression i a
+param = Parameter
+
+true :: Expression i PgBool
 true = BoolLit True
 
-false :: Expression PgBool
+false :: Expression i PgBool
 false = BoolLit False
 
-(&&) :: Expression PgBool -> Expression PgBool -> Expression PgBool
+(&&) :: Expression i PgBool -> Expression i PgBool -> Expression i PgBool
 (&&) = BinaryOp And
 
 infixr 3 &&
 
-and :: Foldable f => f (Expression PgBool) -> Expression PgBool
+and :: Foldable f => f (Expression i PgBool) -> Expression i PgBool
 and = foldl' (&&) true
 
-(||) :: Expression PgBool -> Expression PgBool -> Expression PgBool
+(||) :: Expression i PgBool -> Expression i PgBool -> Expression i PgBool
 (||) = BinaryOp Or
 
-or :: Foldable f => f (Expression PgBool) -> Expression PgBool
+or :: Foldable f => f (Expression i PgBool) -> Expression i PgBool
 or = foldl' (||) false
 
 infixr 2 ||
 
-not :: Expression PgBool -> Expression PgBool
+not :: Expression i PgBool -> Expression i PgBool
 not = UnaryOp Not
 
-(==) :: Expression a -> Expression a -> Expression PgBool
+(==) :: Expression i a -> Expression i a -> Expression i PgBool
 (==) = BinaryOp Equals
 
 infixr 4 ==
 
-(/=) :: Expression a -> Expression a -> Expression PgBool
+(/=) :: Expression i a -> Expression i a -> Expression i PgBool
 (/=) = BinaryOp NotEquals
 
 infixr 4 /=
 
-(<) :: Expression a -> Expression a -> Expression PgBool
+(<) :: Expression i a -> Expression i a -> Expression i PgBool
 (<) = BinaryOp Lower
 
 infixr 4 <
 
-(<=) :: Expression a -> Expression a -> Expression PgBool
+(<=) :: Expression i a -> Expression i a -> Expression i PgBool
 (<=) = BinaryOp LowerEquals
 
 infixr 4 <=
 
-(>) :: Expression a -> Expression a -> Expression PgBool
+(>) :: Expression i a -> Expression i a -> Expression i PgBool
 (>) = BinaryOp Greater
 
 infixr 4 >
 
-(>=) :: Expression a -> Expression a -> Expression PgBool
+(>=) :: Expression i a -> Expression i a -> Expression i PgBool
 (>=) = BinaryOp GreaterEquals
 
 infixr 4 >=
 
-(~~) :: Expression PgString -> Expression PgString -> Expression PgBool
+(~~) :: Expression i PgString -> Expression i PgString -> Expression i PgBool
 (~~) = BinaryOp Like
 
 infixr 4 ~~

@@ -3,9 +3,12 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 
 module HRel.Database.SQL.Builder
-    ( Builder
+    ( Param
+    , Builder
     , runBuilder
+    , evalBuilder
     , mkName
+    , mkParam
     , quoteString
     , quoteName
     )
@@ -13,39 +16,62 @@ where
 
 import Control.Monad.State
 
-import qualified Data.Set    as Set
+import           Data.Foldable      (toList)
+import qualified Data.IntMap.Strict as IntMap
+import qualified Data.Set           as Set
 import           Data.String
-import qualified Data.Text   as Text
+import qualified Data.Text          as Text
 
 import HRel.Database.SQL.Types
 
-newtype Builder a =
-    Builder (State (Set.Set Text.Text) a)
+type Param = ()
+
+data BuilderState i =
+    BuilderState
+        { bsNames  :: Set.Set Text.Text
+        , bsParams :: IntMap.IntMap (i -> Param)
+        }
+
+newtype Builder i a =
+    Builder (State (BuilderState i) a)
     deriving (Functor, Applicative, Monad)
 
-runBuilder :: Builder a -> a
+runBuilder :: Builder i a -> ([i -> Param], a)
 runBuilder (Builder action) =
-    evalState action Set.empty
+    (toList params, x)
+    where
+        (x, BuilderState _ params) =
+            runState action (BuilderState Set.empty IntMap.empty)
 
-mkName :: Text.Text -> Builder Name
+evalBuilder :: Builder i a -> a
+evalBuilder (Builder action) =
+    evalState action (BuilderState Set.empty IntMap.empty)
+
+mkName :: Text.Text -> Builder i Name
 mkName prefix =
     Builder $ state $ \ state ->
-        if Set.member prefix state then
-            pickName state (map (buildName prefix) [(0 :: Word) ..])
-        else
-            registerName state prefix
+        pickName state (prefix : map (buildName prefix) [(0 :: Word) ..])
     where
         buildName prefix index =
             Text.append prefix (Text.pack (show index))
 
         registerName state name =
             ( Name name
-            , Set.insert name state )
+            , state {bsNames = Set.insert name (bsNames state)}
+            )
 
-        pickName _     []           = error "This can't happen"
+        pickName _     []                     = error "This can't happen"
         pickName state (name : names)
-            | Set.member name state = pickName state names
-            | otherwise             = registerName state name
+            | Set.member name (bsNames state) = pickName state names
+            | otherwise                       = registerName state name
+
+mkParam :: (i -> Param) -> Builder i Int
+mkParam accessor =
+    Builder $ state $ \ state ->
+        let newIndex  = length (bsParams state)
+            newParams = IntMap.insert newIndex accessor (bsParams state)
+        in
+            (newIndex, state {bsParams = newParams})
 
 quoteString :: Char -> Text.Text -> Query
 quoteString delim inner =

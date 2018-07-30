@@ -21,27 +21,26 @@ import HRel.Database.SQL.Columns
 import HRel.Database.SQL.Expression
 import HRel.Database.SQL.Types
 
-data Statement a where
+data Statement i a where
     TableOnly
         :: Name
-        -> Statement a
+        -> Statement i a
 
     Select
-        :: (Expression a -> Columns)
-        -> Statement a
-        -> (Expression a -> Expression PgBool)
-        -> Statement b
+        :: (Expression i a -> Columns i)
+        -> Statement i a
+        -> (Expression i a -> Expression i PgBool)
+        -> Statement i b
 
-instance Show (Statement a) where
-    show =
-        CharString.unpack . fromQuery . toQuery
+instance Show (Statement i a) where
+    show = CharString.unpack . fromQuery . evalBuilder . buildStatement
 
-buildWhereClause :: Expression PgBool -> Query
+buildWhereClause :: Expression i PgBool -> Builder i Query
 buildWhereClause = \case
-    BoolLit True -> ""
-    whereClause  -> " WHERE " <> buildExpression whereClause
+    BoolLit True -> pure ""
+    whereClause  -> (" WHERE " <>) <$> buildExpression whereClause
 
-buildStatement :: Statement a -> Builder Query
+buildStatement :: Statement i a -> Builder i Query
 buildStatement = \case
     TableOnly name ->
         pure ("TABLE " <> quoteName name)
@@ -54,18 +53,18 @@ buildStatement = \case
                 TableOnly name -> pure (quoteName name)
                 _              -> (\ code -> "(" <> code <> ")") <$> buildStatement fromClause
 
+        selectCode <- buildColumns (selectClause (Variable bindName))
+        whereCode  <- buildWhereClause (whereClause (Variable bindName))
+
         pure $ mconcat
             [ "SELECT "
-            , buildColumns (selectClause (Variable bindName))
+            , selectCode
             , " FROM "
             , fromCode
             , " AS "
             , quoteName bindName
-            , buildWhereClause (whereClause (Variable bindName))
+            , whereCode
             ]
-
-toQuery :: Statement a -> Query
-toQuery = runBuilder . buildStatement
 
 data TestTable
 
@@ -77,15 +76,19 @@ type instance ColumnsOf TestTable =
      , 'Column "y" PgString
      ]
 
-project :: (Expression a -> Columns) -> Statement a -> Statement b
+project :: (Expression i a -> Columns i) -> Statement i a -> Statement i b
 project selector statement =
     Select selector statement (const true)
 
-restrict :: Selectable a => (Expression a -> Expression PgBool) -> Statement a -> Statement a
+restrict
+    :: Selectable a
+    => (Expression i a -> Expression i PgBool)
+    -> Statement i a
+    -> Statement i a
 restrict restrictor statement =
     Select toColumns statement restrictor
 
-example :: Statement PgNumber
+example :: Statement i PgNumber
 example =
     project selectClause (restrict whereClause fromClause)
     where
@@ -95,5 +98,5 @@ example =
         whereClause row =
             row ! #x >= 0
 
-        fromClause :: Statement TestTable
+        fromClause :: Statement i TestTable
         fromClause = TableOnly (Name "test_table")

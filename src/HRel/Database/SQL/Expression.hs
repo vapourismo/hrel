@@ -5,11 +5,7 @@
 {-# LANGUAGE StrictData        #-}
 
 module HRel.Database.SQL.Expression
-    ( PgBool
-    , PgString
-    , PgNumber
-
-    , Operator (..)
+    ( Operator (..)
     , UnaryOperator (..)
     , Expression (..)
 
@@ -40,34 +36,28 @@ import Control.Applicative
 
 import qualified Data.ByteString.Char8 as CharString
 import           Data.Foldable         (Foldable (..))
-import           Data.Monoid
-import           Data.Scientific
-import           Data.String
+import           Data.Monoid           (mconcat)
+import           Data.Scientific       (FPFormat (Fixed), Scientific, formatScientific)
+import           Data.String           (IsString (fromString))
 import qualified Data.Text             as Text
 
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Types
 
-data PgBool
-
-data PgString
-
-data PgNumber
-
 data Operator operands result where
-    Equals        :: Operator a        PgBool
-    NotEquals     :: Operator a        PgBool
-    Like          :: Operator PgString PgBool
-    Lower         :: Operator a        PgBool
-    LowerEquals   :: Operator a        PgBool
-    Greater       :: Operator a        PgBool
-    GreaterEquals :: Operator a        PgBool
-    And           :: Operator PgBool   PgBool
-    Or            :: Operator PgBool   PgBool
-    Plus          :: Operator PgNumber PgNumber
-    Minus         :: Operator PgNumber PgNumber
-    Multiply      :: Operator PgNumber PgNumber
-    Divide        :: Operator PgNumber PgNumber
+    Equals        :: Operator a Bool
+    NotEquals     :: Operator a Bool
+    Like          :: IsString a => Operator a Bool
+    Lower         :: Operator a Bool
+    LowerEquals   :: Operator a Bool
+    Greater       :: Operator a Bool
+    GreaterEquals :: Operator a Bool
+    And           :: Operator Bool Bool
+    Or            :: Operator Bool Bool
+    Plus          :: Num a => Operator a a
+    Minus         :: Num a => Operator a a
+    Multiply      :: Num a => Operator a a
+    Divide        :: Fractional a => Operator a a
 
 buildOperator :: Operator a b -> Query
 buildOperator = \case
@@ -86,10 +76,10 @@ buildOperator = \case
     Divide        -> "/"
 
 data UnaryOperator operand result where
-    Not      :: UnaryOperator PgBool PgBool
-    Negate   :: UnaryOperator PgNumber PgNumber
-    Absolute :: UnaryOperator PgNumber PgNumber
-    SignOf   :: UnaryOperator PgNumber PgNumber
+    Not      :: UnaryOperator Bool Bool
+    Negate   :: Num a => UnaryOperator a a
+    Absolute :: Num a => UnaryOperator a a
+    SignOf   :: Num a => UnaryOperator a a
 
 buildUnaryOperator :: UnaryOperator a b -> Expression i a -> Builder i Query
 buildUnaryOperator Not      exp = do
@@ -110,10 +100,10 @@ buildUnaryOperator SignOf   exp = do
 
 data Expression i a where
     Variable  :: Name -> Expression i a
-    IntLit    :: Integer -> Expression i PgNumber
-    RealLit   :: Scientific -> Expression i PgNumber
-    BoolLit   :: Bool -> Expression i PgBool
-    StringLit :: Text.Text -> Expression i PgString
+    IntLit    :: Num a => Integer -> Expression i a
+    RealLit   :: Fractional a => Scientific -> Expression i a
+    BoolLit   :: Bool -> Expression i Bool
+    StringLit :: IsString a => Text.Text -> Expression i a
     Parameter :: (i -> Param) -> Expression i a
     BinaryOp  :: Operator a b -> Expression i a -> Expression i a -> Expression i b
     UnaryOp   :: UnaryOperator a b -> Expression i a -> Expression i b
@@ -122,7 +112,7 @@ data Expression i a where
 instance Show (Expression i a) where
     show = CharString.unpack . fromQuery . evalBuilder . buildExpression
 
-instance Num (Expression i PgNumber) where
+instance Num a => Num (Expression i a) where
     (+)         = BinaryOp Plus
     (-)         = BinaryOp Minus
     (*)         = BinaryOp Multiply
@@ -131,7 +121,7 @@ instance Num (Expression i PgNumber) where
     signum      = UnaryOp SignOf
     fromInteger = IntLit
 
-instance Fractional (Expression i PgNumber) where
+instance Fractional a => Fractional (Expression i a) where
     (/) = BinaryOp Divide
 
     recip = BinaryOp Divide (IntLit 1)
@@ -140,14 +130,28 @@ instance Fractional (Expression i PgNumber) where
 
 buildExpression :: Expression i a -> Builder i Query
 buildExpression = \case
-    Variable name        -> pure (quoteName name)
-    IntLit integer       -> pure (fromString (show integer))
-    RealLit real         -> pure (fromString (formatScientific Fixed Nothing real))
-    BoolLit True         -> pure "true"
-    BoolLit False        -> pure "false"
-    StringLit string     -> pure (quoteString '\'' string)
-    Parameter accessor   -> fromString . ('$' :) . show <$> mkParam accessor
-    BinaryOp op lhs rhs  -> do
+    Variable name ->
+        pure (quoteName name)
+
+    IntLit integer ->
+        pure (fromString (show integer))
+
+    RealLit real ->
+        pure (fromString (formatScientific Fixed Nothing real))
+
+    BoolLit True ->
+        pure "true"
+
+    BoolLit False ->
+        pure "false"
+
+    StringLit string ->
+        pure (quoteString '\'' string)
+
+    Parameter accessor ->
+        fromString . ('$' :) . show <$> mkParam accessor
+
+    BinaryOp op lhs rhs -> do
         lhsCode <- buildExpression lhs
         rhsCode <- buildExpression rhs
         pure $ mconcat
@@ -159,8 +163,11 @@ buildExpression = \case
             , rhsCode
             , ")"
             ]
-    UnaryOp op exp       -> buildUnaryOperator op exp
-    Access exp name      -> do
+
+    UnaryOp op exp ->
+        buildUnaryOperator op exp
+
+    Access exp name -> do
         code <- buildExpression exp
         pure $ mconcat
             [ "("
@@ -173,62 +180,62 @@ buildExpression = \case
 param :: (i -> Param) -> Expression i a
 param = Parameter
 
-true :: Expression i PgBool
+true :: Expression i Bool
 true = BoolLit True
 
-false :: Expression i PgBool
+false :: Expression i Bool
 false = BoolLit False
 
-(&&) :: Expression i PgBool -> Expression i PgBool -> Expression i PgBool
+(&&) :: Expression i Bool -> Expression i Bool -> Expression i Bool
 (&&) = BinaryOp And
 
 infixr 3 &&
 
-and :: Foldable f => f (Expression i PgBool) -> Expression i PgBool
+and :: Foldable f => f (Expression i Bool) -> Expression i Bool
 and = foldl' (&&) true
 
-(||) :: Expression i PgBool -> Expression i PgBool -> Expression i PgBool
+(||) :: Expression i Bool -> Expression i Bool -> Expression i Bool
 (||) = BinaryOp Or
 
-or :: Foldable f => f (Expression i PgBool) -> Expression i PgBool
+or :: Foldable f => f (Expression i Bool) -> Expression i Bool
 or = foldl' (||) false
 
 infixr 2 ||
 
-not :: Expression i PgBool -> Expression i PgBool
+not :: Expression i Bool -> Expression i Bool
 not = UnaryOp Not
 
-(==) :: Expression i a -> Expression i a -> Expression i PgBool
+(==) :: Expression i a -> Expression i a -> Expression i Bool
 (==) = BinaryOp Equals
 
 infixr 4 ==
 
-(/=) :: Expression i a -> Expression i a -> Expression i PgBool
+(/=) :: Expression i a -> Expression i a -> Expression i Bool
 (/=) = BinaryOp NotEquals
 
 infixr 4 /=
 
-(<) :: Expression i a -> Expression i a -> Expression i PgBool
+(<) :: Expression i a -> Expression i a -> Expression i Bool
 (<) = BinaryOp Lower
 
 infixr 4 <
 
-(<=) :: Expression i a -> Expression i a -> Expression i PgBool
+(<=) :: Expression i a -> Expression i a -> Expression i Bool
 (<=) = BinaryOp LowerEquals
 
 infixr 4 <=
 
-(>) :: Expression i a -> Expression i a -> Expression i PgBool
+(>) :: Expression i a -> Expression i a -> Expression i Bool
 (>) = BinaryOp Greater
 
 infixr 4 >
 
-(>=) :: Expression i a -> Expression i a -> Expression i PgBool
+(>=) :: Expression i a -> Expression i a -> Expression i Bool
 (>=) = BinaryOp GreaterEquals
 
 infixr 4 >=
 
-(~~) :: Expression i PgString -> Expression i PgString -> Expression i PgBool
+(~~) :: IsString a => Expression i a -> Expression i a -> Expression i Bool
 (~~) = BinaryOp Like
 
 infixr 4 ~~

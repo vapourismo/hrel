@@ -3,7 +3,7 @@ version:       3.0.0
 build-type:    Simple
 cabal-version: >= 2.0
 
-executable hrel
+library
   default-language: Haskell2010
   ghc-options:      -Wall
 
@@ -12,8 +12,7 @@ executable hrel
   else
     ghc-options:    -fno-warn-name-shadowing
 
-  hs-source-dirs:   src
-  main-is:          Main.hs
+  hs-source-dirs:   lib
 
   build-depends:    base,
                     ghc-prim,
@@ -43,7 +42,7 @@ executable hrel
                     scientific,
                     mmorph
 
-  other-modules:    HRel.Network
+  exposed-modules:  HRel.Network
                     HRel.Network.ZMQ
                     HRel.Network.Service
                     HRel.Control.Exception
@@ -66,10 +65,8 @@ executable hrel
                     HRel.Application.Hub
                     HRel.Application.FeedProcessor
 
-test-suite spec
-  type:             exitcode-stdio-1.0
+executable hrel-bin
   default-language: Haskell2010
-
   ghc-options:      -Wall
 
   if impl(ghc >= 8)
@@ -77,11 +74,26 @@ test-suite spec
   else
     ghc-options:    -fno-warn-name-shadowing
 
-  hs-source-dirs:   test src
-  main-is:          Spec.hs
+  hs-source-dirs:   src
+  main-is:          Main.hs
 
-  build-depends:    base, hspec, QuickCheck, mtl, postgresql-simple, mmorph
+  build-depends:    base, hrel, optparse-applicative
 
-  other-modules:    HRel.Control.Effect.Environment
-                    HRel.Control.Effect.EnvironmentSpec
-                    HRel.Database.SQL.StatementSpec
+test-suite hrel-test
+    type:             exitcode-stdio-1.0
+    default-language: Haskell2010
+
+    ghc-options:      -Wall
+
+    if impl(ghc >= 8)
+      ghc-options:    -Wno-name-shadowing
+    else
+      ghc-options:    -fno-warn-name-shadowing
+
+    hs-source-dirs:   test
+    main-is:          Spec.hs
+
+    build-depends:    base, hrel, hspec, QuickCheck, mtl, postgresql-simple
+
+    other-modules:    HRel.Control.Effect.EnvironmentSpec
+                      HRel.Database.SQL.StatementSpec

@@ -40,7 +40,8 @@ executable hrel
                     resourcet,
                     base64-bytestring,
                     postgresql-simple,
-                    scientific
+                    scientific,
+                    mmorph
 
   other-modules:    HRel.Network
                     HRel.Network.ZMQ
@@ -79,7 +80,7 @@ test-suite spec
   hs-source-dirs:   test src
   main-is:          Spec.hs
 
-  build-depends:    base, hspec, QuickCheck, mtl, postgresql-simple
+  build-depends:    base, hspec, QuickCheck, mtl, postgresql-simple, mmorph
 
   other-modules:    HRel.Control.Effect.Environment
                     HRel.Control.Effect.EnvironmentSpec

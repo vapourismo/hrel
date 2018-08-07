@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -12,9 +13,10 @@ module HRel.Control.Effect.Environment
     )
 where
 
+import Control.Monad.Morph  (MFunctor (hoist), MonadTrans (lift))
 import Control.Monad.Reader (ReaderT (..), mapReaderT)
 
-import Data.Type.Equality
+import Data.Type.Equality (type (==))
 
 {-# ANN module "HLint: ignore Use asks" #-}
 
@@ -51,3 +53,17 @@ instance (Functor f, Readerer (e == s) e s f) => HasEnvironment e (ReaderT s f) 
     ask = askReaderT
 
     local = localReaderT
+
+instance
+    {-# OVERLAPPABLE #-}
+    ( HasEnvironment e f
+    , Monad f
+    , MonadTrans t
+    , MFunctor t
+    , Functor (t f)
+    )
+    => HasEnvironment e (t f)
+    where
+        ask = lift ask
+
+        local f = hoist (local f)

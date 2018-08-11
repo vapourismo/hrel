@@ -33,12 +33,11 @@ import Prelude (Bool (..), Fractional (..), Integer, Maybe (Nothing), Num (..), 
 
 import Control.Applicative
 
-import qualified Data.ByteString.Char8 as CharString
-import           Data.Foldable         (Foldable (..))
-import           Data.Monoid           (mconcat)
-import           Data.Scientific       (FPFormat (Fixed), Scientific, formatScientific)
-import           Data.String           (IsString (fromString))
-import qualified Data.Text             as Text
+import           Data.Foldable   (Foldable (..))
+import           Data.Monoid     (mconcat)
+import           Data.Scientific (FPFormat (Fixed), Scientific, formatScientific)
+import           Data.String     (IsString (fromString))
+import qualified Data.Text       as Text
 
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Types
@@ -59,7 +58,7 @@ data Operator operands result where
     Multiply      :: Num a => Operator a a
     Divide        :: Fractional a => Operator a a
 
-buildOperator :: Operator a b -> Query
+buildOperator :: Operator a b -> Code
 buildOperator = \case
     Equals        -> "="
     NotEquals     -> "!="
@@ -81,7 +80,7 @@ data UnaryOperator operand result where
     Absolute :: Num a => UnaryOperator a a
     SignOf   :: Num a => UnaryOperator a a
 
-buildUnaryOperator :: UnaryOperator a b -> Expression i a -> Builder i Query
+buildUnaryOperator :: UnaryOperator a b -> Expression i a -> Builder i Code
 buildUnaryOperator Not      exp = do
     code <- buildExpression exp
     pure (mconcat ["(NOT ", code, ")"])
@@ -110,7 +109,7 @@ data Expression i a where
     Access    :: !(Expression i a) -> !Name -> Expression i b
 
 instance Show (Expression i a) where
-    show = CharString.unpack . fromQuery . evalBuilder . buildExpression
+    show = Text.unpack . unCode . evalBuilder . buildExpression
 
 instance Num a => Num (Expression i a) where
     (+)         = BinaryOp Plus
@@ -128,7 +127,7 @@ instance Fractional a => Fractional (Expression i a) where
 
     fromRational = RealLit . fromRational
 
-buildExpression :: Expression i a -> Builder i Query
+buildExpression :: Expression i a -> Builder i Code
 buildExpression = \case
     Variable name ->
         pure (quoteName name)
@@ -149,7 +148,7 @@ buildExpression = \case
         pure (quoteString '\'' string)
 
     Parameter accessor ->
-        fromString . ('$' :) . show <$> mkParam accessor
+        fromString . ('$' :) . show . (+ 1) <$> mkParam accessor
 
     BinaryOp op lhs rhs -> do
         lhsCode <- buildExpression lhs

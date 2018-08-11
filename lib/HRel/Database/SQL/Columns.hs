@@ -61,7 +61,7 @@ data ColumnExpression i where
 
 type Columns i = [ColumnExpression i]
 
-buildColumns :: Columns i -> Builder i Query
+buildColumns :: Columns i -> Builder i Code
 buildColumns cols = do
     segments <-
         for cols $ \ (ColumnExpression mbName exp) -> do

@@ -71,17 +71,16 @@ mkParam accessor =
         in
             (newIndex, state {bsParams = newParams})
 
-quoteString :: Char -> Text.Text -> Query
+quoteString :: Char -> Text.Text -> Code
 quoteString delim inner =
-    fromString
-        ( delim
-        : Text.unpack (Text.replace single (Text.pack [delim, delim]) inner)
-        ++ [delim]
-        )
+    Code $ Text.cons delim $
+        Text.snoc
+            (Text.replace single (Text.pack [delim, delim]) inner)
+            delim
     where
         single = Text.singleton delim
 
-quoteName :: Name -> Query
+quoteName :: Name -> Code
 quoteName (Name name)
     | Text.any (== '"') name = quoteString '"' name
     | otherwise              = fromString (Text.unpack name)

@@ -2,14 +2,15 @@
 
 module HRel.Database.SQL.Types
     ( Name (..)
-    , Query (..)
+    , Code (..)
     )
 where
 
 import Data.String (IsString)
 import Data.Text   (Text)
 
-import Database.PostgreSQL.Simple.Types (Query (..))
-
 newtype Name = Name {unName :: Text}
     deriving (Show, Eq, Ord, IsString)
+
+newtype Code = Code {unCode :: Text}
+    deriving (Show, Eq, Ord, IsString, Semigroup, Monoid)

@@ -10,9 +10,9 @@
 {-# LANGUAGE StrictData            #-}
 {-# LANGUAGE TypeFamilies          #-}
 
-module HRel.Database.SQL.Statement
-    ( Statement
-    , buildStatement
+module HRel.Database.SQL.Select
+    ( Select
+    , buildSelect
     , table
     , project
     , restrict
@@ -25,40 +25,40 @@ import Prelude hiding ((>=))
 
 import Control.Applicative
 
-import qualified Data.ByteString.Char8 as CharString
-import           Data.String           (IsString (..))
+import           Data.String (IsString (..))
+import qualified Data.Text   as Text
 
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Columns
 import HRel.Database.SQL.Expression
 import HRel.Database.SQL.Types
 
-data Statement i a where
+data Select i a where
     TableOnly
         :: Name
-        -> Statement i a
+        -> Select i a
 
     Select
         :: (Expression i a -> Columns i)
-        -> Statement i a
+        -> Select i a
         -> (Expression i a -> Expression i Bool)
         -> Maybe Word
         -> Maybe Word
-        -> Statement i b
+        -> Select i b
 
-instance IsString (Statement i a) where
+instance IsString (Select i a) where
     fromString = TableOnly . fromString
 
-instance Show (Statement i a) where
-    show = CharString.unpack . fromQuery . evalBuilder . buildStatement
+instance Show (Select i a) where
+    show = Text.unpack . unCode . evalBuilder . buildSelect
 
-buildWhereClause :: Expression i Bool -> Builder i Query
+buildWhereClause :: Expression i Bool -> Builder i Code
 buildWhereClause = \case
     BoolLit True -> pure ""
     whereClause  -> (" WHERE " <>) <$> buildExpression whereClause
 
-buildStatement :: Statement i a -> Builder i Query
-buildStatement = \case
+buildSelect :: Select i a -> Builder i Code
+buildSelect = \case
     TableOnly name ->
         pure ("TABLE " <> quoteName name)
 
@@ -68,7 +68,7 @@ buildStatement = \case
         fromCode <-
             case fromClause of
                 TableOnly name -> pure (quoteName name)
-                _              -> (\ code -> "(" <> code <> ")") <$> buildStatement fromClause
+                _              -> (\ code -> "(" <> code <> ")") <$> buildSelect fromClause
 
         selectCode <- buildColumns (selectClause (Variable bindName))
         whereCode  <- buildWhereClause (whereClause (Variable bindName))
@@ -95,18 +95,18 @@ buildStatement = \case
             , offsetCode
             ]
 
-table :: forall a i. Name -> Statement i a
+table :: forall a i. Name -> Select i a
 table = TableOnly
 
-project :: (Expression i a -> Columns i) -> Statement i a -> Statement i b
+project :: (Expression i a -> Columns i) -> Select i a -> Select i b
 project selector statement =
     Select selector statement (const true) Nothing Nothing
 
-restrict :: (Expression i a -> Expression i Bool) -> Statement i a -> Statement i a
+restrict :: (Expression i a -> Expression i Bool) -> Select i a -> Select i a
 restrict restrictor statement =
     Select expand statement restrictor Nothing Nothing
 
-limit :: Word -> Statement i a -> Statement i a
+limit :: Word -> Select i a -> Select i a
 limit num = \case
     Select projector source restrictor limit offset ->
         Select projector source restrictor ((min num <$> limit) <|> Just num) offset
@@ -114,7 +114,7 @@ limit num = \case
     source ->
         Select expand source (const true) (Just num) Nothing
 
-offset :: Word -> Statement i a -> Statement i a
+offset :: Word -> Select i a -> Select i a
 offset num = \case
     Select projector source restrictor limit offset ->
         Select projector source restrictor limit ((min num <$> offset) <|> Just num)

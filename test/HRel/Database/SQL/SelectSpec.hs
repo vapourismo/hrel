@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HRel.Database.SQL.StatementSpec (spec) where
+module HRel.Database.SQL.SelectSpec (spec) where
 
 import qualified Database.PostgreSQL.Simple as Database
 

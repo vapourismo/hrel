@@ -31,7 +31,6 @@ import qualified Data.Text   as Text
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Columns
 import HRel.Database.SQL.Expression
-import HRel.Database.SQL.Types
 
 data Select i a where
     TableOnly

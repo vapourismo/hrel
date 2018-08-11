@@ -24,8 +24,7 @@ import HRel.Control.Exception
 
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Select
-import HRel.Database.SQL.Types
-import HRel.Database.Types
+import HRel.Database.Value
 
 type Database = LibPQ.Connection
 

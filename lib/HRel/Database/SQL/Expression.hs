@@ -10,7 +10,7 @@ module HRel.Database.SQL.Expression
 
     , buildExpression
 
-    , param
+    , paramWith
 
     , true
     , false
@@ -40,8 +40,7 @@ import           Data.String     (IsString (fromString))
 import qualified Data.Text       as Text
 
 import HRel.Database.SQL.Builder
-import HRel.Database.SQL.Types
-import HRel.Database.Types
+import HRel.Database.Value
 
 data Operator operands result where
     Equals        :: Operator a Bool
@@ -148,7 +147,7 @@ buildExpression = \case
         pure (quoteString '\'' string)
 
     Parameter accessor ->
-        fromString . ('$' :) . show . (+ 1) <$> mkParam accessor
+        mkParam accessor
 
     BinaryOp op lhs rhs -> do
         lhsCode <- buildExpression lhs
@@ -176,8 +175,8 @@ buildExpression = \case
             , ")"
             ]
 
-param :: (i -> Value) -> Expression i a
-param = Parameter
+paramWith :: (i -> Value) -> Expression i a
+paramWith = Parameter
 
 true :: Expression i Bool
 true = BoolLit True

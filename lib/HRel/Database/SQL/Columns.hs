@@ -49,7 +49,6 @@ import           Data.Type.Equality
 
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Expression
-import HRel.Database.SQL.Types
 
 data Label (n :: Symbol) = Label
 

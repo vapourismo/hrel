@@ -54,9 +54,8 @@ library
                     HRel.Data.Product
                     HRel.Data.Type.Fold
                     HRel.Database
-                    HRel.Database.Types
-                    HRel.Database.Marshal
-                    HRel.Database.SQL.Types
+                    HRel.Database.Value
+                    HRel.Database.Query
                     HRel.Database.SQL.Builder
                     HRel.Database.SQL.Columns
                     HRel.Database.SQL.Expression
@@ -96,4 +95,4 @@ test-suite hrel-test
     build-depends:    base, hrel, hspec, QuickCheck, mtl, postgresql-simple
 
     other-modules:    HRel.Control.Effect.EnvironmentSpec
-                      HRel.Database.SQL.StatementSpec
+                      HRel.Database.SQL.SelectSpec

@@ -15,10 +15,10 @@ import Data.Text (Text)
 import HRel.Control.Exception
 
 import HRel.Database
-import HRel.Database.Marshal
 import HRel.Database.SQL.Columns
 import HRel.Database.SQL.Expression
 import HRel.Database.SQL.Select
+import HRel.Database.Value
 
 data TestTable
 
@@ -37,8 +37,8 @@ exampleQuery =
     $ project
         (\ row -> singleton "y" (row ! #y))
     $ restrict
-        (\ row -> row ! #x >= param toValue)
-        ("test_table" :: Select i TestTable)
+        (\ row -> row ! #x >= paramWith toValue)
+        (table @TestTable "test_table")
 
 main :: IO ()
 main = do

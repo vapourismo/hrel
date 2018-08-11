@@ -4,11 +4,16 @@
 {-# LANGUAGE StrictData                 #-}
 
 module HRel.Database.SQL.Builder
-    ( Builder
+    ( -- * Builder
+      Builder
     , runBuilder
     , evalBuilder
+    , Name (..)
     , mkName
     , mkParam
+
+      -- * Code
+    , Code (..)
     , quoteString
     , quoteName
     )
@@ -21,8 +26,7 @@ import qualified Data.Set           as Set
 import           Data.String
 import qualified Data.Text          as Text
 
-import HRel.Database.SQL.Types
-import HRel.Database.Types
+import HRel.Database.Value
 
 data BuilderState i =
     BuilderState
@@ -45,6 +49,9 @@ evalBuilder :: Builder i a -> a
 evalBuilder (Builder action) =
     evalState action (BuilderState Set.empty IntMap.empty)
 
+newtype Name = Name {unName :: Text.Text}
+    deriving (Show, Eq, Ord, IsString)
+
 mkName :: Text.Text -> Builder i Name
 mkName prefix =
     Builder $ state $ \ state ->
@@ -63,13 +70,18 @@ mkName prefix =
             | Set.member name (bsNames state) = pickName state names
             | otherwise                       = registerName state name
 
-mkParam :: (i -> Value) -> Builder i Int
+newtype Code = Code {unCode :: Text.Text}
+    deriving (Show, Eq, Ord, IsString, Semigroup, Monoid)
+
+mkParam :: (i -> Value) -> Builder i Code
 mkParam accessor =
     Builder $ state $ \ state ->
         let newIndex  = length (bsParams state)
             newParams = IntMap.insert newIndex accessor (bsParams state)
         in
-            (newIndex, state {bsParams = newParams})
+            ( Code (Text.pack ('$' : show (1 + newIndex)))
+            , state {bsParams = newParams}
+            )
 
 quoteString :: Char -> Text.Text -> Code
 quoteString delim inner =

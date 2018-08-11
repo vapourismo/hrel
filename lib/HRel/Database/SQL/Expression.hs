@@ -1,11 +1,12 @@
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs             #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StrictData        #-}
 
 module HRel.Database.SQL.Expression
-    ( Operator (..)
-    , UnaryOperator (..)
+    ( Function (..)
     , Expression (..)
 
     , buildExpression
@@ -33,96 +34,93 @@ import Prelude (Bool (..), Fractional (..), Integer, Maybe (Nothing), Num (..), 
 
 import Control.Applicative
 
-import           Data.Foldable   (Foldable (..))
-import           Data.Monoid     (mconcat)
-import           Data.Scientific (FPFormat (Fixed), Scientific, formatScientific)
-import           Data.String     (IsString (fromString))
-import qualified Data.Text       as Text
+import           Data.Foldable    (Foldable (..))
+import           Data.List        (intersperse)
+import           Data.Monoid      (mconcat, (<>))
+import           Data.Scientific  (FPFormat (Fixed), Scientific, formatScientific)
+import           Data.String      (IsString (fromString))
+import qualified Data.Text        as Text
+import           Data.Traversable (sequenceA)
+import           Data.Vinyl       (Rec (..))
 
 import HRel.Database.SQL.Builder
-import HRel.Database.Value
+    ( Builder
+    , Code (..)
+    , Name
+    , evalBuilder
+    , mkParam
+    , quoteName
+    , quoteString
+    )
+import HRel.Database.Value       (Value)
 
-data Operator operands result where
-    Equals        :: Operator a Bool
-    NotEquals     :: Operator a Bool
-    Like          :: IsString a => Operator a Bool
-    Lower         :: Operator a Bool
-    LowerEquals   :: Operator a Bool
-    Greater       :: Operator a Bool
-    GreaterEquals :: Operator a Bool
-    And           :: Operator Bool Bool
-    Or            :: Operator Bool Bool
-    Plus          :: Num a => Operator a a
-    Minus         :: Num a => Operator a a
-    Multiply      :: Num a => Operator a a
-    Divide        :: Fractional a => Operator a a
+data Function params ret where
+    BinaryOperator :: Text.Text -> Function '[a, b] r
+    UnaryOperator  :: Text.Text -> Function '[a] r
+    Function       :: Text.Text -> Function xs r
 
-buildOperator :: Operator a b -> Code
-buildOperator = \case
-    Equals        -> "="
-    NotEquals     -> "!="
-    Like          -> "LIKE"
-    Lower         -> "<"
-    LowerEquals   -> "<="
-    Greater       -> ">"
-    GreaterEquals -> ">="
-    And           -> "AND"
-    Or            -> "OR"
-    Plus          -> "+"
-    Minus         -> "-"
-    Multiply      -> "*"
-    Divide        -> "/"
+buildTuple :: Rec (Expression i) xs -> Builder i Code
+buildTuple params =
+    mconcat . intersperse ", " <$> sequenceA (unwind params)
+    where
+        unwind :: Rec (Expression i) xs -> [Builder i Code]
+        unwind RNil          = []
+        unwind (exp :& rest) = buildExpression exp : unwind rest
 
-data UnaryOperator operand result where
-    Not      :: UnaryOperator Bool Bool
-    Negate   :: Num a => UnaryOperator a a
-    Absolute :: Num a => UnaryOperator a a
-    SignOf   :: Num a => UnaryOperator a a
+buildFunctionCall :: Function xs r -> Rec (Expression i) xs -> Builder i Code
+buildFunctionCall function params =
+    case function of
+        BinaryOperator operator | lhs :& rhs :& RNil <- params -> do
+            lhsCode <- buildExpression lhs
+            rhsCode <- buildExpression rhs
 
-buildUnaryOperator :: UnaryOperator a b -> Expression i a -> Builder i Code
-buildUnaryOperator Not      exp = do
-    code <- buildExpression exp
-    pure (mconcat ["(NOT ", code, ")"])
+            pure $ mconcat
+                [ "("
+                , lhsCode
+                , " "
+                , Code operator
+                , " "
+                , rhsCode
+                , ")"
+                ]
 
-buildUnaryOperator Negate   exp = do
-    code <- buildExpression exp
-    pure (mconcat ["(-", code, ")"])
+        UnaryOperator operator | exp :& RNil <- params -> do
+            code <- buildExpression exp
+            pure (mconcat ["(", Code operator, " ", code, ")"])
 
-buildUnaryOperator Absolute exp = do
-    code <- buildExpression exp
-    pure (mconcat ["ABS(", code, ")"])
-
-buildUnaryOperator SignOf   exp = do
-    code <- buildExpression exp
-    pure (mconcat ["SIGN(", code, ")"])
+        Function funName -> do
+            tupleCode <- buildTuple params
+            pure (Code funName <> tupleCode)
 
 data Expression i a where
-    Variable  :: !Name -> Expression i a
-    IntLit    :: Num a => !Integer -> Expression i a
-    RealLit   :: Fractional a => !Scientific -> Expression i a
-    BoolLit   :: !Bool -> Expression i Bool
-    StringLit :: IsString a => !Text.Text -> Expression i a
-    Parameter :: !(i -> Value) -> Expression i a
-    BinaryOp  :: !(Operator a b) -> Expression i a -> Expression i a -> Expression i b
-    UnaryOp   :: !(UnaryOperator a b) -> !(Expression i a) -> Expression i b
-    Access    :: !(Expression i a) -> !Name -> Expression i b
+    Variable  :: Name -> Expression i a
+    IntLit    :: Num a => Integer -> Expression i a
+    RealLit   :: Fractional a => Scientific -> Expression i a
+    BoolLit   :: Bool -> Expression i Bool
+    StringLit :: IsString a => Text.Text -> Expression i a
+    Parameter :: (i -> Value) -> Expression i a
+    Access    :: (Expression i a) -> Name -> Expression i b
+    Apply     :: Function xs a -> Rec (Expression i) xs -> Expression i a
 
 instance Show (Expression i a) where
     show = Text.unpack . unCode . evalBuilder . buildExpression
 
+instance IsString a => IsString (Expression i a) where
+    fromString = StringLit . fromString
+
 instance Num a => Num (Expression i a) where
-    (+)         = BinaryOp Plus
-    (-)         = BinaryOp Minus
-    (*)         = BinaryOp Multiply
-    negate      = UnaryOp Negate
-    abs         = UnaryOp Absolute
-    signum      = UnaryOp SignOf
+    lhs + rhs   = Apply (BinaryOperator "+") (lhs :& rhs :& RNil)
+    lhs - rhs   = Apply (BinaryOperator "-") (lhs :& rhs :& RNil)
+    lhs * rhs   = Apply (BinaryOperator "*") (lhs :& rhs :& RNil)
+    negate exp  = Apply (UnaryOperator "-") (exp :& RNil)
+    abs exp     = Apply (Function "ABS") (exp :& RNil)
+    signum exp  = Apply (Function "SIGN") (exp :& RNil)
     fromInteger = IntLit
 
 instance Fractional a => Fractional (Expression i a) where
-    (/) = BinaryOp Divide
+    lhs / rhs   = Apply (BinaryOperator "/") (lhs :& rhs :& RNil)
 
-    recip = BinaryOp Divide (IntLit 1)
+    recip = (1 /)
 
     fromRational = RealLit . fromRational
 
@@ -149,22 +147,6 @@ buildExpression = \case
     Parameter accessor ->
         mkParam accessor
 
-    BinaryOp op lhs rhs -> do
-        lhsCode <- buildExpression lhs
-        rhsCode <- buildExpression rhs
-        pure $ mconcat
-            [ "("
-            , lhsCode
-            , " "
-            , buildOperator op
-            , " "
-            , rhsCode
-            , ")"
-            ]
-
-    UnaryOp op exp ->
-        buildUnaryOperator op exp
-
     Access exp name -> do
         code <- buildExpression exp
         pure $ mconcat
@@ -174,6 +156,9 @@ buildExpression = \case
             , quoteName name
             , ")"
             ]
+
+    Apply fun params ->
+        buildFunctionCall fun params
 
 paramWith :: (i -> Value) -> Expression i a
 paramWith = Parameter
@@ -185,7 +170,7 @@ false :: Expression i Bool
 false = BoolLit False
 
 (&&) :: Expression i Bool -> Expression i Bool -> Expression i Bool
-(&&) = BinaryOp And
+lhs && rhs = Apply (BinaryOperator "AND") (lhs :& rhs :& RNil)
 
 infixr 3 &&
 
@@ -193,7 +178,7 @@ and :: Foldable f => f (Expression i Bool) -> Expression i Bool
 and = foldl' (&&) true
 
 (||) :: Expression i Bool -> Expression i Bool -> Expression i Bool
-(||) = BinaryOp Or
+lhs || rhs = Apply (BinaryOperator "OR") (lhs :& rhs :& RNil)
 
 or :: Foldable f => f (Expression i Bool) -> Expression i Bool
 or = foldl' (||) false
@@ -201,39 +186,39 @@ or = foldl' (||) false
 infixr 2 ||
 
 not :: Expression i Bool -> Expression i Bool
-not = UnaryOp Not
+not exp = Apply (UnaryOperator "NOT") (exp :& RNil)
 
 (==) :: Expression i a -> Expression i a -> Expression i Bool
-(==) = BinaryOp Equals
+lhs == rhs = Apply (BinaryOperator "=") (lhs :& rhs :& RNil)
 
 infixr 4 ==
 
 (/=) :: Expression i a -> Expression i a -> Expression i Bool
-(/=) = BinaryOp NotEquals
+lhs /= rhs = Apply (BinaryOperator "!=") (lhs :& rhs :& RNil)
 
 infixr 4 /=
 
 (<) :: Expression i a -> Expression i a -> Expression i Bool
-(<) = BinaryOp Lower
+lhs < rhs = Apply (BinaryOperator "<") (lhs :& rhs :& RNil)
 
 infixr 4 <
 
 (<=) :: Expression i a -> Expression i a -> Expression i Bool
-(<=) = BinaryOp LowerEquals
+lhs <= rhs = Apply (BinaryOperator "<=") (lhs :& rhs :& RNil)
 
 infixr 4 <=
 
 (>) :: Expression i a -> Expression i a -> Expression i Bool
-(>) = BinaryOp Greater
+lhs > rhs = Apply (BinaryOperator ">") (lhs :& rhs :& RNil)
 
 infixr 4 >
 
 (>=) :: Expression i a -> Expression i a -> Expression i Bool
-(>=) = BinaryOp GreaterEquals
+lhs >= rhs = Apply (BinaryOperator ">=") (lhs :& rhs :& RNil)
 
 infixr 4 >=
 
 (~~) :: IsString a => Expression i a -> Expression i a -> Expression i Bool
-(~~) = BinaryOp Like
+lhs ~~ rhs = Apply (BinaryOperator "LIKE") (lhs :& rhs :& RNil)
 
 infixr 4 ~~

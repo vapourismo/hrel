@@ -12,17 +12,8 @@ import Control.Monad.Trans.Resource (MonadResource, liftResourceT)
 import qualified Data.ByteString as ByteString
 import           Data.Conduit    (ConduitT, transPipe)
 
-import Network.HTTP.Client
-    ( HttpException
-    , Manager
-    , Request
-    , Response (..)
-    , brConsume
-    , checkResponse
-    , requestHeaders
-    , throwErrorStatusCodes
-    , withResponse
-    )
+import Network.HTTP.Client  (HttpException, Manager, Request, Response (..), brConsume,
+                             checkResponse, requestHeaders, throwErrorStatusCodes, withResponse)
 import Network.HTTP.Conduit (http)
 import Network.HTTP.Types   (hUserAgent)
 

@@ -10,12 +10,23 @@
 {-# LANGUAGE StrictData            #-}
 {-# LANGUAGE TypeFamilies          #-}
 
-module HRel.Database.SQL.Statement where
+module HRel.Database.SQL.Statement
+    ( Statement
+    , buildStatement
+    , table
+    , project
+    , restrict
+    , limit
+    , offset
+    )
+where
 
 import Prelude hiding ((>=))
 
+import Control.Applicative
+
 import qualified Data.ByteString.Char8 as CharString
-import           Data.Text             (Text)
+import           Data.String           (IsString (..))
 
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Columns
@@ -31,7 +42,12 @@ data Statement i a where
         :: (Expression i a -> Columns i)
         -> Statement i a
         -> (Expression i a -> Expression i Bool)
+        -> Maybe Word
+        -> Maybe Word
         -> Statement i b
+
+instance IsString (Statement i a) where
+    fromString = TableOnly . fromString
 
 instance Show (Statement i a) where
     show = CharString.unpack . fromQuery . evalBuilder . buildStatement
@@ -46,7 +62,7 @@ buildStatement = \case
     TableOnly name ->
         pure ("TABLE " <> quoteName name)
 
-    Select selectClause fromClause whereClause -> do
+    Select selectClause fromClause whereClause mbLimit mbOffset -> do
         bindName <- mkName "S"
 
         fromCode <-
@@ -57,6 +73,16 @@ buildStatement = \case
         selectCode <- buildColumns (selectClause (Variable bindName))
         whereCode  <- buildWhereClause (whereClause (Variable bindName))
 
+        let limitCode =
+                case mbLimit of
+                    Just num -> " LIMIT " <> fromString (show num)
+                    _        -> ""
+
+        let offsetCode =
+                case mbOffset of
+                    Just num -> " OFFSET " <> fromString (show num)
+                    _        -> ""
+
         pure $ mconcat
             [ "SELECT "
             , selectCode
@@ -65,33 +91,33 @@ buildStatement = \case
             , " AS "
             , quoteName bindName
             , whereCode
+            , limitCode
+            , offsetCode
             ]
 
-data TestTable
-
-instance HasColumn "x" Int TestTable
-instance HasColumn "y" Text TestTable
-
-type instance ColumnsOf TestTable =
-    '[ 'Column "x" Int
-     , 'Column "y" Text
-     ]
+table :: forall a i. Name -> Statement i a
+table = TableOnly
 
 project :: (Expression i a -> Columns i) -> Statement i a -> Statement i b
 project selector statement =
-    Select selector statement (const true)
+    Select selector statement (const true) Nothing Nothing
 
-restrict
-    :: Selectable a
-    => (Expression i a -> Expression i Bool)
-    -> Statement i a
-    -> Statement i a
+restrict :: (Expression i a -> Expression i Bool) -> Statement i a -> Statement i a
 restrict restrictor statement =
-    Select toColumns statement restrictor
+    Select expand statement restrictor Nothing Nothing
 
-example :: Statement i Int
-example =
-    project (\ row -> singleton "y" (row ! #y)) $
-        restrict
-            (\ row -> row ! #x >= 0)
-            (TableOnly (Name "test_table") :: Statement i TestTable)
+limit :: Word -> Statement i a -> Statement i a
+limit num = \case
+    Select projector source restrictor limit offset ->
+        Select projector source restrictor ((min num <$> limit) <|> Just num) offset
+
+    source ->
+        Select expand source (const true) (Just num) Nothing
+
+offset :: Word -> Statement i a -> Statement i a
+offset num = \case
+    Select projector source restrictor limit offset ->
+        Select projector source restrictor limit ((min num <$> offset) <|> Just num)
+
+    source ->
+        Select expand source (const true) Nothing (Just num)

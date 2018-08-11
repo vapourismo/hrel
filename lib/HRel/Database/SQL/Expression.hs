@@ -2,7 +2,6 @@
 {-# LANGUAGE GADTs             #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE StrictData        #-}
 
 module HRel.Database.SQL.Expression
     ( Operator (..)
@@ -43,6 +42,7 @@ import qualified Data.Text             as Text
 
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Types
+import HRel.Database.Types
 
 data Operator operands result where
     Equals        :: Operator a Bool
@@ -99,15 +99,15 @@ buildUnaryOperator SignOf   exp = do
     pure (mconcat ["SIGN(", code, ")"])
 
 data Expression i a where
-    Variable  :: Name -> Expression i a
-    IntLit    :: Num a => Integer -> Expression i a
-    RealLit   :: Fractional a => Scientific -> Expression i a
-    BoolLit   :: Bool -> Expression i Bool
-    StringLit :: IsString a => Text.Text -> Expression i a
-    Parameter :: (i -> Param) -> Expression i a
-    BinaryOp  :: Operator a b -> Expression i a -> Expression i a -> Expression i b
-    UnaryOp   :: UnaryOperator a b -> Expression i a -> Expression i b
-    Access    :: Expression i a -> Name -> Expression i b
+    Variable  :: !Name -> Expression i a
+    IntLit    :: Num a => !Integer -> Expression i a
+    RealLit   :: Fractional a => !Scientific -> Expression i a
+    BoolLit   :: !Bool -> Expression i Bool
+    StringLit :: IsString a => !Text.Text -> Expression i a
+    Parameter :: !(i -> Value) -> Expression i a
+    BinaryOp  :: !(Operator a b) -> Expression i a -> Expression i a -> Expression i b
+    UnaryOp   :: !(UnaryOperator a b) -> !(Expression i a) -> Expression i b
+    Access    :: !(Expression i a) -> !Name -> Expression i b
 
 instance Show (Expression i a) where
     show = CharString.unpack . fromQuery . evalBuilder . buildExpression
@@ -177,7 +177,7 @@ buildExpression = \case
             , ")"
             ]
 
-param :: (i -> Param) -> Expression i a
+param :: (i -> Value) -> Expression i a
 param = Parameter
 
 true :: Expression i Bool

@@ -1,10 +1,10 @@
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE StrictData                 #-}
 
 module HRel.Database.SQL.Builder
-    ( Param
-    , Builder
+    ( Builder
     , runBuilder
     , evalBuilder
     , mkName
@@ -14,31 +14,29 @@ module HRel.Database.SQL.Builder
     )
 where
 
-import Control.Monad.State
+import Control.Monad.State.Strict
 
-import           Data.Foldable      (toList)
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Set           as Set
 import           Data.String
 import qualified Data.Text          as Text
 
 import HRel.Database.SQL.Types
-
-type Param = ()
+import HRel.Database.Types
 
 data BuilderState i =
     BuilderState
         { bsNames  :: Set.Set Text.Text
-        , bsParams :: IntMap.IntMap (i -> Param)
+        , bsParams :: IntMap.IntMap (i -> Value)
         }
 
 newtype Builder i a =
     Builder (State (BuilderState i) a)
     deriving (Functor, Applicative, Monad)
 
-runBuilder :: Builder i a -> ([i -> Param], a)
+runBuilder :: Builder i a -> ([i -> Value], a)
 runBuilder (Builder action) =
-    (toList params, x)
+    (IntMap.elems params, x)
     where
         (x, BuilderState _ params) =
             runState action (BuilderState Set.empty IntMap.empty)
@@ -65,7 +63,7 @@ mkName prefix =
             | Set.member name (bsNames state) = pickName state names
             | otherwise                       = registerName state name
 
-mkParam :: (i -> Param) -> Builder i Int
+mkParam :: (i -> Value) -> Builder i Int
 mkParam accessor =
     Builder $ state $ \ state ->
         let newIndex  = length (bsParams state)

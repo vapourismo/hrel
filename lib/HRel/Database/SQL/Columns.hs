@@ -27,12 +27,12 @@ module HRel.Database.SQL.Columns
 
     , Selectable
     , toColumns
+    , expand
 
     , HasColumn (..)
     , (!)
 
-    , Label
-    , mkLabel
+    , Label (..)
     )
 where
 
@@ -51,22 +51,29 @@ import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Expression
 import HRel.Database.SQL.Types
 
+data Label (n :: Symbol) = Label
+
+instance n ~ t => IsLabel n (Label t) where
+    fromLabel = Label
+
 data ColumnExpression i where
-    ColumnExpression :: Name -> Expression i a -> ColumnExpression i
+    ColumnExpression :: Maybe Name -> Expression i a -> ColumnExpression i
 
 type Columns i = [ColumnExpression i]
 
 buildColumns :: Columns i -> Builder i Query
 buildColumns cols = do
     segments <-
-        for cols $ \ (ColumnExpression name exp) -> do
+        for cols $ \ (ColumnExpression mbName exp) -> do
             code <- buildExpression exp
-            pure (code <> " AS " <> quoteName name)
+            pure $ case mbName of
+                Just name -> code <> " AS " <> quoteName name
+                _         -> code
 
     pure (mconcat (intersperse ", " segments))
 
 singleton :: Name -> Expression i a -> Columns i
-singleton name exp = [ColumnExpression name exp]
+singleton name exp = [ColumnExpression (Just name) exp]
 
 data Column = Column Symbol Type
 
@@ -78,7 +85,7 @@ instance SelectableColumns '[] where
 
 instance (KnownSymbol n, SelectableColumns xs) => SelectableColumns ('Column n t ': xs) where
     toSelectColumnExpressions _ exp =
-        ColumnExpression name (Access exp name)
+        ColumnExpression (Just name) (Access exp name)
         : toSelectColumnExpressions (proxy# :: Proxy# xs) exp
         where
             name = Name (Text.pack (symbolVal' (proxy# :: Proxy# n)))
@@ -92,6 +99,10 @@ type Selectable a =
 
 toColumns :: forall a i. Selectable a => Expression i a -> Columns i
 toColumns = toSelectColumnExpressions (proxy# :: Proxy# (ColumnsOf a))
+
+expand :: Expression i a -> Columns i
+expand exp =
+    [ColumnExpression Nothing (Access exp "*")]
 
 class HasColumn (n :: Symbol) t a | n a -> t where
     accessColumn :: Label n -> Expression i a -> Expression i t
@@ -108,11 +119,3 @@ class HasColumn (n :: Symbol) t a | n a -> t where
 (!) = flip accessColumn
 
 infixl 9 !
-
-data Label (n :: Symbol)
-
-mkLabel :: forall n. Label n
-mkLabel = unsafeCoerce# (proxy# :: Proxy# n)
-
-instance n ~ t => IsLabel n (Label t) where
-    fromLabel = mkLabel

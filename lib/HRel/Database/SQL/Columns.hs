@@ -1,25 +1,27 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE DefaultSignatures      #-}
-{-# LANGUAGE ExplicitForAll         #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE MagicHash              #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE OverloadedLabels       #-}
-{-# LANGUAGE OverloadedStrings      #-}
-{-# LANGUAGE PatternSynonyms        #-}
-{-# LANGUAGE PolyKinds              #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE TypeOperators          #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE ConstraintKinds            #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE ExplicitForAll             #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE FunctionalDependencies     #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MagicHash                  #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedLabels           #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE PatternSynonyms            #-}
+{-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE ViewPatterns               #-}
 
 module HRel.Database.SQL.Columns
     ( Columns
-    , singleton
     , buildColumns
 
     , Column (..)
@@ -27,7 +29,9 @@ module HRel.Database.SQL.Columns
 
     , Selectable
     , toColumns
-    , expand
+    , allColumns
+    , Field
+    , singleton
 
     , HasColumn (..)
     , (!)
@@ -36,16 +40,19 @@ module HRel.Database.SQL.Columns
     )
 where
 
-import GHC.Exts
 import GHC.OverloadedLabels
 import GHC.TypeLits
 
-import           Data.Kind          (Type)
-import           Data.List          (intersperse)
-import           Data.Semigroup     ((<>))
-import qualified Data.Text          as Text
-import           Data.Traversable   (for)
-import           Data.Type.Equality
+import           Data.Foldable           (fold)
+import           Data.Kind               (Type)
+import           Data.Semigroup          (Semigroup (..))
+import qualified Data.Sequence           as Seq
+import           Data.Singletons         (SingI (..), SingKind (..))
+import           Data.Singletons.Prelude (Sing (..))
+import           Data.String             (fromString)
+import qualified Data.Text               as Text
+import           Data.Traversable        (for)
+import           Data.Type.Equality      (type (==))
 
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Expression
@@ -56,52 +63,65 @@ instance n ~ t => IsLabel n (Label t) where
     fromLabel = Label
 
 data ColumnExpression i where
-    ColumnExpression :: Maybe Name -> Expression i a -> ColumnExpression i
+    ColumnExpression :: Name -> Expression i a -> ColumnExpression i
 
-type Columns i = [ColumnExpression i]
+data Columns i a
+    = Columns (Seq.Seq (ColumnExpression i))
+    | AllColumns (Expression i a)
 
-buildColumns :: Columns i -> Builder i Code
-buildColumns cols = do
-    segments <-
-        for cols $ \ (ColumnExpression mbName exp) -> do
-            code <- buildExpression exp
-            pure $ case mbName of
-                Just name -> code <> " AS " <> quoteName name
-                _         -> code
+buildColumns :: Columns i a -> Builder i Code
+buildColumns = \case
+    Columns cols -> do
+        segments <-
+            for cols $ \ (ColumnExpression name exp) -> do
+                code <- buildExpression exp
+                pure (code <> " AS " <> quoteName name)
 
-    pure (mconcat (intersperse ", " segments))
+        pure (fold (Seq.intersperse ", " segments))
 
-singleton :: Name -> Expression i a -> Columns i
-singleton name exp = [ColumnExpression (Just name) exp]
+    AllColumns exp ->
+        buildExpression (Access exp "*")
 
 data Column = Column Symbol Type
 
-class SelectableColumns xs where
-    toSelectColumnExpressions :: Proxy# xs -> Expression i a -> [ColumnExpression i]
+data instance Sing (z :: Column) where
+    SColumn :: Sing name -> Sing ('Column name typ)
 
-instance SelectableColumns '[] where
-    toSelectColumnExpressions _ _ = []
+instance KnownSymbol name => SingI ('Column name typ) where
+    sing = SColumn sing
 
-instance (KnownSymbol n, SelectableColumns xs) => SelectableColumns ('Column n t ': xs) where
-    toSelectColumnExpressions _ exp =
-        ColumnExpression (Just name) (Access exp name)
-        : toSelectColumnExpressions (proxy# :: Proxy# xs) exp
-        where
-            name = Name (Text.pack (symbolVal' (proxy# :: Proxy# n)))
+singColumnNames :: Expression i a -> Sing (zs :: [Column]) -> Seq.Seq (ColumnExpression i)
+singColumnNames exp = \case
+    SNil ->
+        Seq.empty
+
+    SCons (SColumn (fromSing -> name)) zs ->
+        ColumnExpression (Name name) (Access exp (Name name))
+        Seq.<| singColumnNames exp zs
 
 type family ColumnsOf a :: [Column]
 
 type Selectable a =
     ( (ColumnsOf a == '[]) ~ 'False
-    , SelectableColumns (ColumnsOf a)
+    , SingI (ColumnsOf a)
     )
 
-toColumns :: forall a i. Selectable a => Expression i a -> Columns i
-toColumns = toSelectColumnExpressions (proxy# :: Proxy# (ColumnsOf a))
+toColumns :: forall a i. Selectable a => Expression i a -> Columns i a
+toColumns exp = Columns (singColumnNames exp (sing :: Sing (ColumnsOf a)))
 
-expand :: Expression i a -> Columns i
-expand exp =
-    [ColumnExpression Nothing (Access exp "*")]
+allColumns :: Expression i a -> Columns i a
+allColumns = AllColumns
+
+data Field name a
+
+singleton :: forall name i a. KnownSymbol name => Expression i a -> Columns i (Field name a)
+singleton exp =
+    Columns $ Seq.singleton $
+        ColumnExpression (fromString (symbolVal (Label :: Label name))) exp
+
+type instance ColumnsOf (Field name a) = '[ 'Column name a ]
+
+instance KnownSymbol name => HasColumn name a (Field name a)
 
 class HasColumn (n :: Symbol) t a | n a -> t where
     accessColumn :: Label n -> Expression i a -> Expression i t

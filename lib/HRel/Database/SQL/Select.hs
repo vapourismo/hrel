@@ -38,7 +38,7 @@ data Select i a where
         -> Select i a
 
     Select
-        :: (Expression i a -> Columns i)
+        :: (Expression i a -> Columns i b)
         -> Select i a
         -> (Expression i a -> Expression i Bool)
         -> Maybe Word
@@ -97,13 +97,13 @@ buildSelect = \case
 table :: forall a i. Name -> Select i a
 table = TableOnly
 
-project :: (Expression i a -> Columns i) -> Select i a -> Select i b
+project :: (Expression i a -> Columns i b) -> Select i a -> Select i b
 project selector statement =
     Select selector statement (const true) Nothing Nothing
 
 restrict :: (Expression i a -> Expression i Bool) -> Select i a -> Select i a
 restrict restrictor statement =
-    Select expand statement restrictor Nothing Nothing
+    Select allColumns statement restrictor Nothing Nothing
 
 limit :: Word -> Select i a -> Select i a
 limit num = \case
@@ -111,7 +111,7 @@ limit num = \case
         Select projector source restrictor ((min num <$> limit) <|> Just num) offset
 
     source ->
-        Select expand source (const true) (Just num) Nothing
+        Select allColumns source (const true) (Just num) Nothing
 
 offset :: Word -> Select i a -> Select i a
 offset num = \case
@@ -119,4 +119,4 @@ offset num = \case
         Select projector source restrictor limit ((min num <$> offset) <|> Just num)
 
     source ->
-        Select expand source (const true) Nothing (Just num)
+        Select allColumns source (const true) Nothing (Just num)

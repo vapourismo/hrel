@@ -30,12 +30,12 @@ type instance ColumnsOf TestTable =
      , 'Column "y" Text
      ]
 
-exampleQuery :: Query Int Int
+exampleQuery :: Query Int (Field "y" Text)
 exampleQuery =
     toQuery
     $ limit 1
     $ project
-        (\ row -> singleton "y" (row ! #y))
+        (\ row -> singleton @"y" (row ! #y))
     $ restrict
         (\ row -> row ! #x >= paramWith toValue)
         (table @TestTable "test_table")

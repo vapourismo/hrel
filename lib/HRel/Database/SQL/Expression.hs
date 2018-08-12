@@ -111,7 +111,7 @@ instance Num a => Num (Expression i a) where
     fromInteger = IntLit
 
 instance Fractional a => Fractional (Expression i a) where
-    lhs / rhs   = Apply (BinaryOperator "/") (lhs :& rhs :& RNil)
+    lhs / rhs = Apply (BinaryOperator "/") (lhs :& rhs :& RNil)
 
     recip = (1 /)
 

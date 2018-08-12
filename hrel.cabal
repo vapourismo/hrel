@@ -37,6 +37,7 @@ library
                     resourcet,
                     resourcet,
                     scientific,
+                    singletons,
                     tagged,
                     text,
                     vector,

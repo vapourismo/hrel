@@ -18,6 +18,7 @@ module HRel.Database.SQL.Select
     , restrict
     , limit
     , offset
+    , innerJoin
     )
 where
 
@@ -32,18 +33,34 @@ import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Columns
 import HRel.Database.SQL.Expression
 
+data Join a b
+
+type instance ColumnsOf (Join a b) =
+    '[ 'Column "left"  a
+     , 'Column "right" b
+     ]
+
+instance HasColumn "left"  a (Join a b)
+instance HasColumn "right" b (Join a b)
+
 data Select i a where
     TableOnly
         :: Name
         -> Select i a
 
     Select
-        :: (Expression i a -> Columns i b)
-        -> Select i a
-        -> (Expression i a -> Expression i Bool)
-        -> Maybe Word
-        -> Maybe Word
+        :: (Expression i a -> Columns i b)       -- ^ SELECT clause
+        -> Select i a                            -- ^ FROM clause
+        -> (Expression i a -> Expression i Bool) -- ^ WHERE clause
+        -> Maybe Word                            -- ^ LIMIT clause
+        -> Maybe Word                            -- ^ OFFSET clause
         -> Select i b
+
+    InnerJoin
+        :: Select i a
+        -> Select i b
+        -> (Expression i a -> Expression i b -> Expression i Bool)
+        -> Select i (Join a b)
 
 instance IsString (Select i a) where
     fromString = TableOnly . fromString
@@ -56,6 +73,11 @@ buildWhereClause = \case
     BoolLit True -> pure ""
     whereClause  -> (" WHERE " <>) <$> buildExpression whereClause
 
+buildFromCode :: Select i a -> Builder i Code
+buildFromCode = \case
+    TableOnly name -> pure (quoteName name)
+    fromClause     -> (\ code -> "(" <> code <> ")") <$> buildSelect fromClause
+
 buildSelect :: Select i a -> Builder i Code
 buildSelect = \case
     TableOnly name ->
@@ -64,10 +86,7 @@ buildSelect = \case
     Select selectClause fromClause whereClause mbLimit mbOffset -> do
         bindName <- mkName "S"
 
-        fromCode <-
-            case fromClause of
-                TableOnly name -> pure (quoteName name)
-                _              -> (\ code -> "(" <> code <> ")") <$> buildSelect fromClause
+        fromCode <- buildFromCode fromClause
 
         selectCode <- buildColumns (selectClause (Variable bindName))
         whereCode  <- buildWhereClause (whereClause (Variable bindName))
@@ -93,6 +112,33 @@ buildSelect = \case
             , limitCode
             , offsetCode
             ]
+
+    InnerJoin leftSelect rightSelect condition -> do
+        leftCode  <- buildFromCode leftSelect
+        leftName  <- mkName "L"
+        rightCode <- buildFromCode rightSelect
+        rightName <- mkName "R"
+
+        conditionCode <- buildExpression (condition (Variable leftName) (Variable rightName))
+
+        pure $ mconcat
+            [ "SELECT "
+            , quoteName leftName
+            , " AS left, "
+            , quoteName rightName
+            , " AS right FROM "
+            , leftCode
+            , " AS "
+            , quoteName leftName
+            , " INNER JOIN "
+            , rightCode
+            , " AS "
+            , quoteName rightName
+            , " ON ("
+            , conditionCode
+            , ")"
+            ]
+
 
 table :: forall a i. Name -> Select i a
 table = TableOnly
@@ -120,3 +166,12 @@ offset num = \case
 
     source ->
         Select allColumns source (const true) Nothing (Just num)
+
+innerJoin
+    :: (Expression i a -> Expression i b -> Expression i Bool)
+    -> Select i a
+    -> Select i b
+    -> Select i (Join a b)
+innerJoin f lhs rhs =
+    InnerJoin lhs rhs f
+

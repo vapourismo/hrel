@@ -8,7 +8,7 @@
 
 module HRel.Application.Test (main) where
 
-import Prelude hiding ((>=))
+import Prelude hiding ((<=), (==), (>=))
 
 import Data.Text (Text)
 
@@ -33,12 +33,28 @@ type instance ColumnsOf TestTable =
 exampleQuery :: Query Int (Field "y" Text)
 exampleQuery =
     toQuery
-    $ limit 1
     $ project
-        (\ row -> singleton @"y" (row ! #y))
-    $ restrict
-        (\ row -> row ! #x >= paramWith toValue)
-        (table @TestTable "test_table")
+        (\ row -> singleton @"y" (row ! #left ! #y))
+    $ limit 1
+    $ innerJoin
+        (\ lhs rhs -> lhs == rhs)
+        leftQuery
+        rightQuery
+
+    where
+        leftQuery =
+            project
+                (\ row -> singleton @"y" (row ! #y))
+            $ restrict
+                (\ row -> row ! #x >= paramWith toValue)
+                (table @TestTable "test_table")
+
+        rightQuery =
+            project
+                (\ row -> singleton @"y" (row ! #y))
+            $ restrict
+                (\ row -> row ! #x <= paramWith toValue)
+                (table @TestTable "test_table")
 
 main :: IO ()
 main = do
@@ -48,6 +64,6 @@ main = do
     print exampleQuery
 
     result <- failOnException @QueryException $
-        runQuery db exampleQuery 3
+        runQuery db exampleQuery 2
 
     debugResult result

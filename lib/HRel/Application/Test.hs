@@ -5,12 +5,14 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module HRel.Application.Test (main) where
 
 import Prelude hiding ((<=), (==), (>=))
 
-import Data.Text (Text)
+import Data.Tagged
+import Data.Text   (Text)
 
 import HRel.Control.Exception
 
@@ -22,36 +24,33 @@ import HRel.Database.Value
 
 data TestTable
 
-instance HasColumn "x" Int TestTable
-instance HasColumn "y" Text TestTable
-
 type instance ColumnsOf TestTable =
-    '[ 'Column "x" Int
-     , 'Column "y" Text
+    '[ "x" ::: Int
+     , "y" ::: Text
      ]
 
-exampleQuery :: Query Int (Field "y" Text)
+exampleQuery :: Query Int (Tagged "y" Text)
 exampleQuery =
     toQuery
     $ project
-        (\ row -> singleton @"y" (row ! #left ! #y))
+        (\ row -> singleColumn @"y" (row ! #left ! #y))
     $ limit 1
     $ innerJoin
-        (\ lhs rhs -> lhs == rhs)
+        (\ lhs rhs -> lhs ! #y == rhs ! #y)
         leftQuery
         rightQuery
 
     where
         leftQuery =
             project
-                (\ row -> singleton @"y" (row ! #y))
+                (\ row -> singleColumn @"y" (row ! #y))
             $ restrict
                 (\ row -> row ! #x >= paramWith toValue)
                 (table @TestTable "test_table")
 
         rightQuery =
             project
-                (\ row -> singleton @"y" (row ! #y))
+                (\ row -> singleColumn @"y" (row ! #y))
             $ restrict
                 (\ row -> row ! #x <= paramWith toValue)
                 (table @TestTable "test_table")

@@ -20,25 +20,7 @@
 {-# LANGUAGE UndecidableInstances       #-}
 {-# LANGUAGE ViewPatterns               #-}
 
-module HRel.Database.SQL.Columns
-    ( Columns
-    , buildColumns
-
-    , Column (..)
-    , ColumnsOf
-
-    , Selectable
-    , toColumns
-    , allColumns
-    , Field
-    , singleton
-
-    , HasColumn (..)
-    , (!)
-
-    , Label (..)
-    )
-where
+module HRel.Database.SQL.Columns where
 
 import GHC.OverloadedLabels
 import GHC.TypeLits
@@ -50,10 +32,12 @@ import qualified Data.Sequence           as Seq
 import           Data.Singletons         (SingI (..), SingKind (..))
 import           Data.Singletons.Prelude (Sing (..))
 import           Data.String             (fromString)
+import           Data.Tagged             (Tagged)
 import qualified Data.Text               as Text
 import           Data.Traversable        (for)
 import           Data.Type.Equality      (type (==))
 
+import HRel.Data.Type.List
 import HRel.Database.SQL.Builder
 import HRel.Database.SQL.Expression
 
@@ -84,57 +68,54 @@ buildColumns = \case
 
 data Column = Column Symbol Type
 
+type (:::) = 'Column
+
+infix 0 :::
+
 data instance Sing (z :: Column) where
-    SColumn :: Sing name -> Sing ('Column name typ)
+    SColumn :: Sing name -> Sing (name ::: typ)
 
-instance KnownSymbol name => SingI ('Column name typ) where
+instance KnownSymbol name => SingI (name ::: typ) where
     sing = SColumn sing
-
-singColumnNames :: Expression i a -> Sing (zs :: [Column]) -> Seq.Seq (ColumnExpression i)
-singColumnNames exp = \case
-    SNil ->
-        Seq.empty
-
-    SCons (SColumn (fromSing -> name)) zs ->
-        ColumnExpression (Name name) (Access exp (Name name))
-        Seq.<| singColumnNames exp zs
 
 type family ColumnsOf a :: [Column]
 
+type instance ColumnsOf (Tagged name a) = '[name ::: a]
+
+type NonEmpty xs = (xs == '[]) ~ 'False
+
 type Selectable a =
-    ( (ColumnsOf a == '[]) ~ 'False
+    ( NonEmpty (ColumnsOf a)
     , SingI (ColumnsOf a)
     )
 
 toColumns :: forall a i. Selectable a => Expression i a -> Columns i a
-toColumns exp = Columns (singColumnNames exp (sing :: Sing (ColumnsOf a)))
+toColumns exp =
+    Columns (singColumnNames (sing :: Sing (ColumnsOf a)))
+    where
+        singColumnNames :: Sing (cols :: [Column]) -> Seq.Seq (ColumnExpression i)
+        singColumnNames = \case
+            SNil ->
+                Seq.empty
+
+            SCons (SColumn (Name . fromSing -> name)) rest ->
+                ColumnExpression name (Access exp name)
+                Seq.<| singColumnNames rest
+
 
 allColumns :: Expression i a -> Columns i a
 allColumns = AllColumns
 
-data Field name a
+singleColumn :: forall name a i. KnownSymbol name => Expression i a -> Columns i (Tagged name a)
+singleColumn =
+    Columns
+    . Seq.singleton
+    . ColumnExpression (fromString (symbolVal (Label :: Label name)))
 
-singleton :: forall name i a. KnownSymbol name => Expression i a -> Columns i (Field name a)
-singleton exp =
-    Columns $ Seq.singleton $
-        ColumnExpression (fromString (symbolVal (Label :: Label name))) exp
-
-type instance ColumnsOf (Field name a) = '[ 'Column name a ]
-
-instance KnownSymbol name => HasColumn name a (Field name a)
-
-class HasColumn (n :: Symbol) t a | n a -> t where
-    accessColumn :: Label n -> Expression i a -> Expression i t
-
-    default accessColumn
-        :: KnownSymbol n
-        => Label n
-        -> Expression i a
-        -> Expression i t
-    accessColumn proxy exp =
-        Access exp (Name (Text.pack (symbolVal proxy)))
+type HasColumn n t a = (KnownSymbol n, Find n (ColumnsOf a) ~ t)
 
 (!) :: HasColumn n t a => Expression i a -> Label n -> Expression i t
-(!) = flip accessColumn
+(!) subject fieldProxy =
+    Access subject (Name (Text.pack (symbolVal fieldProxy)))
 
 infixl 9 !

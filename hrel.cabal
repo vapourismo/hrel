@@ -55,6 +55,7 @@ library
                     HRel.Data.XML.Parser
                     HRel.Data.Product
                     HRel.Data.Type.Fold
+                    HRel.Data.Type.List
                     HRel.Database
                     HRel.Database.Value
                     HRel.Database.Query

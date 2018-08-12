@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StrictData            #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module HRel.Database.SQL.Select
     ( Select
@@ -36,12 +37,9 @@ import HRel.Database.SQL.Expression
 data Join a b
 
 type instance ColumnsOf (Join a b) =
-    '[ 'Column "left"  a
-     , 'Column "right" b
+    '[ "left"  ::: a
+     , "right" ::: b
      ]
-
-instance HasColumn "left"  a (Join a b)
-instance HasColumn "right" b (Join a b)
 
 data Select i a where
     TableOnly

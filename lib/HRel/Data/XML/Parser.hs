@@ -4,7 +4,8 @@
 module HRel.Data.XML.Parser
     ( XmlMessage (..)
     , XmlError (..)
-    , subscribeToXml )
+    , subscribeToXml
+    )
 where
 
 import Control.Applicative
@@ -136,17 +137,17 @@ doctype = do
     skipUntil OpenTagEnd
 
 messages :: XmlParser [XmlMessage]
-messages =
-    choice
-        [ (: []) <$> open
-        , (: []) <$> attribute
-        , openEnd
-        , (: []) <$> close
-        , (: []) <$> text
-        , (: []) <$> cdata
-        , [] <$ instruction
-        , [] <$ comment
-        , [] <$ doctype ]
+messages = choice
+    [ (: []) <$> open
+    , (: []) <$> attribute
+    , openEnd
+    , (: []) <$> close
+    , (: []) <$> text
+    , (: []) <$> cdata
+    , [] <$ instruction
+    , [] <$ comment
+    , [] <$ doctype
+    ]
 
 data XmlError =
     XmlError [String] String

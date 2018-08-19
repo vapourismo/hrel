@@ -7,39 +7,18 @@
 module HRel.Application.FeedProcessor
     ( Input
     , inputInfo
-    , main )
+    , main
+    )
 where
-
-import Control.Monad.Reader         (runReaderT)
-import Control.Monad.Trans          (MonadIO (liftIO))
-import Control.Monad.Trans.Resource (runResourceT)
 
 import Options.Applicative
 
-import           HRel.Application.Hub   (Request (..), Response (..))
-import           HRel.Control.Exception
-import           HRel.Network.Service
-import qualified HRel.Network.ZMQ       as ZMQ
-
-newtype Input =
-    Input
-        { inputReqSocketRecipe :: ZMQ.SocketRecipe ZMQ.Req }
+data Input = Input
 
 inputInfo :: ParserInfo Input
 inputInfo =
-    info inputP (progDesc "Feed processor")
-    where
-        inputP = Input <$> argument (ZMQ.readConnectM ZMQ.Req) (metavar "CONNECTINFO")
+    info (pure Input) (progDesc "Feed processor")
 
 main :: Input -> IO ()
-main Input{..} =
-    failOnException @ZMQ.ZMQError $ ZMQ.withContext $ \ context ->
-        runResourceT $ flip runReaderT context $ do
-            Right service <-
-                try @IntroException
-                    (introduce @Request @Response inputReqSocketRecipe)
-
-            res <-
-                try @RequestException
-                    (request service (DistributeFeed "http://example.com/feed.xml"))
-            liftIO (print res)
+main Input =
+    pure ()

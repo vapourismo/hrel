@@ -45,9 +45,8 @@ data Response
 
 instance Binary Response
 
-newtype Input =
-    Input
-        { inputCommandSocketRecipe :: ZMQ.SocketRecipe ZMQ.Rep }
+newtype Input = Input
+    { inputCommandSocketRecipe :: ZMQ.SocketRecipe ZMQ.Rep }
 
 inputInfo :: ParserInfo Input
 inputInfo =

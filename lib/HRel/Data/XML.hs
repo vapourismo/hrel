@@ -1,23 +1,36 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase       #-}
 
 module HRel.Data.XML
     ( XmlTraversal
+    , xmlConduit
     , attribute
     , attributes
     , text
     , children
-    , child )
+    , child
+    )
 where
 
 import Control.Applicative
+import Control.Monad.Except (MonadError)
 
 import qualified Data.ByteString as ByteString
+import           Data.Conduit    (ConduitT, (.|))
 
-import HRel.Data.Scanner
-import HRel.Data.XML.Parser (XmlMessage (..))
+import HRel.Data.Scanner    (Scanner, await, feed, pull, scannerConduit, seal)
+import HRel.Data.XML.Parser (XmlError, XmlMessage (..), subscribeToXml)
 
 -- | XML traversal
 type XmlTraversal = Scanner XmlMessage
+
+-- | XML conduit
+xmlConduit
+    :: MonadError XmlError m
+    => XmlTraversal a
+    -> ConduitT ByteString.ByteString o m (Maybe a)
+xmlConduit trav =
+    subscribeToXml .| scannerConduit trav
 
 -- | Value for an attribute.
 attribute :: ByteString.ByteString -> XmlTraversal ByteString.ByteString

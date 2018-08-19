@@ -4,7 +4,8 @@
 module HRel.Data.XML.Lexer
     ( Token (..)
     , tokenToByteString
-    , token )
+    , token
+    )
 where
 
 import Prelude hiding (takeWhile)
@@ -142,4 +143,5 @@ token =
         , EqualsSign <$ equalsSign
         , Whitespace <$> whitespace
         , Name <$> name
-        , Other <$> anyWord8 ]
+        , Other <$> anyWord8
+        ]

@@ -43,8 +43,15 @@ import qualified Data.Text        as Text
 import           Data.Traversable (sequenceA)
 import           Data.Vinyl       (Rec (..))
 
-import HRel.Database.SQL.Builder (Builder, Code (..), Name, evalBuilder, mkParam, quoteName,
-                                  quoteString)
+import HRel.Database.SQL.Builder
+    ( Builder
+    , Code (..)
+    , Name
+    , evalBuilder
+    , mkParam
+    , quoteName
+    , quoteString
+    )
 import HRel.Database.Value       (Value)
 
 data Function params ret where

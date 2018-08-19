@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds      #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE PolyKinds            #-}
 {-# LANGUAGE TypeFamilies         #-}
@@ -8,10 +9,12 @@ module HRel.Data.Type.List
     ( Find
     , Has
     , Subset
+    , NonEmpty
     )
 where
 
-import Data.Kind (Constraint)
+import Data.Kind          (Constraint)
+import Data.Type.Equality (type (==))
 
 type family Find (x :: a) (xs :: [p]) :: b where
     Find x (_ x y ': _) = y
@@ -24,3 +27,5 @@ type family Has (needle :: a) (haystack :: [a]) where
 type family Subset (lhs :: [a]) (rhs :: [a]) :: Constraint where
     Subset (l ': ls) rhs = (Has l rhs, Subset ls rhs)
     Subset '[]       _   = ()
+
+type NonEmpty xs = (xs == '[]) ~ 'False

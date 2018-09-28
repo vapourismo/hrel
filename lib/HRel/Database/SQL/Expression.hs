@@ -99,7 +99,7 @@ data Expression i a where
     BoolLit   :: Bool -> Expression i Bool
     StringLit :: IsString a => Text.Text -> Expression i a
     Parameter :: (i -> Value) -> Expression i a
-    Access    :: (Expression i a) -> Name -> Expression i b
+    Access    :: Expression i a -> Name -> Expression i b
     Apply     :: Function xs a -> Rec (Expression i) xs -> Expression i a
 
 instance Show (Expression i a) where

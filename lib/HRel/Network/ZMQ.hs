@@ -40,7 +40,6 @@ where
 
 import GHC.Generics (Generic)
 
-import Control.Monad.Catch          (MonadMask, bracket)
 import Control.Monad.Reader         (ReaderT (..), mapReaderT)
 import Control.Monad.Trans          (MonadIO (liftIO), lift)
 import Control.Monad.Trans.Resource (ResourceT)
@@ -55,11 +54,12 @@ import qualified Data.ByteString.Lazy as LazyByteString
 import qualified System.ZMQ4 as ZMQ
 
 import HRel.Control.Exception
+import HRel.Control.Monad.Exception (bracket)
 
 -- | Do something with a 'ZMQ.Context'. The context will terminate after the handler returns.
 withContext
     :: ( MonadIO m
-       , MonadMask m
+       , MonadException m
        , Throws ZMQ.ZMQError
        )
     => (ZMQ.Context -> m a)
@@ -99,7 +99,7 @@ data SocketRecipe a
 -- | Do something with a 'ZMQ.Socket'. The socket will close after the handler returns.
 withSocket
     :: ( ZMQ.SocketType t
-       , MonadMask m
+       , MonadException m
        , MonadZMQ m
        , Throws ZMQ.ZMQError
        )
@@ -197,7 +197,8 @@ instance Exception DecodeException
 receiveBinary
     :: ( ZMQ.Receiver t
        , Binary.Binary a
-       , MonadThrow m
+       , Monad m
+       , MonadException m
        , MonadZMQ m
        , Throws ZMQ.ZMQError
        , Throws DecodeException

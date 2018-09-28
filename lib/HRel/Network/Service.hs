@@ -53,7 +53,8 @@ serveRequests
        , Typeable o
        , Binary i
        , Binary o
-       , MonadMask m
+       , Monad m
+       , MonadException m
        , MonadZMQ m
        , Throws ZMQError
        )
@@ -99,7 +100,8 @@ introduce
     :: forall i o m
     .  ( Typeable i
        , Typeable o
-       , MonadCatch m
+       , Monad m
+       , MonadException m
        , MonadZMQ m
        , Throws IntroException
        )
@@ -132,7 +134,8 @@ instance Exception RequestException
 request
     :: ( Binary i
        , Binary o
-       , MonadCatch m
+       , Monad m
+       , MonadException m
        , MonadZMQ m
        , Throws RequestException
        )

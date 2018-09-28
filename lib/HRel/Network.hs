@@ -45,7 +45,7 @@ fixRequest baseRequest =
 -- | Perform an HTTP request and retrieve the response body if successful.
 requestResponseBody
     :: ( MonadIO m
-       , MonadThrow m
+       , MonadException m
        , Throws HttpException
        )
     => Manager
@@ -59,7 +59,7 @@ requestResponseBody manager baseRequest =
 -- | Perform HTTP request and yield chunks of the response body if successful.
 requestConduit
     :: ( MonadResource m
-       , MonadThrow m
+       , MonadException m
        , Throws HttpException
        )
     => Manager

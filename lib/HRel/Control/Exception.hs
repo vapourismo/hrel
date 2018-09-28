@@ -1,16 +1,19 @@
 {-# OPTIONS -Wno-unused-top-binds #-}
 
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ConstraintKinds     #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE DeriveFunctor       #-}
-{-# LANGUAGE IncoherentInstances #-}
-{-# LANGUAGE MagicHash           #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE RoleAnnotations     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE IncoherentInstances  #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE RoleAnnotations      #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module HRel.Control.Exception
     ( Throws
@@ -26,23 +29,20 @@ module HRel.Control.Exception
 
       -- * Re-exports
     , Exception
-    , Catch.MonadCatch
-    , Catch.MonadThrow
-    , Catch.MonadMask
+    , Exception.MonadException
     )
 where
 
-import GHC.Exts (Proxy#, proxy#)
-
 import Prelude hiding (fail)
 
-import           Control.Exception   (Exception)
-import qualified Control.Monad.Catch as Catch
-import           Control.Monad.Fail  (MonadFail (fail))
-import           Control.Monad.Trans (MonadTrans (lift))
+import Control.Exception   (Exception)
+import Control.Monad.Fail  (MonadFail (fail))
+import Control.Monad.Trans (MonadTrans (lift))
 
 import Data.Coerce (coerce)
 import Data.Kind   (Constraint)
+
+import qualified HRel.Control.Monad.Exception as Exception
 
 -- | Prevents implementation of 'Throws'
 class ThrowsBrother e
@@ -65,64 +65,58 @@ instance ThrowsBrother (Tau e)
 instance Throws (Tau e)
 
 -- | Strip the 'Throws' constraint.
-removeAnnotation :: forall e a. Proxy# e -> (Throws e => a) -> a
-removeAnnotation _ action =
-    unWrap (coerce (Wrap action :: Wrap e a) :: Wrap (Tau e) a)
+removeAnnotation :: forall e a. (Throws e => a) -> a
+removeAnnotation action = unWrap (coerce (Wrap action :: Wrap e a) :: Wrap (Tau e) a)
 
 -- | Redirect 'Exception' to 'MonadFail' interface.
 failOnException
-    :: forall e a m
-    .  (Exception e, Catch.MonadCatch m, MonadFail m)
+    :: forall e m a
+    .  (Exception e, Exception.MonadException m, MonadFail m)
     => (Throws e => m a)
     -> m a
-failOnException action =
-    catch action (fail . show :: e -> m a)
+failOnException action = catch action (fail . show :: e -> m a)
 
 -- | Throw an 'Exception'.
 throw
-    :: (Catch.MonadThrow m, Exception e)
+    :: (Exception.MonadException m, Exception e)
     => e
     -> Throws e
     => m a
-throw = Catch.throwM
+throw = Exception.throw
 
 -- | Catch an 'Exception'.
 catch
-    :: forall e a m
-    .  (Catch.MonadCatch m, Exception e)
+    :: forall e m a
+    .  (Exception.MonadException m, Exception e)
     => (Throws e => m a)
     -> (e -> m a)
     -> m a
-catch action =
-    Catch.catch (removeAnnotation (proxy# :: Proxy# e) action)
+catch action = Exception.catch (removeAnnotation @e action)
 
 -- | Handle an 'Exception'.
 handle
-    :: forall e a m
-    .  (Catch.MonadCatch m, Exception e)
+    :: forall e m a
+    .  (Exception.MonadException m, Exception e)
     => (e -> m a)
     -> (Throws e => m a)
     -> m a
-handle recover action =
-    Catch.handle recover (removeAnnotation (proxy# :: Proxy# e) action)
+handle recover action = Exception.catch (removeAnnotation @e action) recover
 
 -- | Try and capture.
-try :: forall e a m
-    .  (Catch.MonadCatch m, Exception e)
+try :: forall e m a
+    .  (Exception.MonadException m, Exception e)
     => (Throws e => m a)
     -> m (Either e a)
-try action =
-    Catch.try (removeAnnotation (proxy# :: Proxy# e) action)
+try action = Exception.try (removeAnnotation @e action)
 
 -- | Transform an 'Exception' when it occurs.
 mapException
     :: forall e e' a m
-    .  (Exception e, Exception e', Catch.MonadCatch m)
+    .  (Exception e, Exception e', Exception.MonadException m)
     => (e -> e')
     -> (Throws e => m a)
     -> (Throws e' => m a)
-mapException map =
-    handle (throw . map)
+mapException map = handle (throw . map)
 
 type family ThrowsMany (es :: [*]) :: Constraint where
     ThrowsMany '[]      = ()

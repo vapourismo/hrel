@@ -74,7 +74,10 @@ newtype Result a = Result LibPQ.Result
 
 -- | Execute a query.
 runQuery
-    :: (MonadIO m, MonadThrow m, Throws QueryException)
+    :: ( MonadIO m
+       , MonadException m
+       , Throws QueryException
+       )
     => Database
     -> Query i a
     -> i

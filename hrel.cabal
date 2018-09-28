@@ -42,12 +42,16 @@ library
                     text,
                     vector,
                     vinyl,
-                    zeromq4-haskell
+                    zeromq4-haskell,
+                    monad-control,
+                    transformers-base
 
-  exposed-modules:  HRel.Network
+  exposed-modules:  Control.Monad.Trans.Resource.Orphan
+                    HRel.Network
                     HRel.Network.ZMQ
                     HRel.Network.Service
                     HRel.Control.Exception
+                    HRel.Control.Monad.Exception
                     HRel.Control.Effect.Environment
                     HRel.Data.Scanner
                     HRel.Data.XML

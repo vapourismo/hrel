@@ -20,6 +20,7 @@ import GHC.Generics (Generic)
 
 import Control.Monad.Reader         (runReaderT)
 import Control.Monad.Trans          (liftIO)
+import Control.Monad.Trans.Control  ()
 import Control.Monad.Trans.Resource (runResourceT)
 
 import Data.Binary   (Binary)

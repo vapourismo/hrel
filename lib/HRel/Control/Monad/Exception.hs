@@ -14,7 +14,6 @@ where
 
 import qualified Control.Exception                   as Exception
 import           Control.Monad.Base                  (MonadBase (..))
-import           Control.Monad.Reader                (ReaderT)
 import           Control.Monad.Trans.Control         (MonadBaseControl (..))
 import           Control.Monad.Trans.Resource.Orphan ()
 
@@ -61,7 +60,5 @@ class MonadException m where
 
 instance MonadException IO
 
--- I don't know, man.
-instance MonadBaseControl IO m => MonadException (ReaderT r m)
-
-instance MonadBaseControl IO (t m) => MonadException (t m)
+-- This constraint enforces that the base is actually lifted through.
+instance (MonadBaseControl IO m, MonadBaseControl IO (t m)) => MonadException (t m)
